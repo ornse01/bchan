@@ -219,7 +219,7 @@ LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
 		return;
 	}
 	hmistate->ptr = ptr;
-	gset_ptr(hmistate->ptr, NULL, 0, 0);
+	gset_ptr(hmistate->ptr, NULL, -1, -1);
 }
 
 LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
