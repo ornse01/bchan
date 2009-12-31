@@ -267,6 +267,7 @@ LOCAL W http_chunkediterator_getnext_readchunksize(http_chunkediterator_t *itera
 				DP(("[http] buffer update in chunked size reading\n"));
 				rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
 				if (rcvlen <= 0) {
+					DP_ER("so_recv error:", rcvlen);
 					return rcvlen;
 				}
 				iterator->buffer_rcv_len = rcvlen;
@@ -320,6 +321,7 @@ LOCAL W http_chunkediterator_getnext_readchunksize(http_chunkediterator_t *itera
 			DP(("[http] buffer update in chunked size reading\n"));
 			rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
 			if (rcvlen <= 0) {
+				DP_ER("so_recv: error", rcvlen);
 				return rcvlen;
 			}
 			iterator->buffer_rcv_len = rcvlen;
@@ -350,6 +352,7 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 			return 0;
 		}
 		if (rcvlen < 0) {
+			DP_ER("so_recv error:", rcvlen);
 			return rcvlen;
 		}
 		iterator->buffer_rcv_len = rcvlen;
@@ -366,6 +369,7 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 	if (iterator->current_chunked_len == iterator->current_chunked_push_len) {
 		err = http_chunkediterator_getnext_readchunksize(iterator);
 		if (err < 0) {
+			DP_ER("http_chunkediterator_getnext_readchunksize:", err);
 			return err;
 		}
 	}
@@ -519,6 +523,19 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
 	}
 
 	for (;;) {
+		if (iterator->z.avail_in == 0) {
+			err = http_chunkediterator_getnext(&(iterator->iter), &c_bin, &c_len);
+			if (err < 0) {
+				DP_ER("http_chunkediterator_getnext error:", err);
+				return err;
+			}
+			if (c_bin == NULL) {
+				DP(("full consumed\n"));
+				break;
+			}
+			iterator->z.next_in = c_bin;
+			iterator->z.avail_in = c_len;
+		}
         err = inflate(&(iterator->z), Z_NO_FLUSH);
         if (err == Z_STREAM_END) {
 			*ptr = iterator->buffer;
@@ -537,19 +554,6 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
             iterator->z.avail_out = iterator->buffer_len;
 			return 0;
         }
-		if (iterator->z.avail_in == 0) {
-			err = http_chunkediterator_getnext(&(iterator->iter), &c_bin, &c_len);
-			if (err < 0) {
-				DP_ER("http_chunkediterator_getnext error:", err);
-				return err;
-			}
-			if (c_bin == NULL) {
-				DP(("full consumed\n"));
-				break;
-			}
-			iterator->z.next_in = c_bin;
-			iterator->z.avail_in = c_len;
-		}
 	}
 
 	return 0;
