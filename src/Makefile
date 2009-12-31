@@ -55,6 +55,8 @@ ifneq ($(mode), debug)
   CFLAGS += -Wall
 endif
 
+CFLAGS += $(BUILDOPTIONS)
+
 LOADLIBES += -limg
 
 #----------------------------------------------------------------------

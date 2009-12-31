@@ -39,7 +39,7 @@
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
-# define DP_ER(msg, err) printf("%s (%d/%z)\n", msg, err>>16, err)
+# define DP_ER(msg, err) printf("%s (%d/%x)\n", msg, err>>16, err)
 #else
 # define DP(arg) /**/
 # define DP_ER(msg, err) /**/

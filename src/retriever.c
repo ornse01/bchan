@@ -38,7 +38,7 @@
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
-# define DP_ER(msg, err) printf("%s (%d/%z)\n", msg, err>>16, err)
+# define DP_ER(msg, err) printf("%s (%d/%x)\n", msg, err>>16, err)
 #else
 # define DP(arg) /**/
 # define DP_ER(msg, err) /**/
@@ -341,7 +341,7 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 			len = http_getheaderlength(retriever->http);
 			err = datcache_updatelatestheader(retriever->cache, bin, len);
 			if (err < 0) {
-				DP_ER("datcache_updatelatestheader error", error);
+				DP_ER("datcache_updatelatestheader error", err);
 				return err;
 			}
 
