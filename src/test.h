@@ -1,7 +1,7 @@
 /*
  * test.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -45,5 +45,8 @@ IMPORT VOID test_layout_main();
 
 /* test_parselib.c */
 IMPORT VOID test_parselib_main();
+
+/* test_submitutil.c */
+IMPORT VOID test_submitutil_main();
 
 #endif
