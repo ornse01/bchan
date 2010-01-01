@@ -1,7 +1,7 @@
 /*
  * sjisstring.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -275,3 +275,28 @@ EXPORT UB* sjstring_searchchar(UB *str, W len, UB ch)
 
 	return NULL;
 }
+
+#ifdef BCHAN_CONFIG_DEBUG
+#include	<tstring.h>
+
+EXPORT VOID sjstring_debugprint(UB *str, W len)
+{
+	W i, print_len;
+	TC *print;
+
+	print_len = sjstotcs(NULL, str);
+	print = malloc(sizeof(TC)*(print_len + 1));
+	if (print == NULL) {
+		return;
+	}
+
+	sjstotcs(print, str);
+	print[print_len] = TNULL;
+
+	for (i=0;i<print_len;i++) {
+		printf("%C", print[i]);
+	}
+
+	free(print);
+}
+#endif

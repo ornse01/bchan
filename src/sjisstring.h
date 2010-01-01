@@ -1,7 +1,7 @@
 /*
  * sjisstring.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -36,5 +36,11 @@ IMPORT W sjstring_appendurlencodestring(UB **dest, W *dest_len, UB *str, W len);
 IMPORT W sjstring_appendformpoststring(UB **dest, W *dest_len, UB *str, W len);
 
 IMPORT UB* sjstring_searchchar(UB *str, W len, UB ch);
+
+#ifdef BCHAN_CONFIG_DEBUG
+IMPORT VOID sjstring_debugprint(UB *str, W len);
+#else
+#define sjstring_debugprint(str, len) /**/
+#endif
 
 #endif

@@ -128,9 +128,8 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	UB *body, *header, *response_header, *responsebody;
 	W body_len, header_len, err, response_header_len, responsebody_len;
 	UB *host, *board, *thread;
-	W host_len, board_len, thread_len, print_body_len;
+	W host_len, board_len, thread_len;
 	STIME time;
-	TC *print_body;
 	submitutil_poststatus_t bodystatus;
 
 	datcache_gethost(submit->cache, &host, &host_len);
@@ -165,18 +164,8 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	bodystatus = submitutil_checkresponse(responsebody, responsebody_len);
 	submitutil_poststatus_debugprint(bodystatus);
 
-	print_body_len = sjstotcs(NULL, responsebody);
-	print_body = malloc(sizeof(TC)*(print_body_len + 1));
-	sjstotcs(print_body, responsebody);
-	print_body[print_body_len] = TNULL;
-	{
-		W i;
-		for (i=0;i<print_body_len;i++) {
-			printf("%C", print_body[i]);
-		}
-		printf("\n");
-	}
-	free(print_body);
+	sjstring_debugprint(responsebody, responsebody_len);
+	printf("\n");
 
 	if (bodystatus != submitutil_poststatus_cookie) {
 		return 0; /* TODO */
@@ -198,19 +187,9 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		err = ressubmit_firstpost(submit, next_header, next_header_len, next_body, next_body_len, &next_response, &next_response_len);
 
 		printf("%s\n\n", http_getheader(submit->http));
-		
-		print_body_len = sjstotcs(NULL, next_response);
-		print_body = malloc(sizeof(TC)*(print_body_len + 1));
-		sjstotcs(print_body, next_response);
-		print_body[print_body_len] = TNULL;
-		{
-			W i;
-			for (i=0;i<print_body_len;i++) {
-				printf("%C", print_body[i]);
-			}
-			printf("\n");
-		}
-		free(print_body);
+
+		sjstring_debugprint(next_response, next_response_len);
+		printf("\n");
 
 		bodystatus = submitutil_checkresponse(next_response, next_response_len);
 		submitutil_poststatus_debugprint(bodystatus);
