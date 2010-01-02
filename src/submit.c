@@ -40,6 +40,14 @@
 #include    "parselib.h"
 #include    "submitutil.h"
 
+#ifdef BCHAN_CONFIG_DEBUG
+# define DP(arg) printf arg
+# define DP_ER(msg, err) printf("%s (%d/%x)\n", msg, err>>16, err)
+#else
+# define DP(arg) /**/
+# define DP_ER(msg, err) /**/
+#endif
+
 struct ressubmit_t_ {
 	http_t *http;
 	datcache_t *cache;
@@ -55,40 +63,40 @@ LOCAL W ressubmit_simplerequest(ressubmit_t *submit, UB *header, W header_len, U
 
 	err = http_connect(submit->http, host, host_len);
 	if (err < 0) {
-		printf("error http_connect\n");
+		DP_ER("error http_connect", err);
 		return err;
 	}
 	err = http_send(submit->http, header, header_len);
 	if (err < 0) {
-		printf("error http_send 1\n");
+		DP_ER("error http_send 1", err);
 		return err;
 	}
 	err = http_send(submit->http, body, body_len);
 	if (err < 0) {
-		printf("error http_send 2\n");
+		DP_ER("error http_send 2", err);
 		return err;
 	}
 	err = http_waitresponseheader(submit->http);
 	if (err < 0) {
-		printf("error http_waitresponseheader\n");
+		DP_ER("error http_waitresponseheader", err);
 		return err;
 	}
 
 	context = http_startresponseread(submit->http);
 	if (context == NULL) {
-		printf("error http_startresponseread\n");
+		DP_ER("error http_startresponseread", -1);
 		return -1;
 	}
 	for (;;) {
 		err = http_responsecontext_nextdata(context, &bin, &len);
 		if (err < 0) {
-			printf("error http_responsecontext_nextdata\n");
+			DP_ER("error http_responsecontext_nextdata", err);
 			return -1;
 		}
 		if (bin == NULL) {
 			break;
 		}
-		printf("http_responsecontext_nextdata len = %d\n", len);
+		DP(("http_responsecontext_nextdata len = %d\n", len));
 		sjstring_appendasciistring(&r_body, &r_len, bin, len);
 	}
 	http_endresponseread(submit->http, context);
@@ -150,8 +158,10 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
-	printf("%s", header);
-	printf("%s\n\n", body);
+	sjstring_debugprint(header, header_len);
+	DP(("\n\n"));
+	sjstring_debugprint(body, body_len);
+	DP(("\n\n"));
 
 	err = ressubmit_simplerequest(submit, header, header_len, body, body_len, &responsebody, &responsebody_len);
 	if (err < 0) {
@@ -164,9 +174,9 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 
 	response_header = http_getheader(submit->http);
 	response_header_len = http_getheaderlength(submit->http);
-	printf("%s\n\n", response_header);
+	sjstring_debugprint(response_header, response_header_len);
 	sjstring_debugprint(responsebody, responsebody_len);
-	printf("\n");
+	DP(("\n"));
 
 	if (http_getstatus(submit->http) != 200) {
 		return RESSUBMIT_RESPOST_ERROR_STATUS;
@@ -203,27 +213,31 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	err = submitutil_makenextrequestbody(responsebody, responsebody_len, &next_body, &next_body_len);
 	free(responsebody);
 	if (err < 0) {
+		DP_ER("submitutil_makenextrequestbody error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 	err = ressubmit_makenextheader(submit, next_body_len, response_header, response_header_len, &next_header, &next_header_len);
 	if (err < 0) {
 		free(next_body);
+		DP_ER("ressubmit_makenextheader error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
-	printf("%s", next_header);
-	printf("%s\n", next_body);
+	sjstring_debugprint(next_header, next_header_len);
+	sjstring_debugprint(next_body, next_body_len);
+	DP(("\n"));
 
 	err = ressubmit_simplerequest(submit, next_header, next_header_len, next_body, next_body_len, &next_response, &next_response_len);
 	if (err < 0) {
 		free(next_header);
 		free(next_body);
+		DP_ER("ressubmit_simplerequest error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
-	printf("%s\n\n", http_getheader(submit->http));
-
+	sjstring_debugprint(http_getheader(submit->http), http_getheaderlength(submit->http));
+    DP(("\n\n"));
 	sjstring_debugprint(next_response, next_response_len);
-	printf("\n");
+    DP(("\n"));
 
 	bodystatus = submitutil_checkresponse(next_response, next_response_len);
 	submitutil_poststatus_debugprint(bodystatus);
@@ -232,7 +246,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	free(next_body);
 	free(next_response);
 
-	printf("complete\n");
+	DP(("complete\n"));
 
 	switch (bodystatus) {
 	case submitutil_poststatus_notfound:
