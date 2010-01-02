@@ -37,4 +37,10 @@ IMPORT ressubmit_t* ressubmit_new(datcache_t *cache);
 IMPORT VOID ressubmit_delete(ressubmit_t *submit);
 IMPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post);
 
+#define RESSUBMIT_RESPOST_ERROR_CLIENT -1
+#define RESSUBMIT_RESPOST_ERROR_STATUS -2
+#define RESSUBMIT_RESPOST_ERROR_CONTENT -3
+#define RESSUBMIT_RESPOST_SUCCEED 0
+#define RESSUBMIT_RESPOST_DENIED 1
+
 #endif

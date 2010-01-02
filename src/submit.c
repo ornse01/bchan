@@ -131,6 +131,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	W host_len, board_len, thread_len;
 	UB *next_body, *next_header, *next_response;
 	W next_body_len, next_header_len, next_response_len;
+	W ret;
 	STIME time;
 	submitutil_poststatus_t bodystatus;
 
@@ -141,12 +142,12 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	get_tim(&time, NULL);
 	err = postresdata_genrequestbody(post, board, board_len, thread, thread_len, time, &body, &body_len);
 	if (err < 0) {
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 	err = ressubmit_makeheader(submit, body_len, &header, &header_len);
 	if (err < 0) {
 		free(body);
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
 	printf("%s", header);
@@ -156,7 +157,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	if (err < 0) {
 		free(body);
 		free(header);
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 	free(body);
 	free(header);
@@ -167,12 +168,34 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	sjstring_debugprint(responsebody, responsebody_len);
 	printf("\n");
 
+	if (http_getstatus(submit->http) != 200) {
+		return RESSUBMIT_RESPOST_ERROR_STATUS;
+	}
+
 	bodystatus = submitutil_checkresponse(responsebody, responsebody_len);
 	submitutil_poststatus_debugprint(bodystatus);
 
-	if (bodystatus != submitutil_poststatus_cookie) {
+	switch (bodystatus) {
+	case submitutil_poststatus_notfound:
 		free(responsebody);
-		return 0; /* TODO */
+		return RESSUBMIT_RESPOST_ERROR_CONTENT;
+	case submitutil_poststatus_true:
+		free(responsebody);
+		return RESSUBMIT_RESPOST_SUCCEED;
+	case submitutil_poststatus_false:
+		free(responsebody);
+		return RESSUBMIT_RESPOST_DENIED;
+	case submitutil_poststatus_error:
+		free(responsebody);
+		return RESSUBMIT_RESPOST_DENIED;
+	case submitutil_poststatus_check:
+		free(responsebody);
+		return RESSUBMIT_RESPOST_DENIED;
+	default:
+		free(responsebody);
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
+	case submitutil_poststatus_cookie:
+		break;
 	}
 
 	dly_tsk(1000);
@@ -180,12 +203,12 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	err = submitutil_makenextrequestbody(responsebody, responsebody_len, &next_body, &next_body_len);
 	free(responsebody);
 	if (err < 0) {
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 	err = ressubmit_makenextheader(submit, next_body_len, response_header, response_header_len, &next_header, &next_header_len);
 	if (err < 0) {
 		free(next_body);
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 	printf("%s", next_header);
 	printf("%s\n", next_body);
@@ -194,7 +217,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	if (err < 0) {
 		free(next_header);
 		free(next_body);
-		return err;
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
 	printf("%s\n\n", http_getheader(submit->http));
@@ -211,7 +234,31 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 
 	printf("complete\n");
 
-	return 0;
+	switch (bodystatus) {
+	case submitutil_poststatus_notfound:
+		ret = RESSUBMIT_RESPOST_ERROR_CONTENT;
+		break;
+	case submitutil_poststatus_true:
+		ret = RESSUBMIT_RESPOST_SUCCEED;
+		break;
+	case submitutil_poststatus_false:
+		ret = RESSUBMIT_RESPOST_DENIED;
+		break;
+	case submitutil_poststatus_error:
+		ret = RESSUBMIT_RESPOST_DENIED;
+		break;
+	case submitutil_poststatus_check:
+		ret = RESSUBMIT_RESPOST_DENIED;
+		break;
+	case submitutil_poststatus_cookie:
+		ret = RESSUBMIT_RESPOST_DENIED;
+		break;
+	default:
+		ret = RESSUBMIT_RESPOST_ERROR_CLIENT;
+		break;
+	}
+
+	return ret;
 }
 
 EXPORT ressubmit_t* ressubmit_new(datcache_t *cache)
