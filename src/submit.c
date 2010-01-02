@@ -45,19 +45,7 @@ struct ressubmit_t_ {
 	datcache_t *cache;
 };
 
-LOCAL W ressubmit_makeheader(ressubmit_t *submit, W body_len, UB **header, W *header_len)
-{
-	UB *host, *board, *thread;
-	W host_len, board_len, thread_len;
-
-	datcache_gethost(submit->cache, &host, &host_len);
-	datcache_getborad(submit->cache, &board, &board_len);
-	datcache_getthread(submit->cache, &thread, &thread_len);
-
-	return submitutil_makeheaderstring(host, host_len, board, board_len, thread, thread_len, body_len, header, header_len);
-}
-
-LOCAL W ressubmit_firstpost(ressubmit_t *submit, UB *header, W header_len, UB *body, W body_len, UB **responsebody, W *responsebody_len)
+LOCAL W ressubmit_simplerequest(ressubmit_t *submit, UB *header, W header_len, UB *body, W body_len, UB **responsebody, W *responsebody_len)
 {
 	UB *host, *r_body = NULL, *bin;
 	W err, host_len, r_len = 0, len;
@@ -111,6 +99,18 @@ LOCAL W ressubmit_firstpost(ressubmit_t *submit, UB *header, W header_len, UB *b
 	return 0;
 }
 
+LOCAL W ressubmit_makeheader(ressubmit_t *submit, W body_len, UB **header, W *header_len)
+{
+	UB *host, *board, *thread;
+	W host_len, board_len, thread_len;
+
+	datcache_gethost(submit->cache, &host, &host_len);
+	datcache_getborad(submit->cache, &board, &board_len);
+	datcache_getthread(submit->cache, &thread, &thread_len);
+
+	return submitutil_makeheaderstring(host, host_len, board, board_len, thread, thread_len, body_len, header, header_len);
+}
+
 LOCAL W ressubmit_makenextheader(ressubmit_t *submit, W body_len, UB *prev_header, W prev_header_len, UB **header, W *header_len)
 {
 	UB *host, *board, *thread;
@@ -129,6 +129,8 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	W body_len, header_len, err, response_header_len, responsebody_len;
 	UB *host, *board, *thread;
 	W host_len, board_len, thread_len;
+	UB *next_body, *next_header, *next_response;
+	W next_body_len, next_header_len, next_response_len;
 	STIME time;
 	submitutil_poststatus_t bodystatus;
 
@@ -150,57 +152,62 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	printf("%s", header);
 	printf("%s\n\n", body);
 
-	err = ressubmit_firstpost(submit, header, header_len, body, body_len, &responsebody, &responsebody_len);
+	err = ressubmit_simplerequest(submit, header, header_len, body, body_len, &responsebody, &responsebody_len);
 	if (err < 0) {
 		free(body);
 		free(header);
 		return err;
 	}
+	free(body);
+	free(header);
 
 	response_header = http_getheader(submit->http);
 	response_header_len = http_getheaderlength(submit->http);
 	printf("%s\n\n", response_header);
+	sjstring_debugprint(responsebody, responsebody_len);
+	printf("\n");
 
 	bodystatus = submitutil_checkresponse(responsebody, responsebody_len);
 	submitutil_poststatus_debugprint(bodystatus);
 
-	sjstring_debugprint(responsebody, responsebody_len);
-	printf("\n");
-
 	if (bodystatus != submitutil_poststatus_cookie) {
+		free(responsebody);
 		return 0; /* TODO */
 	}
 
 	dly_tsk(1000);
 
-	{
-		UB *next_body, *next_header, *next_response;
-		W next_body_len, next_header_len, next_response_len;
-		printf("AA\n");
-		submitutil_makenextrequestbody(responsebody, responsebody_len, &next_body, &next_body_len);
-		printf("BB\n");
-		ressubmit_makenextheader(submit, next_body_len, response_header, response_header_len, &next_header, &next_header_len);
-		printf("%s", next_header);
-		printf("%s\n", next_body);
+	err = submitutil_makenextrequestbody(responsebody, responsebody_len, &next_body, &next_body_len);
+	free(responsebody);
+	if (err < 0) {
+		return err;
+	}
+	err = ressubmit_makenextheader(submit, next_body_len, response_header, response_header_len, &next_header, &next_header_len);
+	if (err < 0) {
+		free(next_body);
+		return err;
+	}
+	printf("%s", next_header);
+	printf("%s\n", next_body);
 
-#if 1
-		err = ressubmit_firstpost(submit, next_header, next_header_len, next_body, next_body_len, &next_response, &next_response_len);
-
-		printf("%s\n\n", http_getheader(submit->http));
-
-		sjstring_debugprint(next_response, next_response_len);
-		printf("\n");
-
-		bodystatus = submitutil_checkresponse(next_response, next_response_len);
-		submitutil_poststatus_debugprint(bodystatus);
-
-		free(next_response);
-#endif
+	err = ressubmit_simplerequest(submit, next_header, next_header_len, next_body, next_body_len, &next_response, &next_response_len);
+	if (err < 0) {
+		free(next_header);
+		free(next_body);
+		return err;
 	}
 
-	free(responsebody);
-	free(body);
-	free(header);
+	printf("%s\n\n", http_getheader(submit->http));
+
+	sjstring_debugprint(next_response, next_response_len);
+	printf("\n");
+
+	bodystatus = submitutil_checkresponse(next_response, next_response_len);
+	submitutil_poststatus_debugprint(bodystatus);
+
+	free(next_header);
+	free(next_body);
+	free(next_response);
 
 	printf("complete\n");
 
