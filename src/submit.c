@@ -158,9 +158,9 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
-	sjstring_debugprint(header, header_len);
+	SJSTRING_DP(header, header_len);
 	DP(("\n\n"));
-	sjstring_debugprint(body, body_len);
+	SJSTRING_DP(body, body_len);
 	DP(("\n\n"));
 
 	err = ressubmit_simplerequest(submit, header, header_len, body, body_len, &responsebody, &responsebody_len);
@@ -174,8 +174,8 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 
 	response_header = http_getheader(submit->http);
 	response_header_len = http_getheaderlength(submit->http);
-	sjstring_debugprint(response_header, response_header_len);
-	sjstring_debugprint(responsebody, responsebody_len);
+	SJSTRING_DP(response_header, response_header_len);
+	SJSTRING_DP(responsebody, responsebody_len);
 	DP(("\n"));
 
 	if (http_getstatus(submit->http) != 200) {
@@ -183,7 +183,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	}
 
 	bodystatus = submitutil_checkresponse(responsebody, responsebody_len);
-	submitutil_poststatus_debugprint(bodystatus);
+	SUBMITUTIL_POSTSTATUS_DP(bodystatus);
 
 	switch (bodystatus) {
 	case submitutil_poststatus_notfound:
@@ -222,8 +222,8 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		DP_ER("ressubmit_makenextheader error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
-	sjstring_debugprint(next_header, next_header_len);
-	sjstring_debugprint(next_body, next_body_len);
+	SJSTRING_DP(next_header, next_header_len);
+	SJSTRING_DP(next_body, next_body_len);
 	DP(("\n"));
 
 	err = ressubmit_simplerequest(submit, next_header, next_header_len, next_body, next_body_len, &next_response, &next_response_len);
@@ -234,13 +234,13 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
-	sjstring_debugprint(http_getheader(submit->http), http_getheaderlength(submit->http));
+	SJSTRING_DP(http_getheader(submit->http), http_getheaderlength(submit->http));
     DP(("\n\n"));
-	sjstring_debugprint(next_response, next_response_len);
+	SJSTRING_DP(next_response, next_response_len);
     DP(("\n"));
 
 	bodystatus = submitutil_checkresponse(next_response, next_response_len);
-	submitutil_poststatus_debugprint(bodystatus);
+	SUBMITUTIL_POSTSTATUS_DP(bodystatus);
 
 	free(next_header);
 	free(next_body);

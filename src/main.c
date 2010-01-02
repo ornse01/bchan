@@ -470,7 +470,7 @@ LOCAL VOID bchan_retriever_task(W arg)
 			break;
 		default:
 			DP_ER("datretreiver_request error:",err);
-			datretriever_debugprint(retr);
+			DATRETRIEVER_DP(retr);
 			req_tmg(0, BCHAN_MESSAGE_RETRIEVER_ERROR);
 			break;
 		}

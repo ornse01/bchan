@@ -279,7 +279,7 @@ EXPORT UB* sjstring_searchchar(UB *str, W len, UB ch)
 #ifdef BCHAN_CONFIG_DEBUG
 #include	<tstring.h>
 
-EXPORT VOID sjstring_debugprint(UB *str, W len)
+EXPORT VOID SJSTRING_DP(UB *str, W len)
 {
 	W i, print_len;
 	TC *print;

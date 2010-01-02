@@ -37,9 +37,9 @@ IMPORT VOID datretriever_delete(datretriever_t *retriever);
 IMPORT W datretriever_request(datretriever_t *retriever);
 
 #ifdef BCHAN_CONFIG_DEBUG
-IMPORT VOID datretriever_debugprint(datretriever_t *retriever);
+IMPORT VOID DATRETRIEVER_DP(datretriever_t *retriever);
 #else
-#define datretriever_debugprint(retriever) /**/
+#define DATRETRIEVER_DP(retriever) /**/
 #endif
 
 #define DATRETRIEVER_REQUEST_NOT_MODIFIED    0

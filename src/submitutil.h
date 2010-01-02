@@ -44,9 +44,9 @@ IMPORT W submitutil_makenextrequestbody(UB *prev_body, W prev_body_len, UB **nex
 IMPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB *prev_header, W prev_header_len, UB **header, W *header_len);
 
 #ifdef BCHAN_CONFIG_DEBUG
-IMPORT VOID submitutil_poststatus_debugprint(submitutil_poststatus_t status);
+IMPORT VOID SUBMITUTIL_POSTSTATUS_DP(submitutil_poststatus_t status);
 #else
-#define submitutil_poststatus_debugprint(status) /**/
+#define SUBMITUTIL_POSTSTATUS_DP(status) /**/
 #endif
 
 #endif

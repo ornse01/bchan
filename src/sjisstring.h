@@ -38,9 +38,9 @@ IMPORT W sjstring_appendformpoststring(UB **dest, W *dest_len, UB *str, W len);
 IMPORT UB* sjstring_searchchar(UB *str, W len, UB ch);
 
 #ifdef BCHAN_CONFIG_DEBUG
-IMPORT VOID sjstring_debugprint(UB *str, W len);
+IMPORT VOID SJSTRING_DP(UB *str, W len);
 #else
-#define sjstring_debugprint(str, len) /**/
+#define SJSTRING_DP(str, len) /**/
 #endif
 
 #endif

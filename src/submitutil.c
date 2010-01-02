@@ -153,7 +153,7 @@ EXPORT submitutil_poststatus_t submitutil_checkresponse(UB *body, W len)
 }
 
 #ifdef BCHAN_CONFIG_DEBUG
-EXPORT VOID submitutil_poststatus_debugprint(submitutil_poststatus_t status)
+EXPORT VOID SUBMITUTIL_POSTSTATUS_DP(submitutil_poststatus_t status)
 {
 	switch (status) {
 	case submitutil_poststatus_notfound:

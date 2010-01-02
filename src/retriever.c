@@ -419,7 +419,7 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 }
 
 #ifdef BCHAN_CONFIG_DEBUG
-EXPORT VOID datretriever_debugprint(datretriever_t *retriever)
+EXPORT VOID DATRETRIEVER_DP(datretriever_t *retriever)
 {
 	UB *header;
 
