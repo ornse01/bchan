@@ -36,10 +36,33 @@
 .TEXT_MLIST2	=	23
 .MSGTEXT_RETRIEVING	=	24
 .MSGTEXT_NOTMODIFIED	=	25
+.MSGTEXT_POSTSUCCEED	=	26
+.MSGTEXT_POSTDENIED	=	27
+.MSGTEXT_POSTERROR	=	28
+.MS_CONFIRM_POST	=	29
+.MS_CONFIRM_CANCEL	=	30
+.TEXT_CONFIRM_TITLE	=	31
 
 ---------
 -- data type = PARTS_DATA
 ---------
+	{% 7 0}		-- datatype PARTS_DATA
+
+	{# MS_CONFIRM_POST 0 0} 	-- data number
+	MS_PARTS+P_DISP:L	-- type
+	{0H 0H 350H 25H}	-- r
+	0L			-- cv (unused)
+	OFFSET:L+20		-- name ()
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "上記全てを承諾して書き込む\0"
+
+	{# MS_CONFIRM_CANCEL 0 0} 	-- data number
+	MS_PARTS+P_DISP:L	-- type
+	{0H 0H 100H 25H}	-- r
+	0L			-- cv (unused)
+	OFFSET:L+20		-- name ()
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "取り消し\0"
 
 ---------
 -- data type = TEXT_DATA
@@ -60,6 +83,18 @@
 
 	{# MSGTEXT_NOTMODIFIED 0 0}	-- data number
 	"更新されていません\0"
+
+	{# MSGTEXT_POSTSUCCEED 0 0}	-- data number
+	"書きこみました\0"
+
+	{# MSGTEXT_POSTDENIED 0 0}	-- data number
+	"書きこめませんでした\0"
+
+	{# MSGTEXT_POSTERROR 0 0}	-- data number
+	"エラーが発生しました\0"
+
+	{# TEXT_CONFIRM_TITLE 0 0}	-- data number
+	"書き込み確認\0"
 
 ---------
 -- data type = MENU_DATA

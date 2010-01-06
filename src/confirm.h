@@ -35,7 +35,7 @@
 typedef struct cfrmwindow_t_ cfrmwindow_t;
 typedef VOID (*cfrmwindow_notifyclosecallback)(VP arg, W send);
 
-IMPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc, VP arg);
+IMPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc, VP arg, W dnum_title, W dnum_post, W dnum_cancel);
 IMPORT VOID cfrmwindow_delete(cfrmwindow_t *window);
 IMPORT W cfrmwindow_open(cfrmwindow_t* window);
 IMPORT VOID cfrmwindow_weventbutdn(cfrmwindow_t *window, WEVENT *wev);

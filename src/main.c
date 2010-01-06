@@ -63,6 +63,12 @@
 #define BCHAN_DBX_TEXT_MLIST2	23
 #define BCHAN_DBX_MSGTEXT_RETRIEVING 24
 #define BCHAN_DBX_MSGTEXT_NOTMODIFIED 25
+#define BCHAN_DBX_MSGTEXT_POSTSUCCEED 26
+#define BCHAN_DBX_MSGTEXT_POSTDENIED 27
+#define BCHAN_DBX_MSGTEXT_POSTERROR	28
+#define BCHAN_DBX_MS_CONFIRM_POST 29
+#define BCHAN_DBX_MS_CONFIRM_CANCEL	30
+#define BCHAN_DBX_TEXT_CONFIRM_TITLE 31
 
 #define BCHAN_MENU_WINDOW 3
 
@@ -72,7 +78,19 @@ struct bchan_hmistate_t_ {
 
 	TC *msg_retrieving;
 	TC *msg_notmodified;
+	TC *msg_postsucceed;
+	TC *msg_postdenied;
+	TC *msg_posterror;
 };
+
+LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
+{
+	if (hmistate->ptr == ptr) {
+		return;
+	}
+	hmistate->ptr = ptr;
+	gset_ptr(hmistate->ptr, NULL, -1, -1);
+}
 
 typedef struct bchan_t_ bchan_t;
 struct bchan_t_ {
@@ -206,20 +224,28 @@ LOCAL W bchan_paste(VP arg, WEVENT *wev)
 LOCAL VOID bchan_recieveclose(VP arg, W send)
 {
 	bchan_t *bchan = (bchan_t*)arg;
+	W err;
 
 	DP(("bchan_recieveclose = %d\n", send));
 	if (send == 1) {
-		ressubmit_respost(bchan->submit, bchan->resdata);
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_BUSY);
+		err = ressubmit_respost(bchan->submit, bchan->resdata);
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		switch (err) {
+		case RESSUBMIT_RESPOST_SUCCEED:
+			pdsp_msg(bchan->hmistate.msg_postsucceed);
+			break;
+		case RESSUBMIT_RESPOST_DENIED:
+			pdsp_msg(bchan->hmistate.msg_postdenied);
+			break;
+		case RESSUBMIT_RESPOST_ERROR_CLIENT:
+		case RESSUBMIT_RESPOST_ERROR_STATUS:
+		case RESSUBMIT_RESPOST_ERROR_CONTENT:
+		default:
+			pdsp_msg(bchan->hmistate.msg_posterror);
+			break;
+		}
 	}
-}
-
-LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
-{
-	if (hmistate->ptr == ptr) {
-		return;
-	}
-	hmistate->ptr = ptr;
-	gset_ptr(hmistate->ptr, NULL, -1, -1);
 }
 
 LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
@@ -237,6 +263,21 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	if (err < 0) {
 		DP_ER("dget_dtp: message not modified error", err);
 		hmistate->msg_notmodified = NULL;
+	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_POSTSUCCEED, (void**)&hmistate->msg_postsucceed);
+	if (err < 0) {
+		DP_ER("dget_dtp: message post succeed error", err);
+		hmistate->msg_postsucceed = NULL;
+	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_POSTDENIED, (void**)&hmistate->msg_postdenied);
+	if (err < 0) {
+		DP_ER("dget_dtp: message post denied error", err);
+		hmistate->msg_postdenied = NULL;
+	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_POSTERROR, (void**)&hmistate->msg_posterror);
+	if (err < 0) {
+		DP_ER("dget_dtp: message post error error", err);
+		hmistate->msg_posterror = NULL;
 	}
 }
 
@@ -294,7 +335,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("ressubmit_new error", 0);
 		goto error_submit;
 	}
-	confirm = cfrmwindow_new(&r0, bchan_recieveclose, bchan);
+	confirm = cfrmwindow_new(&r0, bchan_recieveclose, bchan, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
 	if (confirm == NULL) {
 		DP_ER("dfrmwindow_new error", 0);
 		goto error_confirm;

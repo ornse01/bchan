@@ -53,12 +53,18 @@
 struct cfrmwindow_t_ {
 	WID wid;
 	GID gid;
-	PAID tw_id;
+	PAID ms_post_id;
+	PAID ms_cancel_id;
 	RECT r;
 	datwindow_t *base;
 	postresdata_t *post;
 	cfrmwindow_notifyclosecallback notifyclosecallback;
 	VP arg;
+	TC *windowtitle;
+	W dnum_post;
+	W dnum_cancel;
+	SIZE sz_ms_post;
+	SIZE sz_ms_cancel;
 };
 
 LOCAL VOID cfrmwindow_close2(cfrmwindow_t *window)
@@ -74,7 +80,8 @@ LOCAL VOID cfrmwindow_close2(cfrmwindow_t *window)
 	wcls_wnd(window->wid, CLR);
 	window->wid = -1;
 	window->gid = -1;
-	window->tw_id = -1;
+	window->ms_post_id = -1;
+	window->ms_cancel_id = -1;
 }
 
 LOCAL VOID cfrmwindow_scroll(VP arg, W dh, W dv)
@@ -157,18 +164,31 @@ LOCAL VOID cfrmwindow_resize(VP arg)
 LOCAL VOID cfrmwindow_butdn(VP arg, WEVENT *wev)
 {
 	cfrmwindow_t *window = (cfrmwindow_t*)arg;
+	PAID id;
 	W ret;
 
-	ret = cchk_par(window->tw_id, wev->s.pos);
+	ret = cfnd_par(window->wid, wev->s.pos, &id);
 	if (ret <= 0) {
 		return;
 	}
-	ret = cact_par(window->tw_id, wev);
-	if ((ret & 0x5000) != 0x5000) {
+	if (id == window->ms_post_id) {
+		ret = cact_par(window->ms_post_id, wev);
+		if ((ret & 0x5000) != 0x5000) {
+			return;
+		}
+		cfrmwindow_close2(window);
+		(*window->notifyclosecallback)(window->arg, 1);
 		return;
 	}
-	cfrmwindow_close2(window);
-	(*window->notifyclosecallback)(window->arg, 1);
+	if (id == window->ms_cancel_id) {
+		ret = cact_par(window->ms_cancel_id, wev);
+		if ((ret & 0x5000) != 0x5000) {
+			return;
+		}
+		cfrmwindow_close2(window);
+		(*window->notifyclosecallback)(window->arg, 0);
+		return;
+	}
 }
 
 LOCAL VOID cfrmwindow_close(VP arg)
@@ -235,17 +255,15 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 		0x10efefef,
 		FILL100
 	}};
-	static	TC	tit0[] = {TK_T, TK_e, TK_s, TK_t, TNULL};
-	static	TC	tit1[] = {MC_STR, TK_T, TK_e, TK_s, TK_t, TNULL};
 	WID wid;
-	RECT r = {{10, 112, 60, 136}};
+	PNT pos;
 	SIZE sz;
 
 	if (window->wid > 0) {
 		return 0;
 	}
 
-	wid = wopn_wnd(WA_SIZE|WA_HHDL|WA_VHDL|WA_BBAR|WA_RBAR, 0, &(window->r), NULL, 2, tit0, &pat0, NULL);
+	wid = wopn_wnd(WA_SIZE|WA_HHDL|WA_VHDL|WA_BBAR|WA_RBAR, 0, &(window->r), NULL, 2, window->windowtitle, &pat0, NULL);
 	if (wid < 0) {
 		return wid;
 	}
@@ -257,13 +275,18 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 	datwindow_setdrawrect(window->base, 0, 0, sz.h, sz.v);
 	datwindow_setworkrect(window->base, 0, 0, window->r.c.right, window->r.c.bottom);
 
-	r.c.left = 10;
-	r.c.top = sz.v - 24;
-	r.c.right = 60;
-	r.c.bottom = r.c.top + 24;
-	window->tw_id = ccre_msw(wid, MS_PARTS|P_DCLICK, &r, tit1, NULL);
-	if (window->tw_id < 0) {
-		DP_ER("ccre_msw error:", window->tw_id);
+	pos.x = 10;
+	pos.y = sz.v - 24;
+	window->ms_cancel_id = copn_par(wid, window->dnum_cancel, &pos);
+	if (window->ms_cancel_id < 0) {
+		DP_ER("copn_par error:", window->ms_cancel_id);
+	}
+
+	pos.x = pos.x + window->sz_ms_cancel.h + 16;
+	pos.y = sz.v - 24;
+	window->ms_post_id = copn_par(wid, window->dnum_post, &pos);
+	if (window->ms_post_id < 0) {
+		DP_ER("copn_par error:", window->ms_post_id);
 	}
 
 	wreq_dsp(wid);
@@ -310,9 +333,11 @@ EXPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 	}
 }
 
-EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc, VP arg)
+EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc, VP arg, W dnum_title, W dnum_post, W dnum_cancel)
 {
 	cfrmwindow_t *window;
+	W err;
+	SWSEL *sw;
 
 	window = (cfrmwindow_t*)malloc(sizeof(cfrmwindow_t));
 	if (window == NULL) {
@@ -320,7 +345,8 @@ EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc
 	}
 	window->wid = -1;
 	window->gid = -1;
-	window->tw_id = -1;
+	window->ms_post_id = -1;
+	window->ms_cancel_id = -1;
 	window->r = *r;
 	window->base = datwindow_new(-1, cfrmwindow_scroll, cfrmwindow_draw, cfrmwindow_resize, cfrmwindow_close, cfrmwindow_butdn, NULL, window);
 	if (window->base == NULL) {
@@ -330,6 +356,36 @@ EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc
 	window->post = NULL;
 	window->notifyclosecallback = proc;
 	window->arg = arg;
+
+	err = dget_dtp(TEXT_DATA, dnum_title, (void**)&window->windowtitle);
+	if (err < 0) {
+		DP_ER("dget_dtp: message retrieving error", err);
+		datwindow_delete(window->base);
+		free(window);
+		return NULL;
+	}
+
+	err = dget_dtp(PARTS_DATA, dnum_post, (void**)&sw);
+	if (err < 0) {
+		DP_ER("dget_dtp: message retrieving error", err);
+		datwindow_delete(window->base);
+		free(window);
+		return NULL;
+	}
+	window->dnum_post = dnum_post;
+	window->sz_ms_post.h = sw->r.c.right - sw->r.c.left;
+	window->sz_ms_post.v = sw->r.c.bottom - sw->r.c.top;
+
+	err = dget_dtp(PARTS_DATA, dnum_cancel, (void**)&sw);
+	if (err < 0) {
+		DP_ER("dget_dtp: message retrieving error", err);
+		datwindow_delete(window->base);
+		free(window);
+		return NULL;
+	}
+	window->dnum_cancel = dnum_cancel;
+	window->sz_ms_cancel.h = sw->r.c.right - sw->r.c.left;
+	window->sz_ms_cancel.v = sw->r.c.bottom - sw->r.c.top;
 
 	return window;
 }
