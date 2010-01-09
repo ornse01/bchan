@@ -786,7 +786,7 @@ LOCAL    CLI_arg   MESSAGEtoargv(const MESSAGE *src)
 EXPORT	W	MAIN(MESSAGE *msg)
 {
 	static	RECT	r0 = {{100, 100, 650+7, 400+30}};
-	static	TC	tit0[] = {TK_T, TK_e, TK_s, TK_t, TNULL};
+	static	TC	tit0[21];
 	static	PAT	pat0 = {{
 		0,
 		16, 16,
@@ -839,6 +839,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 			DP_ER("dopn_dat error", err);
 			ext_prc(0);
 		}
+		fil_sts(&lnk, tit0, NULL, NULL);
 		break;
 	case DISPREQ:
 		oend_req(((M_DISPREQ*)msg)->vid, -1);
@@ -856,6 +857,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		if (err < 0) {
 			ext_prc(0);
 		}
+		fil_sts(&((M_EXECREQ*)msg)->lnk, tit0, NULL, NULL);
 		vid = ((M_EXECREQ*)msg)->vid;
 		break;
 	default:
