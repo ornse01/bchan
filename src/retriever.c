@@ -351,11 +351,16 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 			DP(("not modified\n"));
 			http_close(retriever->http);
 			ret = DATRETRIEVER_REQUEST_NOT_MODIFIED;
+		} else if (status == 203) {
+			DP(("non-authoritative\n"));
+			http_close(retriever->http);
+			ret = DATRETRIEVER_REQUEST_NON_AUTHORITATIVE;
 		} else if (status == 416) {
 			/* todo all reloading. */
 			http_close(retriever->http);
 			ret = DATRETRIEVER_REQUEST_ALLRELOAD;
 		} else {
+			DP(("another status = %d\n", status));
 			http_close(retriever->http);
 		}
 	} else {
@@ -377,7 +382,12 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 			return status;
 		}
 		DP(("HTTP/1.1 %d\n", status));
-		if (status != 200) {
+		if (status == 203) {
+			http_close(retriever->http);
+			DP(("non-authoritative\n"));
+			return DATRETRIEVER_REQUEST_NON_AUTHORITATIVE;
+		} else if (status != 200) {
+			DP(("another status = %d\n", status));
 			http_close(retriever->http);
 			return 0;
 		}

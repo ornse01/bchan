@@ -69,6 +69,7 @@
 #define BCHAN_DBX_MS_CONFIRM_POST 29
 #define BCHAN_DBX_MS_CONFIRM_CANCEL	30
 #define BCHAN_DBX_TEXT_CONFIRM_TITLE 31
+#define BCHAN_DBX_MSGTEXT_NONAUTHORITATIVE 32
 
 #define BCHAN_MENU_WINDOW 3
 
@@ -78,6 +79,7 @@ struct bchan_hmistate_t_ {
 
 	TC *msg_retrieving;
 	TC *msg_notmodified;
+	TC *msg_nonauthoritative;
 	TC *msg_postsucceed;
 	TC *msg_postdenied;
 	TC *msg_posterror;
@@ -121,6 +123,7 @@ struct bchan_t_ {
 #define BCHAN_MESSAGE_RETRIEVER_UPDATE   1
 #define BCHAN_MESSAGE_RETRIEVER_RELAYOUT 2
 #define BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED 3
+#define BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE 4
 #define BCHAN_MESSAGE_RETRIEVER_ERROR -1
 
 static	WEVENT	wev0;
@@ -263,6 +266,11 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	if (err < 0) {
 		DP_ER("dget_dtp: message not modified error", err);
 		hmistate->msg_notmodified = NULL;
+	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_NONAUTHORITATIVE, (void**)&hmistate->msg_nonauthoritative);
+	if (err < 0) {
+		DP_ER("dget_dtp: message non-authoritative error", err);
+		hmistate->msg_nonauthoritative = NULL;
 	}
 	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_POSTSUCCEED, (void**)&hmistate->msg_postsucceed);
 	if (err < 0) {
@@ -509,6 +517,9 @@ LOCAL VOID bchan_retriever_task(W arg)
 		case DATRETRIEVER_REQUEST_NOT_MODIFIED:
 			req_tmg(0, BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED);
 			break;
+		case DATRETRIEVER_REQUEST_NON_AUTHORITATIVE:
+			req_tmg(0, BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE);
+			break;
 		default:
 			DP_ER("datretreiver_request error:",err);
 			DATRETRIEVER_DP(retr);
@@ -702,6 +713,10 @@ LOCAL VOID receive_message(bchan_t *bchan)
 			case BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED:
 				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
 				pdsp_msg(bchan->hmistate.msg_notmodified);
+				break;
+			case BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE:
+				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+				pdsp_msg(bchan->hmistate.msg_nonauthoritative);
 				break;
 			case BCHAN_MESSAGE_RETRIEVER_ERROR:
 				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);

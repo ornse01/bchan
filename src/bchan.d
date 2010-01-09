@@ -42,6 +42,7 @@
 .MS_CONFIRM_POST	=	29
 .MS_CONFIRM_CANCEL	=	30
 .TEXT_CONFIRM_TITLE	=	31
+.MSGTEXT_NONAUTHORITATIVE	=	32
 
 ---------
 -- data type = PARTS_DATA
@@ -95,6 +96,9 @@
 
 	{# TEXT_CONFIRM_TITLE 0 0}	-- data number
 	"書き込み確認\0"
+
+	{# MSGTEXT_NONAUTHORITATIVE 0 0}	-- data number
+	"ｄａｔ落ちしています\0"
 
 ---------
 -- data type = MENU_DATA
