@@ -103,6 +103,8 @@ struct bchan_t_ {
 	VID vid;
 	W exectype;
 
+	Bool request_confirm_open; /* TODO: should be other implememt? */
+
 	MENUITEM *mnitem;
 	MNID mnid;
 
@@ -216,7 +218,7 @@ LOCAL W bchan_paste(VP arg, WEVENT *wev)
 		}
 		bchan->resdata = post;
 		cfrmwindow_setpostresdata(bchan->confirm, post);
-		cfrmwindow_open(bchan->confirm);
+		bchan->request_confirm_open = True;
 	}
 
 	return 0; /* ACK */
@@ -343,7 +345,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("ressubmit_new error", 0);
 		goto error_submit;
 	}
-	confirm = cfrmwindow_new(&r0, bchan_recieveclose, bchan, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
+	confirm = cfrmwindow_new(&r0, wid, bchan_recieveclose, bchan, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
 	if (confirm == NULL) {
 		DP_ER("dfrmwindow_new error", 0);
 		goto error_confirm;
@@ -382,6 +384,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan->mbfid = -1;
 	bchan->vid = vid;
 	bchan->exectype = exectype;
+	bchan->request_confirm_open = False;
 	bchan->cache = cache;
 	bchan->parser = parser;
 	bchan->layout = layout;
@@ -914,6 +917,10 @@ EXPORT	W	MAIN(MESSAGE *msg)
 			case	EV_RSWITCH:
 				if (wev0.s.wid == wid) {
 					datwindow_weventreswitch(window, &wev0);
+					if (bchan.request_confirm_open == True) {
+						cfrmwindow_open(bchan.confirm);
+						bchan.request_confirm_open = False;
+					}
 				}
 				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
 					cfrmwindow_weventreswitch(bchan.confirm, &wev0);
@@ -922,6 +929,10 @@ EXPORT	W	MAIN(MESSAGE *msg)
 			case	EV_SWITCH:
 				if (wev0.s.wid == wid) {
 					datwindow_weventswitch(window, &wev0);
+					if (bchan.request_confirm_open == True) {
+						cfrmwindow_open(bchan.confirm);
+						bchan.request_confirm_open = False;
+					}
 				}
 				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
 					cfrmwindow_weventswitch(bchan.confirm, &wev0);

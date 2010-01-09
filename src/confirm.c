@@ -53,6 +53,7 @@
 struct cfrmwindow_t_ {
 	WID wid;
 	GID gid;
+	WID parent;
 	PAID ms_post_id;
 	PAID ms_cancel_id;
 	RECT r;
@@ -302,8 +303,9 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 		return 0;
 	}
 
-	wid = wopn_wnd(WA_SIZE|WA_HHDL|WA_VHDL|WA_BBAR|WA_RBAR, 0, &(window->r), NULL, 2, window->windowtitle, &pat0, NULL);
+	wid = wopn_wnd(WA_SUBW|WA_SIZE|WA_HHDL|WA_VHDL|WA_BBAR|WA_RBAR, window->parent, &(window->r), NULL, 2, window->windowtitle, &pat0, NULL);
 	if (wid < 0) {
+		DP_ER("wopn_wnd: confirm error", wid);
 		return wid;
 	}
 	window->wid = wid;
@@ -398,7 +400,7 @@ EXPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 	}
 }
 
-EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc, VP arg, W dnum_title, W dnum_post, W dnum_cancel)
+EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, WID parent, cfrmwindow_notifyclosecallback proc, VP arg, W dnum_title, W dnum_post, W dnum_cancel)
 {
 	cfrmwindow_t *window;
 	W err;
@@ -410,6 +412,7 @@ EXPORT cfrmwindow_t* cfrmwindow_new(RECT *r, cfrmwindow_notifyclosecallback proc
 	}
 	window->wid = -1;
 	window->gid = -1;
+	window->parent = parent;
 	window->ms_post_id = -1;
 	window->ms_cancel_id = -1;
 	window->r = *r;
