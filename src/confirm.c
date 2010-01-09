@@ -65,6 +65,13 @@ struct cfrmwindow_t_ {
 	W dnum_cancel;
 	SIZE sz_ms_post;
 	SIZE sz_ms_cancel;
+
+	/* left top of content rect */
+	PNT pos_from;
+	PNT pos_mail;
+	PNT pos_message;
+	PNT pos_cancel;
+	PNT pos_post;
 };
 
 LOCAL VOID cfrmwindow_close2(cfrmwindow_t *window)
@@ -123,14 +130,14 @@ LOCAL VOID cfrmwindow_draw(VP arg, RECT *r)
 	gid = window->gid;
 
 	cfrmwindow_resetgenv(window);
-	gdra_stp(gid, 0, 16, label_from, 4, G_STORE);
+	gdra_stp(gid, window->pos_from.x, window->pos_from.y + 16, label_from, 4, G_STORE);
 	tadlib_drawtext(window->post->from, window->post->from_len, gid, 0, 0);
 	cfrmwindow_resetgenv(window);
-	gdra_stp(gid, 0, 32, label_mail, 8, G_STORE);
+	gdra_stp(gid, window->pos_mail.x, window->pos_mail.y + 16, label_mail, 8, G_STORE);
 	tadlib_drawtext(window->post->mail, window->post->mail_len, gid, 0, 0);
 	cfrmwindow_resetgenv(window);
-	gset_chp(gid, 0, 64, True);
-	tadlib_drawtext(window->post->message, window->post->message_len, gid, 0, 0);
+	gset_chp(gid, window->pos_message.x, window->pos_message.y + 16, True);
+	tadlib_drawtext(window->post->message, window->post->message_len, gid, -window->pos_message.x, -window->pos_message.y);
 
 	cdsp_pwd(window->wid, r, P_RDISP);
 }
@@ -199,9 +206,15 @@ LOCAL VOID cfrmwindow_close(VP arg)
 	(*window->notifyclosecallback)(window->arg, 0);
 }
 
-LOCAL VOID cfrmwindow_calcdrawsize(cfrmwindow_t *window, SIZE *sz)
+#define CFRMWINDOW_LAYOUT_WHOLE_MARGIN 5
+#define CFRMWINDOW_LAYOUT_FROM_MARGIN 0
+#define CFRMWINDOW_LAYOUT_MAIL_MARGIN 0
+#define CFRMWINDOW_LAYOUT_MESSAGE_MARGIN 16
+#define CFRMWINDOW_LAYOUT_BUTTON_MARGIN 5
+
+LOCAL VOID cfrmwindow_calclayout(cfrmwindow_t *window, SIZE *sz)
 {
-	SIZE sz_from = {0,0}, sz_mail = {0,0}, sz_msg = {0,0};
+	SIZE sz_from = {0,0}, sz_mail = {0,0}, sz_msg = {0,0}, sz_button = {0,0};
 	TC label_from[] = {0x4C3E, 0x4130, TK_COLN, TK_KSP, TNULL};
 	TC label_mail[] = {TK_E, 0x213E, TK_m, TK_a, TK_i, TK_l, TK_COLN, TK_KSP, TNULL};
 	GID gid;
@@ -222,28 +235,55 @@ LOCAL VOID cfrmwindow_calcdrawsize(cfrmwindow_t *window, SIZE *sz)
 		return;
 	}
 	tadlib_calcdrawsize(window->post->from, window->post->from_len, gid, &sz_from);
+	sz_from.h += width_from + CFRMWINDOW_LAYOUT_FROM_MARGIN * 2;
+	sz_from.v += CFRMWINDOW_LAYOUT_FROM_MARGIN * 2;
+
 	cfrmwindow_resetgenv(window);
 	width_mail = gget_stw(gid, label_mail, 4, NULL, NULL);
 	if (width_mail < 0) {
 		return;
 	}
 	tadlib_calcdrawsize(window->post->mail, window->post->mail_len, gid, &sz_mail);
+	sz_mail.h += width_mail + CFRMWINDOW_LAYOUT_MAIL_MARGIN * 2;
+	sz_mail.v += CFRMWINDOW_LAYOUT_MAIL_MARGIN * 2;
+
 	cfrmwindow_resetgenv(window);
 	tadlib_calcdrawsize(window->post->message, window->post->message_len, gid, &sz_msg);
+	sz_msg.h += CFRMWINDOW_LAYOUT_MESSAGE_MARGIN * 2;
+	sz_msg.v += CFRMWINDOW_LAYOUT_MESSAGE_MARGIN * 2;
+
+	sz_button.h = window->sz_ms_post.h + window->sz_ms_cancel.h + CFRMWINDOW_LAYOUT_BUTTON_MARGIN * 4;
+	sz_button.v = (window->sz_ms_post.v > window->sz_ms_cancel.v) ? window->sz_ms_post.v : window->sz_ms_cancel.v + CFRMWINDOW_LAYOUT_BUTTON_MARGIN * 2;
 
 	sz->v += sz_from.v;
-	if (sz->h < sz_from.h + width_from) {
-		sz->h = sz_from.h + width_from;
+	if (sz->h < sz_from.h) {
+		sz->h = sz_from.h;
 	}
 	sz->v += sz_mail.v;
-	if (sz->h < sz_mail.h + width_mail) {
-		sz->h = sz_mail.h + width_mail;
+	if (sz->h < sz_mail.h) {
+		sz->h = sz_mail.h;
 	}
 	sz->v += sz_msg.v;
-	if (sz->h < sz_msg.v) {
-		sz->h = sz_msg.v;
+	if (sz->h < sz_msg.h) {
+		sz->h = sz_msg.h;
 	}
-	sz->v += 16 + 24;
+	sz->v += sz_button.v;
+	if (sz->h < sz_button.h) {
+		sz->h = sz_button.h;
+	}
+	sz->h += CFRMWINDOW_LAYOUT_WHOLE_MARGIN * 2;
+	sz->v += CFRMWINDOW_LAYOUT_WHOLE_MARGIN * 2;
+
+	window->pos_from.x = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + CFRMWINDOW_LAYOUT_FROM_MARGIN;
+	window->pos_from.y = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + CFRMWINDOW_LAYOUT_FROM_MARGIN;
+	window->pos_mail.x = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + CFRMWINDOW_LAYOUT_MAIL_MARGIN;
+	window->pos_mail.y = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + sz_from.v + CFRMWINDOW_LAYOUT_MAIL_MARGIN;
+	window->pos_message.x = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + CFRMWINDOW_LAYOUT_MESSAGE_MARGIN;
+	window->pos_message.y = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + sz_from.v + sz_mail.v + CFRMWINDOW_LAYOUT_MESSAGE_MARGIN;
+	window->pos_cancel.x = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + CFRMWINDOW_LAYOUT_BUTTON_MARGIN;
+	window->pos_cancel.y = CFRMWINDOW_LAYOUT_WHOLE_MARGIN + sz_from.v + sz_mail.v + sz_msg.v + CFRMWINDOW_LAYOUT_BUTTON_MARGIN;
+	window->pos_post.x = window->pos_cancel.x + window->sz_ms_cancel.h + CFRMWINDOW_LAYOUT_BUTTON_MARGIN;
+	window->pos_post.y = window->pos_cancel.y;
 }
 
 EXPORT W cfrmwindow_open(cfrmwindow_t* window)
@@ -256,7 +296,6 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 		FILL100
 	}};
 	WID wid;
-	PNT pos;
 	SIZE sz;
 
 	if (window->wid > 0) {
@@ -271,20 +310,16 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 	window->gid = wget_gid(wid);
 	datwindow_setwid(window->base, wid);
 
-	cfrmwindow_calcdrawsize(window, &sz);
+	cfrmwindow_calclayout(window, &sz);
 	datwindow_setdrawrect(window->base, 0, 0, sz.h, sz.v);
 	datwindow_setworkrect(window->base, 0, 0, window->r.c.right, window->r.c.bottom);
 
-	pos.x = 10;
-	pos.y = sz.v - 24;
-	window->ms_cancel_id = copn_par(wid, window->dnum_cancel, &pos);
+	window->ms_cancel_id = copn_par(wid, window->dnum_cancel, &window->pos_cancel);
 	if (window->ms_cancel_id < 0) {
 		DP_ER("copn_par error:", window->ms_cancel_id);
 	}
 
-	pos.x = pos.x + window->sz_ms_cancel.h + 16;
-	pos.y = sz.v - 24;
-	window->ms_post_id = copn_par(wid, window->dnum_post, &pos);
+	window->ms_post_id = copn_par(wid, window->dnum_post, &window->pos_post);
 	if (window->ms_post_id < 0) {
 		DP_ER("copn_par error:", window->ms_post_id);
 	}
@@ -327,8 +362,38 @@ EXPORT Bool cfrmwindow_compairwid(cfrmwindow_t *window, WID wid)
 
 EXPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 {
+	SIZE sz;
+	RECT r;
+	RECT work;
+	W err;
+
 	window->post = post;
 	if (window->wid > 0) {
+		cfrmwindow_calclayout(window, &sz);
+		datwindow_setdrawrect(window->base, 0, 0, sz.h, sz.v);
+
+		work.c.left = 0;
+		work.c.top = 0;
+		wset_wrk(window->wid, &work);
+		datwindow_setworkrect(window->base, work.c.left, work.c.top, work.c.right, work.c.bottom);
+
+		r.c.left = window->pos_cancel.x;
+		r.c.top = window->pos_cancel.y;
+		r.c.right = r.c.left + window->sz_ms_cancel.h;
+		r.c.bottom = r.c.top + window->sz_ms_cancel.v;
+		err = cset_pos(window->ms_cancel_id, &r);
+		if (err < 0) {
+			DP_ER("cset_pos error cancel button", err);
+		}
+		r.c.left = window->pos_post.x;
+		r.c.top = window->pos_post.y;
+		r.c.right = r.c.left + window->sz_ms_post.h;
+		r.c.bottom = r.c.top + window->sz_ms_post.v;
+		err = cset_pos(window->ms_post_id, &r);
+		if (err < 0) {
+			DP_ER("cset_pos error post button", err);
+		}
+
 		wreq_dsp(window->wid);
 	}
 }
