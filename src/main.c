@@ -199,7 +199,6 @@ LOCAL VOID bchan_close(VP arg)
 
 LOCAL W bchan_paste(VP arg, WEVENT *wev)
 {
-#ifdef BCHAN_CONFIG_DEBUG
 	bchan_t *bchan = (bchan_t*)arg;
 	W err;
 	postresdata_t *post = NULL;
@@ -222,8 +221,6 @@ LOCAL W bchan_paste(VP arg, WEVENT *wev)
 	}
 
 	return 0; /* ACK */
-#endif
-	return 1; /* NACK */
 }
 
 LOCAL VOID bchan_recieveclose(VP arg, W send)
