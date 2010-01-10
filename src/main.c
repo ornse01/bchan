@@ -301,7 +301,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	cfrmwindow_t *confirm;
 	MENUITEM *mnitem_dbx, *mnitem;
 	MNID mnid;
-	static	RECT	r0 = {{200, 100, 400+7, 200+30}};
+	static	RECT	r0 = {{200, 80, 500+7, 230+30}};
 	RECT w_work;
 	W len, err;
 
