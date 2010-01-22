@@ -1,7 +1,7 @@
 /*
  * postres.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -85,6 +85,7 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 	W chratio_seg_len = sizeof(chratio_seg);
 	Bool is_hankaku = False, is_chratio;
 	RATIO w_ratio;
+	W ratio_a, ratio_b;
 	enum {
 		SEARCH_HEADER,
 		SKIP_HEADER,
@@ -117,10 +118,12 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 			is_chratio = is_chratio_fusen(seg, &w_ratio);
 			if (is_chratio == True) {
 				memcpy(chratio_seg, seg, chratio_seg_len);
-				if (w_ratio == (1<<8)||2) {
-					is_hankaku = True;
-				} else {
+				ratio_a = w_ratio >> 8;
+				ratio_b = w_ratio & 0xFF;
+				if ((ratio_a * 2 > ratio_b)||(ratio_b == 0)) {
 					is_hankaku = False;
+				} else {
+					is_hankaku = True;
 				}
 				switch (state) {
 				case READ_HEADER_FIELDVALUE_FROM:

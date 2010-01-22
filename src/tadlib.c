@@ -1,7 +1,7 @@
 /*
  * tadlib.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -195,18 +195,22 @@ LOCAL W tadlib_calcdrawsize_chratio(VP arg, RATIO w_ratio, RATIO h_ratio)
 	tadlib_calcdrawsize_t *ctx;
 	GID gid;
 	FSSPEC spec;
+	W ratio_a, ratio_b;
 
 	ctx = (tadlib_calcdrawsize_t*)arg;
 	gid = ctx->gid;
 
-	if (w_ratio == 0) {
+	ratio_a = w_ratio >> 8;
+	ratio_b = w_ratio & 0xFF;
+
+	if ((ratio_a * 2 > ratio_b)||(ratio_b == 0)) {
 		gget_fon(gid, &spec, NULL);
 		spec.attr |= FT_PROP;
 		spec.size.h = 16;
 		spec.size.v = 16;
 		gset_fon(gid, &spec);
 		ctx->isHankaku = False;
-	} else if (w_ratio == (1<<8)||2) {
+	} else {
 		gget_fon(gid, &spec, NULL);
 		spec.attr |= FT_PROP;
 		spec.size.h = 8;
@@ -289,18 +293,22 @@ LOCAL W tadlib_drawtext_chratio(VP arg, RATIO w_ratio, RATIO h_ratio)
 	tadlib_drawtext_t *ctx;
 	GID gid;
 	FSSPEC spec;
+	W ratio_a, ratio_b;
 
 	ctx = (tadlib_drawtext_t*)arg;
 	gid = ctx->gid;
 
-	if (w_ratio == 0) {
+	ratio_a = w_ratio >> 8;
+	ratio_b = w_ratio & 0xFF;
+
+	if ((ratio_a * 2 > ratio_b)||(ratio_b == 0)) {
 		gget_fon(gid, &spec, NULL);
 		spec.attr |= FT_PROP;
 		spec.size.h = 16;
 		spec.size.v = 16;
 		gset_fon(gid, &spec);
 		ctx->isHankaku = False;
-	} else if (w_ratio == (1<<8)||2) {
+	} else {
 		gget_fon(gid, &spec, NULL);
 		spec.attr |= FT_PROP;
 		spec.size.h = 8;
