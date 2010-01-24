@@ -1,7 +1,7 @@
 /*
  * retriever.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -206,7 +206,7 @@ LOCAL W datretriever_http_sendheder(datretriever_t *retriever)
 	HTTP_ERR_SEND(retriever->http, "/");
 	HTTP_ERR_SEND(retriever->http, retriever->thread);
 	HTTP_ERR_SEND(retriever->http, "/\r\n");
-	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.10)\r\nConnection: close\r\n\r\n");
+	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.101)\r\nConnection: close\r\n\r\n");
 
 	return 0;
 }
@@ -245,7 +245,7 @@ LOCAL W datretriever_http_sendheader_partial(datretriever_t *retriever, UB *etag
 	HTTP_ERR_SEND(retriever->http, "-\r\n");
 	HTTP_ERR_SEND(retriever->http, "\r\n");
 
-	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.10)\r\nConnection: close\r\n\r\n");
+	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.101)\r\nConnection: close\r\n\r\n");
 
 	return 0;
 }
