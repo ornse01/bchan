@@ -1,7 +1,7 @@
 /*
  * parser.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -41,7 +41,8 @@
 #endif
 
 typedef enum {
-	datparser_elmname_a = 1,
+	datparser_elmname_a_open = 1,
+	datparser_elmname_a_close,
 	datparser_elmname_br,
 	datparser_elmname_hr
 } datparser_elmname_t;
@@ -188,6 +189,24 @@ LOCAL W datparser_convert_str(datparser_t *parser, const UB *src, W slen, UW att
 	return 0;
 }
 
+LOCAL W datparser_appendchcolorfusen(TC **dest, W *dlen, COLOR color)
+{
+	UB data[10];
+	TADSEG *seg = (TADSEG*)data;
+
+	seg->id = 0xFF00|TS_TFONT;
+	seg->len = 6;
+	*(UH*)(data + 4) = 6 << 8;
+	*(COLOR*)(data + 6) = color;
+
+	*dest = realloc(*dest, sizeof(TC)*(*dlen + 10/sizeof(TC) + 1));
+	memcpy((*dest)+*dlen, data, 10);
+	*dlen += 10/sizeof(TC);
+	(*dest)[*dlen] = TNULL;
+
+	return 0;
+}
+
 LOCAL W datparser_parsechar(datparser_t *parser, UB ch, datparser_res_t *res)
 {
 	TC **str;
@@ -251,6 +270,12 @@ LOCAL W datparser_parsechar(datparser_t *parser, UB ch, datparser_res_t *res)
 			}
 			if (ret == datparser_elmname_hr) {
 				datparser_convert_str(parser, "\r\n\r\n", 4, TF_ATTR_CONT|attr, str, len);
+			}
+			if (ret == datparser_elmname_a_open) {
+				datparser_appendchcolorfusen(str, len, 0x100000ff);
+			}
+			if (ret == datparser_elmname_a_close) {
+				datparser_appendchcolorfusen(str, len, 0x10000000);
 			}
 			break;
 		} else if (parser->strstate == STRSTATE_SEARCH_END) {
@@ -319,6 +344,12 @@ LOCAL W datparser_parsechar(datparser_t *parser, UB ch, datparser_res_t *res)
 			}
 			if (ret == datparser_elmname_hr) {
 				datparser_convert_str(parser, "\r\n\r\n", 4, TF_ATTR_CONT|attr, str, len);
+			}
+			if (ret == datparser_elmname_a_open) {
+				datparser_appendchcolorfusen(str, len, 0x100000ff);
+			}
+			if (ret == datparser_elmname_a_close) {
+				datparser_appendchcolorfusen(str, len, 0x10000000);
 			}
 		} else if (parser->strstate == STRSTATE_CHARREF) {
 			chref_result = charreferparser_parsechar(&(parser->charref), ch);
@@ -400,10 +431,12 @@ EXPORT VOID datparser_clear(datparser_t *parser)
 
 LOCAL tokenchecker_valuetuple_t nList_elmname[] = {
 	{NULL,0},
-	{"A", datparser_elmname_a},
+	{"/A", datparser_elmname_a_close},
+	{"/a", datparser_elmname_a_close},
+	{"A", datparser_elmname_a_open},
 	{"BR", datparser_elmname_br},
 	{"HR", datparser_elmname_hr},
-	{"a", datparser_elmname_a},
+	{"a", datparser_elmname_a_open},
 	{"br", datparser_elmname_br},
 	{"hr", datparser_elmname_hr},
 	{NULL,0}

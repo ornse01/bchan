@@ -44,9 +44,11 @@
 typedef W (*iterate_callback_ch)(VP arg, TC ch);
 typedef W (*iterate_callback_br)(VP arg);
 typedef W (*iterate_callback_chratio)(VP arg, RATIO w_ratio, RATIO h_ratio);
+typedef W (*iterate_callback_chcolor)(VP arg, COLOR color);
 
 typedef struct iterate_callbacks_t_ iterate_callbacks_t;
 struct iterate_callbacks_t_ {
+	iterate_callback_chcolor callback_chcolor;
 	iterate_callback_chratio callback_chratio;
 	iterate_callback_ch callback_ch;
 	iterate_callback_br callback_br;
@@ -60,6 +62,15 @@ LOCAL VOID parse_fusen_chration(UB attr, UB *data, iterate_callbacks_t *callback
 	h_ratio = *(RATIO*)(data + 2);
 
 	(*callbacks->callback_chratio)(arg, w_ratio, h_ratio);
+}
+
+LOCAL VOID parse_fusen_chcolor(UB attr, UB *data, iterate_callbacks_t *callbacks, VP arg)
+{
+	COLOR color;
+
+	color = *(COLOR*)(data + 2);
+
+	(*callbacks->callback_chcolor)(arg, color);
 }
 
 LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
@@ -83,11 +94,14 @@ LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
 	subid = *(UH*)data >> 8;
 	attr = *(UH*)data & 0xff;
 
-	if (subid != 3) {
-		return;
+	switch (subid) {
+	case 3:
+		parse_fusen_chration(attr, data, callbacks, arg);
+		break;
+	case 6:
+		parse_fusen_chcolor(attr, data, callbacks, arg);
+		break;
 	}
-
-	parse_fusen_chration(attr, data, callbacks, arg);
 }
 
 LOCAL W parse_tad(TC *str, W len, iterate_callbacks_t *callbacks, VP arg)
@@ -222,6 +236,11 @@ LOCAL W tadlib_calcdrawsize_chratio(VP arg, RATIO w_ratio, RATIO h_ratio)
 	return 0;
 }
 
+LOCAL W tadlib_calcdrawsize_chcolor(VP arg, COLOR color)
+{
+	return 0;
+}
+
 EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz)
 {
 	W err;
@@ -234,6 +253,7 @@ EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz)
 	ctx.sz.h = 0;
 	ctx.ln_width = 0;
 
+	callbacks.callback_chcolor = tadlib_calcdrawsize_chcolor;
 	callbacks.callback_chratio = tadlib_calcdrawsize_chratio;
 	callbacks.callback_ch = tadlib_calcdrawsize_ch;
 	callbacks.callback_br = tadlib_calcdrawsize_br;
@@ -320,6 +340,17 @@ LOCAL W tadlib_drawtext_chratio(VP arg, RATIO w_ratio, RATIO h_ratio)
 	return 0;
 }
 
+LOCAL W tadlib_drawtext_chcolor(VP arg, COLOR color)
+{
+	tadlib_drawtext_t *ctx;
+	GID gid;
+
+	ctx = (tadlib_drawtext_t*)arg;
+	gid = ctx->gid;
+
+	return gset_chc(gid, color, /*tmp*/0x10efefef);
+}
+
 EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 {
 	tadlib_drawtext_t ctx;
@@ -330,6 +361,7 @@ EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 	ctx.dh = dh;
 	ctx.dv = dv;
 
+	callbacks.callback_chcolor = tadlib_drawtext_chcolor;
 	callbacks.callback_chratio = tadlib_drawtext_chratio;
 	callbacks.callback_ch = tadlib_drawtext_ch;
 	callbacks.callback_br = tadlib_drawtext_br;
