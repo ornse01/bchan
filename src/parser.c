@@ -30,6 +30,7 @@
 
 #include	<bstdio.h>
 #include	<bstdlib.h>
+#include	<errcode.h>
 #include	<btron/tf.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
@@ -53,22 +54,27 @@ struct datparser_t_ {
 	W i;
 	/**/
 	enum {
-		STATE_NAME,
-		STATE_MAIL,
-		STATE_DATE,
-		STATE_BODY,
-		STATE_TITLE
+		STATE_START,
+		STATE_LSTN,
+		STATE_ELEMENT,
+		STATE_CHARREF,
+		STATE_URL,
 	} state;
 	enum {
-		STRSTATE_START,
-		STRSTATE_LSTN,
-		STRSTATE_ELMNAME,
-		STRSTATE_SEARCH_END,
-		STRSTATE_CHARREF,
-	} strstate;
+		COLUMN_NAME,
+		COLUMN_MAIL,
+		COLUMN_DATE,
+		COLUMN_BODY,
+		COLUMN_TITLE
+	} col;
+	enum {
+		STATE_ELEMENT_SUBSTATE_ELMNAME,
+		STATE_ELEMENT_SUBSTATE_REM,
+	} state_element_substate;
 	tokenchecker_t elmname;
 	charreferparser_t charref;
 	datparser_res_t *resbuffer;
+	W elmnameid;
 };
 
 EXPORT datparser_res_t* datparser_res_new()
@@ -189,7 +195,104 @@ LOCAL W datparser_convert_str(datparser_t *parser, const UB *src, W slen, UW att
 	return 0;
 }
 
-LOCAL W datparser_appendchcolorfusen(TC **dest, W *dlen, COLOR color)
+LOCAL W datparser_outputconvertingstring(datparser_t *parser, UB *str, W len, datparser_res_t *res)
+{
+	switch (parser->col) {
+	case COLUMN_NAME:
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->name), &(res->name_len));
+	case COLUMN_MAIL:
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->mail), &(res->mail_len));
+	case COLUMN_DATE:
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT|TF_ATTR_SUPPRESS_FUSEN, &(res->date), &(res->date_len));
+	case COLUMN_BODY:
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->body), &(res->body_len));
+	case COLUMN_TITLE:
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT|TF_ATTR_SUPPRESS_FUSEN, &(res->title), &(res->title_len));
+	}
+	return -1; /* TODO */
+}
+
+LOCAL W datparser_flushstring(datparser_t *parser, datparser_res_t *res)
+{
+	W len0, err;
+
+	switch (parser->col) {
+	case COLUMN_NAME:
+		err = datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT, &(res->name), &(res->name_len));
+		if (err < 0) {
+			return err;
+		}
+		return datparser_convert_str(parser, NULL, 0, TF_ATTR_START, NULL, &len0);
+	case COLUMN_MAIL:
+		err = datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT, &(res->mail), &(res->mail_len));
+		if (err < 0) {
+			return err;
+		}
+		return datparser_convert_str(parser, NULL, 0, TF_ATTR_START, NULL, &len0);
+	case COLUMN_DATE:
+		err = datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT|TF_ATTR_SUPPRESS_FUSEN, &(res->date), &(res->date_len));
+		if (err < 0) {
+			return err;
+		}
+		return datparser_convert_str(parser, NULL, 0, TF_ATTR_START|TF_ATTR_SUPPRESS_FUSEN, NULL, &len0);
+	case COLUMN_BODY:
+		err = datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT, &(res->body), &(res->body_len));
+		if (err < 0) {
+			return err;
+		}
+		return datparser_convert_str(parser, NULL, 0, TF_ATTR_START, NULL, &len0);
+	case COLUMN_TITLE:
+		err =  datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT|TF_ATTR_SUPPRESS_FUSEN, &(res->title), &(res->title_len));
+		if (err < 0) {
+			return err;
+		}
+		return datparser_convert_str(parser, NULL, 0, TF_ATTR_START|TF_ATTR_SUPPRESS_FUSEN, NULL, &len0);
+	}
+	return -1; /* TODO */
+}
+
+LOCAL W datparser_appendbinary(datparser_t *parser, UB *data, W len, datparser_res_t *res)
+{
+	TC **str;
+	W *len0;
+
+	switch (parser->col) {
+	case COLUMN_NAME:
+		str = &(res->name);
+		len0 = &(res->name_len);
+		break;
+	case COLUMN_MAIL:
+		str = &(res->mail);
+		len0 = &(res->mail_len);
+		break;
+	case COLUMN_DATE:
+		str = &(res->date);
+		len0 = &(res->date_len);
+		break;
+	case COLUMN_BODY:
+		str = &(res->body);
+		len0 = &(res->body_len);
+		break;
+	case COLUMN_TITLE:
+		str = &(res->title);
+		len0 = &(res->title_len);
+		break;
+	default:
+		return -1; /* TODO*/
+	}
+
+	*str = realloc(*str, sizeof(TC)*(*len0 + len/sizeof(TC) + 1));
+	if (*str == NULL) {
+		return ER_NOMEM;
+	}
+	memcpy((*str)+*len0, data, len);
+	*len0 += len/sizeof(TC);
+	(*str)[*len0] = TNULL;
+
+	return 0;
+}
+
+LOCAL W datparser_appendchcolorfusen(datparser_t *parser, COLOR color, datparser_res_t *res)
 {
 	UB data[10];
 	TADSEG *seg = (TADSEG*)data;
@@ -199,169 +302,191 @@ LOCAL W datparser_appendchcolorfusen(TC **dest, W *dlen, COLOR color)
 	*(UH*)(data + 4) = 6 << 8;
 	*(COLOR*)(data + 6) = color;
 
-	*dest = realloc(*dest, sizeof(TC)*(*dlen + 10/sizeof(TC) + 1));
-	memcpy((*dest)+*dlen, data, 10);
-	*dlen += 10/sizeof(TC);
-	(*dest)[*dlen] = TNULL;
+	return datparser_appendbinary(parser, data, 10, res);
+}
 
+LOCAL W datparser_appendconvertedelementinfo(datparser_t *parser, W tagid, datparser_res_t *res)
+{
+	switch (tagid) {
+	case datparser_elmname_br:
+		return datparser_outputconvertingstring(parser, "\r\n", 2, res);
+	case datparser_elmname_hr:
+		return datparser_outputconvertingstring(parser, "\r\n\r\n", 4, res);
+	case datparser_elmname_a_open:
+		return datparser_appendchcolorfusen(parser, 0x100000ff, res);
+	case datparser_elmname_a_close:
+		return datparser_appendchcolorfusen(parser, 0x10000000, res);
+	}
 	return 0;
+}
+
+#define DATPARSER_PARSECHAR_CONTINUE 0
+#define DATPARSER_PARSECHAR_RESRESOLVED 1
+
+LOCAL W datparser_parsechar_start_trigger(datparser_t *parser, UB ch, datparser_res_t *res)
+{
+	W err;
+	charreferparser_result_t chref_result;
+
+	switch (ch) {
+	case '\n':
+		err = datparser_flushstring(parser, res);
+		if (err < 0) {
+			return err;
+		}
+		parser->col = COLUMN_NAME;
+		return DATPARSER_PARSECHAR_RESRESOLVED;
+	case '<':
+		parser->state = STATE_LSTN;
+		break;
+	case '&':
+		charreferparser_resetstate(&(parser->charref));
+		chref_result = charreferparser_parsechar(&(parser->charref), ch);
+		if (chref_result != CHARREFERPARSER_RESULT_CONTINUE) {
+			return -1; /* TODO */
+		}
+		parser->state = STATE_CHARREF;
+		break;
+	default:
+		err = datparser_outputconvertingstring(parser, &ch, 1, res);
+		if (err < 0) {
+			return err;
+		}
+		break;
+	}
+
+	return DATPARSER_PARSECHAR_CONTINUE;
+}
+
+LOCAL W datparser_parsechar_lstn_trigger(datparser_t *parser, UB ch, datparser_res_t *res)
+{
+	W ret, err;
+
+	switch (ch) {
+	case '>':
+		err = datparser_flushstring(parser, res);
+		if (err < 0) {
+			return err;
+		}
+		parser->state = STATE_START;
+		switch (parser->col) {
+		case COLUMN_NAME:
+			parser->col = COLUMN_MAIL;
+			break;
+		case COLUMN_MAIL:
+			parser->col = COLUMN_DATE;
+			break;
+		case COLUMN_DATE:
+			parser->col = COLUMN_BODY;
+			break;
+		case COLUMN_BODY:
+			parser->col = COLUMN_TITLE;
+			break;
+		case COLUMN_TITLE:
+			parser->col = COLUMN_NAME;
+			break;
+		}
+		break;
+	default:
+		parser->state = STATE_ELEMENT;
+		parser->state_element_substate = STATE_ELEMENT_SUBSTATE_ELMNAME;
+		tokenchecker_resetstate(&(parser->elmname));
+		ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
+		if (ret == TOKENCHECK_NOMATCH) {
+			parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
+			break;
+		}
+		if (ret != TOKENCHECK_CONTINUE) {
+			return -1; /* TODO */
+		}
+		break;
+	}
+
+	return DATPARSER_PARSECHAR_CONTINUE;
+}
+
+LOCAL W datparser_parsechar_element_trigger(datparser_t *parser, UB ch, datparser_res_t *res)
+{
+	W ret, err;
+
+	if (parser->state_element_substate != STATE_ELEMENT_SUBSTATE_ELMNAME) {
+		if (ch == '>') {
+			err = datparser_appendconvertedelementinfo(parser, parser->elmnameid, res);
+			if (err < 0) {
+				return err;
+			}
+			parser->state = STATE_START;
+		}
+		return DATPARSER_PARSECHAR_CONTINUE;
+	}
+
+	ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
+	if (ret == TOKENCHECK_NOMATCH) {
+		if (ch == '>') {
+			parser->state = STATE_START;
+		} else {
+			parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
+			parser->elmnameid = -1;
+		}
+		return DATPARSER_PARSECHAR_CONTINUE;
+	}
+	if (ret == TOKENCHECK_CONTINUE) {
+		return DATPARSER_PARSECHAR_CONTINUE;
+	}
+	if (ch == '>') {
+		err = datparser_appendconvertedelementinfo(parser, ret, res);
+		if (err < 0) {
+			return err;
+		}
+		parser->state = STATE_START;
+	} if (ch == ' ') {
+		parser->elmnameid = ret;
+		parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
+	}
+
+	return DATPARSER_PARSECHAR_CONTINUE;
+}
+
+LOCAL W datparser_parsechar_charref_trigger(datparser_t *parser, UB ch, datparser_res_t *res)
+{
+	W err;
+	charreferparser_result_t chref_result;
+	UB chref;
+
+	chref_result = charreferparser_parsechar(&(parser->charref), ch);
+	if (chref_result == CHARREFERPARSER_RESULT_DETERMINE) {
+		chref = charreferparser_getcharnumber(&(parser->charref));
+		err = datparser_outputconvertingstring(parser, &chref, 1, res);
+		if (err < 0) {
+			return err;
+		}
+		parser->state = STATE_START;
+	}
+
+	return DATPARSER_PARSECHAR_CONTINUE;
+}
+
+LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, datparser_res_t *res)
+{
+	return DATPARSER_PARSECHAR_CONTINUE;
 }
 
 LOCAL W datparser_parsechar(datparser_t *parser, UB ch, datparser_res_t *res)
 {
-	TC **str;
-	W *len, len0, ret;
-	UW attr = 0;
-	UB chref;
-	charreferparser_result_t chref_result;
-
 	switch (parser->state) {
-	case STATE_NAME:
-		str = &(res->name);
-		len = &(res->name_len);
-		break;
-	case STATE_MAIL:
-		str = &(res->mail);
-		len = &(res->mail_len);
-		break;
-	case STATE_DATE:
-		str = &(res->date);
-		len = &(res->date_len);
-		attr = TF_ATTR_SUPPRESS_FUSEN;
-		break;
-	case STATE_BODY:
-		str = &(res->body);
-		len = &(res->body_len);
-		break;
-	case STATE_TITLE:
-		str = &(res->title);
-		len = &(res->title_len);
-		attr = TF_ATTR_SUPPRESS_FUSEN;
-		break;
+	case STATE_START:
+		return datparser_parsechar_start_trigger(parser, ch, res);
+	case STATE_LSTN:
+		return datparser_parsechar_lstn_trigger(parser, ch, res);
+	case STATE_ELEMENT:
+		return datparser_parsechar_element_trigger(parser, ch, res);
+	case STATE_CHARREF:
+		return datparser_parsechar_charref_trigger(parser, ch, res);
+	case STATE_URL:
+		return datparser_parsechar_url_trigger(parser, ch, res);
 	default:
-		DP(("error state\n"));
 		return -1; /* TODO */
 	}
-
-	switch(ch) {
-	  case '\n':
-		if (parser->state == STATE_TITLE) {
-		}
-		parser->state = STATE_NAME;
-		datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT|attr, str, len);
-		datparser_convert_str(parser, NULL, 0, TF_ATTR_START|attr, NULL, &len0);
-		return 1; /* TODO */
-		break;
-	  case '<':
-		parser->strstate = STRSTATE_LSTN;
-		break;
-	  case '>':
-		if (parser->strstate == STRSTATE_START) {
-			datparser_convert_str(parser, ">", 1, TF_ATTR_CONT|attr, str, len);
-			break;
-		} else if (parser->strstate == STRSTATE_ELMNAME) {
-			parser->strstate = STRSTATE_START;
-			ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
-			if (ret == TOKENCHECK_NOMATCH) {
-				break;
-			}
-			if (ret == datparser_elmname_br) {
-				datparser_convert_str(parser, "\r\n", 2, TF_ATTR_CONT|attr, str, len);
-			}
-			if (ret == datparser_elmname_hr) {
-				datparser_convert_str(parser, "\r\n\r\n", 4, TF_ATTR_CONT|attr, str, len);
-			}
-			if (ret == datparser_elmname_a_open) {
-				datparser_appendchcolorfusen(str, len, 0x100000ff);
-			}
-			if (ret == datparser_elmname_a_close) {
-				datparser_appendchcolorfusen(str, len, 0x10000000);
-			}
-			break;
-		} else if (parser->strstate == STRSTATE_SEARCH_END) {
-			parser->strstate = STRSTATE_START;
-			break;
-		}
-		/* STRSTATE_LSTN */
-		switch (parser->state) {
-		case STATE_NAME:
-			parser->state = STATE_MAIL;
-			break;
-		case STATE_MAIL:
-			parser->state = STATE_DATE;
-			break;
-		case STATE_DATE:
-			parser->state = STATE_BODY;
-			break;
-		case STATE_BODY:
-			parser->state = STATE_TITLE;
-			break;
-		case STATE_TITLE:
-			parser->state = STATE_NAME;
-			break;
-		}
-		datparser_convert_str(parser, NULL, 0, TF_ATTR_CONT|attr, str, len);
-		datparser_convert_str(parser, NULL, 0, TF_ATTR_START|attr, NULL, &len0);
-
-		parser->strstate = STRSTATE_START;
-		break;
-	  case '&':
-		if (parser->strstate == STRSTATE_START) {
-			charreferparser_resetstate(&(parser->charref));
-			chref_result = charreferparser_parsechar(&(parser->charref), ch);
-			if (chref_result != CHARREFERPARSER_RESULT_CONTINUE) {
-				break;
-			}
-			parser->strstate = STRSTATE_CHARREF;
-			break;
-		}
-	  default:
-		if (parser->strstate == STRSTATE_LSTN) {
-			parser->strstate = STRSTATE_ELMNAME;
-			tokenchecker_resetstate(&(parser->elmname));
-			ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
-			if (ret == TOKENCHECK_NOMATCH) {
-				parser->strstate = STRSTATE_SEARCH_END;
-				break;
-			}
-			if (ret == TOKENCHECK_CONTINUE) {
-				break;
-			}
-			break;
-		} else if (parser->strstate == STRSTATE_START) {
-			datparser_convert_str(parser, &ch, 1, TF_ATTR_CONT|attr, str, len);
-		} else if (parser->strstate == STRSTATE_ELMNAME) {
-			ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
-			if (ret == TOKENCHECK_NOMATCH) {
-				parser->strstate = STRSTATE_SEARCH_END;
-				break;
-			}
-			if (ret == TOKENCHECK_CONTINUE) {
-				break;
-			}
-			if (ret == datparser_elmname_br) {
-				datparser_convert_str(parser, "\r\n", 2, TF_ATTR_CONT|attr, str, len);
-			}
-			if (ret == datparser_elmname_hr) {
-				datparser_convert_str(parser, "\r\n\r\n", 4, TF_ATTR_CONT|attr, str, len);
-			}
-			if (ret == datparser_elmname_a_open) {
-				datparser_appendchcolorfusen(str, len, 0x100000ff);
-			}
-			if (ret == datparser_elmname_a_close) {
-				datparser_appendchcolorfusen(str, len, 0x10000000);
-			}
-		} else if (parser->strstate == STRSTATE_CHARREF) {
-			chref_result = charreferparser_parsechar(&(parser->charref), ch);
-			if (chref_result == CHARREFERPARSER_RESULT_DETERMINE) {
-				chref = charreferparser_getcharnumber(&(parser->charref));
-				datparser_convert_str(parser, &chref, 1, TF_ATTR_CONT|attr, str, len);
-				parser->strstate = STRSTATE_START;
-			}
-		}
-	}
-
-	return 0; /* TODO */
 }
 
 EXPORT W datparser_getnextres(datparser_t *parser, datparser_res_t **res)
@@ -423,8 +548,7 @@ EXPORT VOID datparser_clear(datparser_t *parser)
 	}
 
 	parser->i = 0;
-	parser->state = STATE_NAME;
-	parser->strstate = STRSTATE_START;
+	parser->state = STATE_START;
 
 	datparsr_res_clear(parser->resbuffer);
 }
@@ -469,8 +593,8 @@ EXPORT datparser_t* datparser_new(datcache_t *cache)
 	}
 
 	parser->i = 0;
-	parser->state = STATE_NAME;
-	parser->strstate = STRSTATE_START;
+	parser->state = STATE_START;
+	parser->col = COLUMN_NAME;
 
 	parser->resbuffer = datparser_res_new();
 	if (parser->resbuffer == NULL) {
