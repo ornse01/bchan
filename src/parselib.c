@@ -67,7 +67,7 @@ EXPORT VOID tokenchecker_resetstate(tokenchecker_t *checker)
 	checker->flg_notexist = 0;
 }
 
-EXPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, B c)
+EXPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, UB c)
 {
 	W i;
 	tokenchecker_valuetuple_t *NameList = checker->NameList;
@@ -90,7 +90,7 @@ EXPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, B c)
 	}
 
 	if (checker->flg_notexist) {
-		return TOKENCHECK_CONTINUE;
+		return TOKENCHECK_NOMATCH;
 	}
 
 	for (i=checker->StartIndex_of_list;i<checker->EndIndex_of_list;i++) {
@@ -100,7 +100,7 @@ EXPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, B c)
 	}
 	if (i==checker->EndIndex_of_list) { /*receive char is not matched.*/
 		checker->flg_notexist = 1;
-		return TOKENCHECK_CONTINUE;
+		return TOKENCHECK_NOMATCH;
 	}
 	checker->StartIndex_of_list = i;
 	for (i=i+1;i<checker->EndIndex_of_list;i++) {
@@ -113,10 +113,16 @@ EXPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, B c)
 	if ((NameList[checker->StartIndex_of_list]).name[checker->pos_of_EachString] == '\0') {
 		/*Don't recive endtoken but List's Name is end.*/
 		checker->flg_notexist = 1;
-		return TOKENCHECK_CONTINUE;
+		return TOKENCHECK_NOMATCH;
 	}
 	checker->pos_of_EachString++;
 	return TOKENCHECK_CONTINUE;
+}
+
+EXPORT VOID tokenchecker_getparsingstring(tokenchecker_t *checker, UB **str, W *len)
+{
+	*str = (checker->NameList[checker->StartIndex_of_list]).name;
+	*len = checker->pos_of_EachString + 1;
 }
 
 LOCAL tokenchecker_valuetuple_t nList_nameref[] = {

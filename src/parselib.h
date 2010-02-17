@@ -51,7 +51,8 @@ struct  tokenchecker_t_ {
 
 IMPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuetuple_t *namelist, B *endchars);
 IMPORT VOID tokenchecker_resetstate(tokenchecker_t *checker);
-IMPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, B c);
+IMPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, UB c);
+IMPORT VOID tokenchecker_getparsingstring(tokenchecker_t *checker, UB **str, W *len);
 
 typedef struct charreferparser_t_ charreferparser_t;
 struct charreferparser_t_ {
