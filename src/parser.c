@@ -82,8 +82,8 @@ struct datparser_t_ {
 		STATE_URL_SUBSTATE_SCHEME,
 		STATE_URL_SUBSTATE_REM,
 	} state_url_substate;
-	tokenchecker_t elmname;
-	tokenchecker_t urlscheme;
+	tokenchecker2_t elmname;
+	tokenchecker2_t urlscheme;
 	charreferparser_t charref;
 	datparser_res_t *resbuffer;
 	W elmnameid;
@@ -337,7 +337,7 @@ LOCAL W datparser_appendconvertedelementinfo(datparser_t *parser, W tagid, datpa
 
 LOCAL W datparser_parsechar_start_trigger(datparser_t *parser, UB ch, Bool issecondbyte, datparser_res_t *res)
 {
-	W err, ret;
+	W err, ret, val;
 	charreferparser_result_t chref_result;
 
 	if ((ch == '\n')&&(issecondbyte == False)) {
@@ -357,10 +357,10 @@ LOCAL W datparser_parsechar_start_trigger(datparser_t *parser, UB ch, Bool issec
 		}
 		parser->state = STATE_CHARREF;
 	} else {
-		ret = tokenchecker_inputcharacter(&(parser->urlscheme), ch);
-		if (ret == TOKENCHECK_NOMATCH) {
-			tokenchecker_resetstate(&(parser->urlscheme));
-		} else if (ret == TOKENCHECK_CONTINUE) {
+		ret = tokenchecker2_inputchar(&(parser->urlscheme), ch, &val);
+		if ((ret == TOKENCHECKER2_NOMATCH)||(ret == TOKENCHECKER2_CONTINUE_NOMATCH)) {
+			tokenchecker2_clear(&(parser->urlscheme));
+		} else if (ret == TOKENCHECKER2_CONTINUE) {
 			parser->state = STATE_URL;
 			parser->state_url_substate = STATE_URL_SUBSTATE_SCHEME;
 			return DATPARSER_PARSECHAR_CONTINUE;
@@ -376,7 +376,7 @@ LOCAL W datparser_parsechar_start_trigger(datparser_t *parser, UB ch, Bool issec
 
 LOCAL W datparser_parsechar_lstn_trigger(datparser_t *parser, UB ch, Bool issecondbyte, datparser_res_t *res)
 {
-	W ret, err;
+	W ret, err, val;
 
 	if ((ch == '>')&&(issecondbyte == False)) {
 		err = datparser_flushstring(parser, res);
@@ -404,13 +404,14 @@ LOCAL W datparser_parsechar_lstn_trigger(datparser_t *parser, UB ch, Bool isseco
 	} else {
 		parser->state = STATE_ELEMENT;
 		parser->state_element_substate = STATE_ELEMENT_SUBSTATE_ELMNAME;
-		tokenchecker_resetstate(&(parser->elmname));
-		ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
-		if (ret == TOKENCHECK_NOMATCH) {
+		tokenchecker2_clear(&(parser->elmname));
+		ret = tokenchecker2_inputchar(&(parser->elmname), ch, &val);
+		if (ret == TOKENCHECKER2_NOMATCH) {
 			parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
 			return DATPARSER_PARSECHAR_CONTINUE;
 		}
-		if (ret != TOKENCHECK_CONTINUE) {
+		if (!((ret == TOKENCHECKER2_CONTINUE)
+			  ||(ret == TOKENCHECKER2_CONTINUE_NOMATCH))) {
 			return -1; /* TODO */
 		}
 	}
@@ -420,7 +421,7 @@ LOCAL W datparser_parsechar_lstn_trigger(datparser_t *parser, UB ch, Bool isseco
 
 LOCAL W datparser_parsechar_element_trigger(datparser_t *parser, UB ch, Bool issecondbyte, datparser_res_t *res)
 {
-	W ret, err;
+	W ret, err, val;
 
 	if (parser->state_element_substate != STATE_ELEMENT_SUBSTATE_ELMNAME) {
 		if ((ch == '>')&&(issecondbyte == False)) {
@@ -433,8 +434,8 @@ LOCAL W datparser_parsechar_element_trigger(datparser_t *parser, UB ch, Bool iss
 		return DATPARSER_PARSECHAR_CONTINUE;
 	}
 
-	ret = tokenchecker_inputcharacter(&(parser->elmname), ch);
-	if (ret == TOKENCHECK_NOMATCH) {
+	ret = tokenchecker2_inputchar(&(parser->elmname), ch, &val);
+	if (ret == TOKENCHECKER2_NOMATCH) {
 		if ((ch == '>')&&(issecondbyte == False)) {
 			parser->state = STATE_START;
 		} else {
@@ -443,18 +444,21 @@ LOCAL W datparser_parsechar_element_trigger(datparser_t *parser, UB ch, Bool iss
 		}
 		return DATPARSER_PARSECHAR_CONTINUE;
 	}
-	if (ret == TOKENCHECK_CONTINUE) {
+	if ((ret == TOKENCHECKER2_CONTINUE)
+		||(ret == TOKENCHECKER2_CONTINUE_NOMATCH)) {
 		return DATPARSER_PARSECHAR_CONTINUE;
 	}
-	if ((ch == '>')&&(issecondbyte == False)) {
-		err = datparser_appendconvertedelementinfo(parser, ret, res);
-		if (err < 0) {
-			return err;
+	if (ret == TOKENCHECKER2_DETERMINE) {
+		if ((ch == '>')&&(issecondbyte == False)) {
+			err = datparser_appendconvertedelementinfo(parser, val, res);
+			if (err < 0) {
+				return err;
+			}
+			parser->state = STATE_START;
+		} if ((ch == ' ')&&(issecondbyte == False)) {
+			parser->elmnameid = val;
+			parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
 		}
-		parser->state = STATE_START;
-	} if ((ch == ' ')&&(issecondbyte == False)) {
-		parser->elmnameid = ret;
-		parser->state_element_substate = STATE_ELEMENT_SUBSTATE_REM;
 	}
 
 	return DATPARSER_PARSECHAR_CONTINUE;
@@ -481,15 +485,14 @@ LOCAL W datparser_parsechar_charref_trigger(datparser_t *parser, UB ch, Bool iss
 
 LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecondbyte, datparser_res_t *res)
 {
-	W ret, err, len;
+	W ret, err, len, val;
 	UB *str;
-	W i;
 
 	if (parser->state_url_substate == STATE_URL_SUBSTATE_SCHEME) {
-		ret = tokenchecker_inputcharacter(&(parser->urlscheme), ch);
-		if (ret == TOKENCHECK_NOMATCH) {
-			tokenchecker_getparsingstring(&(parser->urlscheme), &str, &len);
-			err = datparser_outputconvertingstring(parser, str, /*tmp*/len-1, res);
+		ret = tokenchecker2_inputchar(&(parser->urlscheme), ch, &val);
+		if ((ret == TOKENCHECKER2_NOMATCH)||(ret == TOKENCHECKER2_CONTINUE_NOMATCH)) {
+			tokenchecker2_getlastmatchedstring(&(parser->urlscheme), &str, &len);
+			err = datparser_outputconvertingstring(parser, str, len, res);
 			if (err < 0) {
 				return err;
 			}
@@ -497,7 +500,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 			if (err < 0) {
 				return err;
 			}
-			tokenchecker_resetstate(&(parser->urlscheme));
+			tokenchecker2_clear(&(parser->urlscheme));
 			if (ch == '<') {
 				parser->state = STATE_LSTN;
 			} else {
@@ -505,7 +508,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 			}
 			return DATPARSER_PARSECHAR_CONTINUE;
 		}
-		if (ret == TOKENCHECK_CONTINUE) {
+		if (ret == TOKENCHECKER2_CONTINUE) {
 			return DATPARSER_PARSECHAR_CONTINUE;
 		}
 
@@ -513,7 +516,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 		if (err < 0) {
 			return err;
 		}
-		tokenchecker_getparsingstring(&(parser->urlscheme), &str, &len);
+		tokenchecker2_getlastmatchedstring(&(parser->urlscheme), &str, &len);
 		err = datparser_outputconvertingstring(parser, str, len, res);
 		if (err < 0) {
 			return err;
@@ -523,7 +526,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 			return err;
 		}
 
-		tokenchecker_resetstate(&(parser->urlscheme));
+		tokenchecker2_clear(&(parser->urlscheme));
 		parser->state_url_substate = STATE_URL_SUBSTATE_REM;
 	} else if (parser->state_url_substate == STATE_URL_SUBSTATE_REM) {
 		if ((ch == ' ')||(ch == '\n')) { /* check other chars. */
@@ -640,12 +643,11 @@ EXPORT VOID datparser_clear(datparser_t *parser)
 	parser->state = STATE_START;
 
 	datparsr_res_clear(parser->resbuffer);
-	tokenchecker_resetstate(&(parser->elmname));
-	tokenchecker_resetstate(&(parser->urlscheme));
+	tokenchecker2_clear(&(parser->elmname));
+	tokenchecker2_clear(&(parser->urlscheme));
 }
 
 LOCAL tokenchecker_valuetuple_t nList_elmname[] = {
-	{NULL,0},
 	{"/A", datparser_elmname_a_close},
 	{"/a", datparser_elmname_a_close},
 	{"A", datparser_elmname_a_open},
@@ -654,16 +656,13 @@ LOCAL tokenchecker_valuetuple_t nList_elmname[] = {
 	{"a", datparser_elmname_a_open},
 	{"br", datparser_elmname_br},
 	{"hr", datparser_elmname_hr},
-	{NULL,0}
 };
 LOCAL B eToken_elmname[] = " >";
 
 LOCAL tokenchecker_valuetuple_t nList_urlscheme[] = {
-	{NULL,0},
 	{"http", datparser_urlscheme_http},
 	{"sssp", datparser_urlscheme_sssp},
 	{"ttp", datparser_urlscheme_ttp},
-	{NULL,0}
 };
 LOCAL B eToken_urlscheme[] = ":";
 
@@ -703,8 +702,8 @@ EXPORT datparser_t* datparser_new(datcache_t *cache)
 		free(parser);
 		return NULL;
 	}
-	tokenchecker_initialize(&(parser->elmname), nList_elmname, eToken_elmname);
-	tokenchecker_initialize(&(parser->urlscheme), nList_urlscheme, eToken_urlscheme);
+	tokenchecker2_initialize(&(parser->elmname), nList_elmname, 8, eToken_elmname);
+	tokenchecker2_initialize(&(parser->urlscheme), nList_urlscheme, 3, eToken_urlscheme);
 	charreferparser_initialize(&(parser->charref));
 
 	return parser;

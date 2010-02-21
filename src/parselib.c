@@ -1,7 +1,7 @@
 /*
  * parselib.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -213,12 +213,10 @@ EXPORT VOID tokenchecker2_getlastmatchedstring(tokenchecker2_t *checker, UB **st
 }
 
 LOCAL tokenchecker_valuetuple_t nList_nameref[] = {
-  {NULL,0},
   {"amp", '&'},
   {"gt", '>'},
   {"lt", '<'},
   {"quot", '"'},
-  {NULL,0}
 };
 LOCAL B eToken_nameref[] = ";";
 
@@ -240,7 +238,7 @@ LOCAL W charreferparser_hexchartointeger(UB ch)
 
 EXPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *parser, UB ch)
 {
-	W err;
+	W ret, val;
 
 	switch (parser->state) {
 	case START:
@@ -259,7 +257,7 @@ EXPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *par
 		}
 		/* TODO */
 		parser->state = NAMED;
-		tokenchecker_inputcharacter(&parser->named, ch);
+		tokenchecker2_inputchar(&parser->named, ch, &val);
 		parser->charnumber = -1;
 		return CHARREFERPARSER_RESULT_CONTINUE;
 	case RECIEVE_NUMBER:
@@ -296,10 +294,10 @@ EXPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *par
 		}
 		return CHARREFERPARSER_RESULT_INVALID;
 	case NAMED:
-		err = tokenchecker_inputcharacter(&parser->named, ch);
+		ret = tokenchecker2_inputchar(&parser->named, ch, &val);
 		if (ch == ';') {
-			if (err > 0) {
-				parser->charnumber = err;
+			if (ret == TOKENCHECKER2_DETERMINE) {
+				parser->charnumber = val;
 			}
 			parser->state = DETERMINED;
 			return CHARREFERPARSER_RESULT_DETERMINE;
@@ -330,14 +328,14 @@ EXPORT VOID charreferparser_resetstate(charreferparser_t *parser)
 {
 	parser->state = START;
 	parser->charnumber = 0;
-	tokenchecker_resetstate(&(parser->named));
+	tokenchecker2_clear(&(parser->named));
 }
 
 EXPORT W charreferparser_initialize(charreferparser_t *parser)
 {
 	parser->state = START;
 	parser->charnumber = 0;
-	tokenchecker_initialize(&(parser->named), nList_nameref, eToken_nameref);
+	tokenchecker2_initialize(&(parser->named), nList_nameref, 4, eToken_nameref);
 	return 0;
 }
 

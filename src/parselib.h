@@ -91,7 +91,7 @@ struct charreferparser_t_ {
 		INVALID,
 		DETERMINED
 	} state;
-	tokenchecker_t named;
+	tokenchecker2_t named;
 	W charnumber;
 };
 
