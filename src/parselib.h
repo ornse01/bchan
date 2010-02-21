@@ -37,25 +37,6 @@ struct tokenchecker_valuetuple_t_ {
 
 typedef struct  tokenchecker_t_ tokenchecker_t;
 struct  tokenchecker_t_ {
-	tokenchecker_valuetuple_t *NameList;
-	W num_of_list;
-	W pos_of_EachString;
-	W StartIndex_of_list;
-	W EndIndex_of_list;
-	W flg_notexist;
-	B *endtokens;
-};
-
-#define TOKENCHECK_CONTINUE 0
-#define TOKENCHECK_NOMATCH -1
-
-IMPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuetuple_t *namelist, B *endchars);
-IMPORT VOID tokenchecker_resetstate(tokenchecker_t *checker);
-IMPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, UB c);
-IMPORT VOID tokenchecker_getparsingstring(tokenchecker_t *checker, UB **str, W *len);
-
-typedef struct  tokenchecker2_t_ tokenchecker2_t;
-struct  tokenchecker2_t_ {
 	tokenchecker_valuetuple_t *namelist;
 	W namelistnum;
 	B *endtokens;
@@ -66,18 +47,18 @@ struct  tokenchecker2_t_ {
 };
 
 enum {
-	TOKENCHECKER2_CONTINUE,
-	TOKENCHECKER2_CONTINUE_NOMATCH,
-	TOKENCHECKER2_DETERMINE,
-	TOKENCHECKER2_NOMATCH,
-	TOKENCHECKER2_AFTER_END
+	TOKENCHECKER_CONTINUE,
+	TOKENCHECKER_CONTINUE_NOMATCH,
+	TOKENCHECKER_DETERMINE,
+	TOKENCHECKER_NOMATCH,
+	TOKENCHECKER_AFTER_END
 };
 
-IMPORT VOID tokenchecker2_initialize(tokenchecker2_t *checker, tokenchecker_valuetuple_t *namelist, W namelistnum, B *endchars);
-IMPORT VOID tokenchecker2_finalize(tokenchecker2_t *checker);
-IMPORT VOID tokenchecker2_clear(tokenchecker2_t *checker);
-IMPORT W tokenchecker2_inputchar(tokenchecker2_t *checker, UB c, W *val);
-IMPORT VOID tokenchecker2_getlastmatchedstring(tokenchecker2_t *checker, UB **str, W *len);
+IMPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuetuple_t *namelist, W namelistnum, B *endchars);
+IMPORT VOID tokenchecker_finalize(tokenchecker_t *checker);
+IMPORT VOID tokenchecker_clear(tokenchecker_t *checker);
+IMPORT W tokenchecker_inputchar(tokenchecker_t *checker, UB c, W *val);
+IMPORT VOID tokenchecker_getlastmatchedstring(tokenchecker_t *checker, UB **str, W *len);
 
 typedef struct charreferparser_t_ charreferparser_t;
 struct charreferparser_t_ {
@@ -91,7 +72,7 @@ struct charreferparser_t_ {
 		INVALID,
 		DETERMINED
 	} state;
-	tokenchecker2_t named;
+	tokenchecker_t named;
 	W charnumber;
 };
 
