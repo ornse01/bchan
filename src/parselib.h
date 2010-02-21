@@ -1,7 +1,7 @@
 /*
  * parselib.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -53,6 +53,31 @@ IMPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuet
 IMPORT VOID tokenchecker_resetstate(tokenchecker_t *checker);
 IMPORT W tokenchecker_inputcharacter(tokenchecker_t *checker, UB c);
 IMPORT VOID tokenchecker_getparsingstring(tokenchecker_t *checker, UB **str, W *len);
+
+typedef struct  tokenchecker2_t_ tokenchecker2_t;
+struct  tokenchecker2_t_ {
+	tokenchecker_valuetuple_t *namelist;
+	W namelistnum;
+	B *endtokens;
+	W stringindex;
+	W listindex_start;
+	W listindex_end;
+	W flag;
+};
+
+enum {
+	TOKENCHECKER2_CONTINUE,
+	TOKENCHECKER2_CONTINUE_NOMATCH,
+	TOKENCHECKER2_DETERMINE,
+	TOKENCHECKER2_NOMATCH,
+	TOKENCHECKER2_AFTER_END
+};
+
+IMPORT VOID tokenchecker2_initialize(tokenchecker2_t *checker, tokenchecker_valuetuple_t *namelist, W namelistnum, B *endchars);
+IMPORT VOID tokenchecker2_finalize(tokenchecker2_t *checker);
+IMPORT VOID tokenchecker2_clear(tokenchecker2_t *checker);
+IMPORT W tokenchecker2_inputchar(tokenchecker2_t *checker, UB c, W *val);
+IMPORT VOID tokenchecker2_getlastmatchedstring(tokenchecker2_t *checker, UB **str, W *len);
 
 typedef struct charreferparser_t_ charreferparser_t;
 struct charreferparser_t_ {

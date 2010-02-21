@@ -125,6 +125,93 @@ EXPORT VOID tokenchecker_getparsingstring(tokenchecker_t *checker, UB **str, W *
 	*len = checker->pos_of_EachString + 1;
 }
 
+#define TOKENCHECKER2_FLAG_NOTEXIST 0x00000001
+#define TOKENCHECKER2_FLAG_AFTERENDCHAR 0x00000002
+
+EXPORT VOID tokenchecker2_initialize(tokenchecker2_t *checker, tokenchecker_valuetuple_t *namelist, W namelistnum, B *endchars)
+{
+	checker->namelist = namelist;
+	checker->namelistnum = namelistnum;
+	checker->endtokens = endchars;
+	checker->stringindex = 0;
+	checker->listindex_start = 0;
+	checker->listindex_end = checker->namelistnum;
+	checker->flag = 0;
+}
+
+EXPORT VOID tokenchecker2_clear(tokenchecker2_t *checker)
+{
+	checker->stringindex = 0;
+	checker->listindex_start = 0;
+	checker->listindex_end = checker->namelistnum;
+	checker->flag = 0;
+}
+
+EXPORT W tokenchecker2_inputchar(tokenchecker2_t *checker, UB c, W *val)
+{
+	W i;
+	tokenchecker_valuetuple_t *namelist = checker->namelist;
+
+	if ((checker->flag & TOKENCHECKER2_FLAG_AFTERENDCHAR) != 0) {
+		return TOKENCHECKER2_AFTER_END;
+	}
+
+	for (i = 0;; i++) {
+		if ((checker->endtokens)[i] == '\0') {
+			break;
+		}
+		if (c == (checker->endtokens)[i]) {
+			checker->flag |= TOKENCHECKER2_FLAG_AFTERENDCHAR;
+			if ((checker->flag & TOKENCHECKER2_FLAG_NOTEXIST) != 0) {
+				return TOKENCHECKER2_NOMATCH;
+			}
+			if ((namelist[checker->listindex_start]).name[checker->stringindex] == '\0') {
+				/*List's Name End and receive EndToken = found match string*/
+				*val = (namelist[checker->listindex_start]).val;
+				return TOKENCHECKER2_DETERMINE;
+			}
+			/*List's Name continue but receive endtoken.*/
+			return TOKENCHECKER2_NOMATCH;
+		}
+	}
+
+	if ((checker->flag & TOKENCHECKER2_FLAG_NOTEXIST) != 0) {
+		return TOKENCHECKER2_CONTINUE_NOMATCH;
+	}
+
+	for (i = checker->listindex_start; i < checker->listindex_end; i++) {
+		if ((namelist[i]).name[checker->stringindex] == c) {
+			break;
+		}
+	}
+	if (i == checker->listindex_end) { /*receive char is not matched.*/
+		checker->flag &= TOKENCHECKER2_FLAG_NOTEXIST;
+		return TOKENCHECKER2_CONTINUE_NOMATCH;
+	}
+	checker->listindex_start = i;
+	for (i = i+1; i < checker->listindex_end; i++) {
+		if ((namelist[i]).name[checker->stringindex] != c) {
+			break;
+		}
+	}
+	checker->listindex_end = i;
+
+	if ((namelist[checker->listindex_start]).name[checker->stringindex] == '\0') {
+		/*Don't recive endtoken but List's Name is end.*/
+		checker->flag |= TOKENCHECKER2_FLAG_NOTEXIST;
+		return TOKENCHECKER2_CONTINUE_NOMATCH;
+	}
+	checker->stringindex++;
+
+	return TOKENCHECKER2_CONTINUE;
+}
+
+EXPORT VOID tokenchecker2_getlastmatchedstring(tokenchecker2_t *checker, UB **str, W *len)
+{
+	*str = (checker->namelist[checker->listindex_start]).name;
+	*len = checker->stringindex;
+}
+
 LOCAL tokenchecker_valuetuple_t nList_nameref[] = {
   {NULL,0},
   {"amp", '&'},
