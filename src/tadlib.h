@@ -1,7 +1,7 @@
 /*
  * tadlib.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -32,5 +32,21 @@
 
 IMPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz);
 IMPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv);
+
+typedef struct {
+#if BIGENDIAN
+	UB subid;
+	UB attr;
+#else
+	UB attr;
+	UB subid;
+#endif
+	UH appl[3];
+} TT_BCHAN;
+
+#define TT_BCHAN_SUBID_ANCHOR_START 1
+#define TT_BCHAN_SUBID_ANCHOR_END   2
+#define TT_BCHAN_SUBID_URL_START    3
+#define TT_BCHAN_SUBID_URL_END      4
 
 #endif

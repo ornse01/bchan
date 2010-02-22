@@ -45,6 +45,7 @@ typedef W (*iterate_callback_ch)(VP arg, TC ch);
 typedef W (*iterate_callback_br)(VP arg);
 typedef W (*iterate_callback_chratio)(VP arg, RATIO w_ratio, RATIO h_ratio);
 typedef W (*iterate_callback_chcolor)(VP arg, COLOR color);
+typedef W (*iterate_callback_bchanappl)(VP arg, UB subid);
 
 typedef struct iterate_callbacks_t_ iterate_callbacks_t;
 struct iterate_callbacks_t_ {
@@ -52,6 +53,7 @@ struct iterate_callbacks_t_ {
 	iterate_callback_chratio callback_chratio;
 	iterate_callback_ch callback_ch;
 	iterate_callback_br callback_br;
+	iterate_callback_bchanappl callback_bchanappl;
 };
 
 LOCAL VOID parse_fusen_chration(UB attr, UB *data, iterate_callbacks_t *callbacks, VP arg)
@@ -73,6 +75,15 @@ LOCAL VOID parse_fusen_chcolor(UB attr, UB *data, iterate_callbacks_t *callbacks
 	(*callbacks->callback_chcolor)(arg, color);
 }
 
+LOCAL VOID parse_fusen_TS_TAPPL(UB *data, iterate_callbacks_t *callbacks, VP arg)
+{
+	TT_BCHAN *fsn = (TT_BCHAN*)data;
+
+	if ((fsn->appl[0] == 0x8000)&&(fsn->appl[1] == 0xC053)&&(fsn->appl[2] == 0x8000)) {
+		(*callbacks->callback_bchanappl)(arg, fsn->subid);		
+	}
+}
+
 LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
 {
 	UB *data;
@@ -81,9 +92,6 @@ LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
 	UB attr;
 
 	segid = seg->id & 0xFF;
-	if (segid != TS_TFONT) {
-		return;
-	}
 
 	if (seg->len == 0xffff) {
 		data = ((UB*)seg) + 8;
@@ -94,13 +102,17 @@ LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
 	subid = *(UH*)data >> 8;
 	attr = *(UH*)data & 0xff;
 
-	switch (subid) {
-	case 3:
-		parse_fusen_chration(attr, data, callbacks, arg);
-		break;
-	case 6:
-		parse_fusen_chcolor(attr, data, callbacks, arg);
-		break;
+	if (segid == TS_TFONT) {
+		switch (subid) {
+		case 3:
+			parse_fusen_chration(attr, data, callbacks, arg);
+			break;
+		case 6:
+			parse_fusen_chcolor(attr, data, callbacks, arg);
+			break;
+		}
+	} else if (segid == TS_TAPPL) {
+		parse_fusen_TS_TAPPL(data, callbacks, arg);
 	}
 }
 
@@ -241,6 +253,11 @@ LOCAL W tadlib_calcdrawsize_chcolor(VP arg, COLOR color)
 	return 0;
 }
 
+LOCAL W tadlib_calcdrawsize_bchanappl(VP arg, UB subid)
+{
+	return 0;
+}
+
 EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz)
 {
 	W err;
@@ -257,6 +274,7 @@ EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz)
 	callbacks.callback_chratio = tadlib_calcdrawsize_chratio;
 	callbacks.callback_ch = tadlib_calcdrawsize_ch;
 	callbacks.callback_br = tadlib_calcdrawsize_br;
+	callbacks.callback_bchanappl = tadlib_calcdrawsize_bchanappl;
 
 	err = parse_tad(str, len, &callbacks, &ctx);
 	if (err < 0) {
@@ -351,6 +369,32 @@ LOCAL W tadlib_drawtext_chcolor(VP arg, COLOR color)
 	return gset_chc(gid, color, /*tmp*/0x10efefef);
 }
 
+LOCAL W tadlib_drawtext_bchanappl(VP arg, UB subid)
+{
+	tadlib_drawtext_t *ctx;
+	GID gid;
+	W err = 0;
+
+	ctx = (tadlib_drawtext_t*)arg;
+	gid = ctx->gid;
+
+	switch (subid) {
+	case TT_BCHAN_SUBID_ANCHOR_START:
+		err = gset_chc(gid, 0x100000ff, /*tmp*/0x10efefef);
+		break;
+	case TT_BCHAN_SUBID_ANCHOR_END:
+		err = gset_chc(gid, 0x10000000, /*tmp*/0x10efefef);
+		break;
+	case TT_BCHAN_SUBID_URL_START:
+		err = gset_chc(gid, 0x100000ff, /*tmp*/0x10efefef);
+		break;
+	case TT_BCHAN_SUBID_URL_END:
+		err = gset_chc(gid, 0x10000000, /*tmp*/0x10efefef);
+		break;
+	}
+	return err;
+}
+
 EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 {
 	tadlib_drawtext_t ctx;
@@ -365,6 +409,7 @@ EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 	callbacks.callback_chratio = tadlib_drawtext_chratio;
 	callbacks.callback_ch = tadlib_drawtext_ch;
 	callbacks.callback_br = tadlib_drawtext_br;
+	callbacks.callback_bchanappl = tadlib_drawtext_bchanappl;
 
 	return parse_tad(str, len, &callbacks, &ctx);
 }

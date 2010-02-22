@@ -27,6 +27,7 @@
 #include    "cache.h"
 #include    "parser.h"
 #include    "parselib.h"
+#include    "tadlib.h"
 
 #include	<bstdio.h>
 #include	<bstdlib.h>
@@ -317,6 +318,23 @@ LOCAL W datparser_appendchcolorfusen(datparser_t *parser, COLOR color, datparser
 	return datparser_appendbinary(parser, data, 10, res);
 }
 
+LOCAL W datparser_appendbchanapplfusen(datparser_t *parser, UB subid, datparser_res_t *res)
+{
+	UB data[12];
+	TADSEG *seg = (TADSEG*)data;
+	TT_BCHAN *fsn = (TT_BCHAN*)(data + 4);
+
+	seg->id = 0xFF00|TS_TAPPL;
+	seg->len = 8;
+	fsn->attr = 0;
+	fsn->subid = subid;
+	fsn->appl[0] = 0x8000;
+	fsn->appl[1] = 0xC053;
+	fsn->appl[2] = 0x8000;
+
+	return datparser_appendbinary(parser, data, 12, res);
+}
+
 LOCAL W datparser_appendconvertedelementinfo(datparser_t *parser, W tagid, datparser_res_t *res)
 {
 	switch (tagid) {
@@ -325,9 +343,9 @@ LOCAL W datparser_appendconvertedelementinfo(datparser_t *parser, W tagid, datpa
 	case datparser_elmname_hr:
 		return datparser_outputconvertingstring(parser, "\r\n\r\n", 4, res);
 	case datparser_elmname_a_open:
-		return datparser_appendchcolorfusen(parser, 0x100000ff, res);
+		return datparser_appendbchanapplfusen(parser, TT_BCHAN_SUBID_ANCHOR_START, res);
 	case datparser_elmname_a_close:
-		return datparser_appendchcolorfusen(parser, 0x10000000, res);
+		return datparser_appendbchanapplfusen(parser, TT_BCHAN_SUBID_ANCHOR_END, res);
 	}
 	return 0;
 }
@@ -512,7 +530,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 			return DATPARSER_PARSECHAR_CONTINUE;
 		}
 
-		err = datparser_appendchcolorfusen(parser, 0x100000ff, res);
+		err = datparser_appendbchanapplfusen(parser, TT_BCHAN_SUBID_URL_START, res);
 		if (err < 0) {
 			return err;
 		}
@@ -530,7 +548,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 		parser->state_url_substate = STATE_URL_SUBSTATE_REM;
 	} else if (parser->state_url_substate == STATE_URL_SUBSTATE_REM) {
 		if ((ch == ' ')||(ch == '\n')) { /* check other chars. */
-			err = datparser_appendchcolorfusen(parser, 0x10000000, res);
+			err = datparser_appendbchanapplfusen(parser, TT_BCHAN_SUBID_URL_END, res);
 			if (err < 0) {
 				return err;
 			}
