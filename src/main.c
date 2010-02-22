@@ -70,6 +70,7 @@
 #define BCHAN_DBX_MS_CONFIRM_CANCEL	30
 #define BCHAN_DBX_TEXT_CONFIRM_TITLE 31
 #define BCHAN_DBX_MSGTEXT_NONAUTHORITATIVE 32
+#define BCHAN_DBX_MSGTEXT_NETWORKERROR	33
 
 #define BCHAN_MENU_WINDOW 3
 
@@ -83,6 +84,7 @@ struct bchan_hmistate_t_ {
 	TC *msg_postsucceed;
 	TC *msg_postdenied;
 	TC *msg_posterror;
+	TC *msg_networkerror;
 };
 
 LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
@@ -285,6 +287,11 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	if (err < 0) {
 		DP_ER("dget_dtp: message post error error", err);
 		hmistate->msg_posterror = NULL;
+	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_NETWORKERROR, (void**)&hmistate->msg_networkerror);
+	if (err < 0) {
+		DP_ER("dget_dtp: message network error error", err);
+		hmistate->msg_networkerror = NULL;
 	}
 }
 
@@ -720,7 +727,7 @@ LOCAL VOID receive_message(bchan_t *bchan)
 				break;
 			case BCHAN_MESSAGE_RETRIEVER_ERROR:
 				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(NULL);
+				pdsp_msg(bchan->hmistate.msg_networkerror);
 				break;
 			}
 		}

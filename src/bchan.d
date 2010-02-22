@@ -43,6 +43,7 @@
 .MS_CONFIRM_CANCEL	=	30
 .TEXT_CONFIRM_TITLE	=	31
 .MSGTEXT_NONAUTHORITATIVE	=	32
+.MSGTEXT_NETWORKERROR	=	33
 
 ---------
 -- data type = PARTS_DATA
@@ -99,6 +100,9 @@
 
 	{# MSGTEXT_NONAUTHORITATIVE 0 0}	-- data number
 	"ｄａｔ落ちしています\0"
+
+	{# MSGTEXT_NETWORKERROR 0 0}	-- data number
+	"ネットワークエラーが発生しました\0"
 
 ---------
 -- data type = MENU_DATA
