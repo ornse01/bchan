@@ -30,7 +30,15 @@
 #ifndef __TADLIB_H__
 #define __TADLIB_H__
 
-IMPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz);
+typedef struct actionlist_t_ actionlist_t;
+
+#define ACTIONLIST_ACTIONTYPE_ANCHOR 0
+#define ACTIONLIST_ACTIONTYPE_URL    1
+IMPORT actionlist_t* actionlist_new();
+IMPORT VOID actionlist_delete(actionlist_t *alist);
+IMPORT W actionlist_findboard(actionlist_t *alist, PNT pos, RECT *r, W *type, UB **start, W *len);
+
+IMPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **alist);
 IMPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv);
 
 typedef struct {

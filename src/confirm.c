@@ -220,6 +220,7 @@ LOCAL VOID cfrmwindow_calclayout(cfrmwindow_t *window, SIZE *sz)
 	TC label_mail[] = {TK_E, 0x213E, TK_m, TK_a, TK_i, TK_l, TK_COLN, TK_KSP, TNULL};
 	GID gid;
 	W width_from, width_mail;
+	actionlist_t *alist_from = NULL, *alist_mail = NULL, *alist_message = NULL;
 
 	sz->h = 0;
 	sz->v = 0;
@@ -235,21 +236,30 @@ LOCAL VOID cfrmwindow_calclayout(cfrmwindow_t *window, SIZE *sz)
 	if (width_from < 0) {
 		return;
 	}
-	tadlib_calcdrawsize(window->post->from, window->post->from_len, gid, &sz_from);
+	tadlib_calcdrawsize(window->post->from, window->post->from_len, gid, &sz_from, &alist_from);
 	sz_from.h += width_from + CFRMWINDOW_LAYOUT_FROM_MARGIN * 2;
 	sz_from.v += CFRMWINDOW_LAYOUT_FROM_MARGIN * 2;
 
+	if (alist_from != NULL) {
+		actionlist_delete(alist_from);
+	}
 	cfrmwindow_resetgenv(window);
 	width_mail = gget_stw(gid, label_mail, 4, NULL, NULL);
 	if (width_mail < 0) {
 		return;
 	}
-	tadlib_calcdrawsize(window->post->mail, window->post->mail_len, gid, &sz_mail);
+	tadlib_calcdrawsize(window->post->mail, window->post->mail_len, gid, &sz_mail, &alist_mail);
 	sz_mail.h += width_mail + CFRMWINDOW_LAYOUT_MAIL_MARGIN * 2;
 	sz_mail.v += CFRMWINDOW_LAYOUT_MAIL_MARGIN * 2;
 
+	if (alist_mail != NULL) {
+		actionlist_delete(alist_mail);
+	}
 	cfrmwindow_resetgenv(window);
-	tadlib_calcdrawsize(window->post->message, window->post->message_len, gid, &sz_msg);
+	tadlib_calcdrawsize(window->post->message, window->post->message_len, gid, &sz_msg, &alist_message);
+	if (alist_message != NULL) {
+		actionlist_delete(alist_message);
+	}
 	sz_msg.h += CFRMWINDOW_LAYOUT_MESSAGE_MARGIN * 2;
 	sz_msg.v += CFRMWINDOW_LAYOUT_MESSAGE_MARGIN * 2;
 

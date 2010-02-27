@@ -1,7 +1,7 @@
 /*
  * layout.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -50,6 +50,12 @@ struct datlayout_res_t_ {
 		datlayout_box_t resheader;
 		datlayout_box_t resmessage;
 	} box;
+	struct {
+		actionlist_t *name;
+		actionlist_t *mail;
+		actionlist_t *date;
+		actionlist_t *body;
+	} action;
 };
 
 struct datlayout_t_ {
@@ -90,12 +96,28 @@ LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
 	layout_res->box.res.t = 0;
 	layout_res->box.res.r = 0;
 	layout_res->box.res.b = 0;
+	layout_res->action.name = NULL;
+	layout_res->action.mail = NULL;
+	layout_res->action.date = NULL;
+	layout_res->action.body = NULL;
 
 	return layout_res;
 }
 
 LOCAL VOID datlayout_res_delete(datlayout_res_t *layout_res)
 {
+	if (layout_res->action.body != NULL) {
+		actionlist_delete(layout_res->action.body);
+	}
+	if (layout_res->action.date != NULL) {
+		actionlist_delete(layout_res->action.date);
+	}
+	if (layout_res->action.mail != NULL) {
+		actionlist_delete(layout_res->action.mail);
+	}
+	if (layout_res->action.name != NULL) {
+		actionlist_delete(layout_res->action.name);
+	}
 	datparser_res_delete(layout_res->parser_res);
 	free(layout_res);
 }
@@ -120,11 +142,11 @@ LOCAL W datlayout_res_calcresheaderdrawsize(datlayout_res_t *layout_res, GID gid
 	SIZE sz_name = {0,0}, sz_mail = {0,0}, sz_date = {0,0};
 
 	datlayout_res_setupgid(gid);
-	tadlib_calcdrawsize(layout_res->parser_res->name, layout_res->parser_res->name_len, gid, &sz_name);
+	tadlib_calcdrawsize(layout_res->parser_res->name, layout_res->parser_res->name_len, gid, &sz_name, &layout_res->action.name);
 	datlayout_res_setupgid(gid);
-	tadlib_calcdrawsize(layout_res->parser_res->mail, layout_res->parser_res->mail_len, gid, &sz_mail);
+	tadlib_calcdrawsize(layout_res->parser_res->mail, layout_res->parser_res->mail_len, gid, &sz_mail, &layout_res->action.mail);
 	datlayout_res_setupgid(gid);
-	tadlib_calcdrawsize(layout_res->parser_res->date, layout_res->parser_res->date_len, gid, &sz_date);
+	tadlib_calcdrawsize(layout_res->parser_res->date, layout_res->parser_res->date_len, gid, &sz_date, &layout_res->action.date);
 
 	sz->h = sz_name.h + sz_mail.h + sz_date.h + 16*(4+1+1+1+1);
 	sz->v = sz_name.v;
@@ -140,7 +162,7 @@ LOCAL W datlayout_res_calcresheaderdrawsize(datlayout_res_t *layout_res, GID gid
 
 LOCAL W datlayout_res_calcbodydrawsize(datlayout_res_t *layout_res, GID gid, SIZE *sz)
 {
-	return tadlib_calcdrawsize(layout_res->parser_res->body, layout_res->parser_res->body_len, gid, sz);
+	return tadlib_calcdrawsize(layout_res->parser_res->body, layout_res->parser_res->body_len, gid, sz, &layout_res->action.body);
 }
 
 LOCAL W datlayout_res_calcsize(datlayout_res_t *layout_res, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, GID gid, W left, W top)

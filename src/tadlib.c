@@ -27,11 +27,14 @@
 #include    "tadlib.h"
 
 #include	<bstdio.h>
+#include	<bstdlib.h>
 #include	<tstring.h>
 #include	<tcode.h>
 #include	<btron/btron.h>
 #include	<btron/dp.h>
+#include	<btron/libapp.h>
 #include	<tad.h>
+#include	<bsys/queue.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -180,6 +183,107 @@ LOCAL W parse_tad(TC *str, W len, iterate_callbacks_t *callbacks, VP arg)
 	return 0;
 }
 
+typedef struct actionlist_data_t_ actionlist_data_t;
+struct actionlist_data_t_ {
+	QUEUE queue;
+	RECT r;
+	W type;
+	UB *start;
+	UB *end;
+};
+
+struct actionlist_t_ {
+	actionlist_data_t sentinel;
+};
+
+LOCAL actionlist_data_t* actionlist_data_next(actionlist_data_t *data)
+{
+	return (actionlist_data_t*)data->queue.next;
+}
+
+LOCAL actionlist_data_t* actionlist_data_new(RECT r, W type, UB *start, UB *end)
+{
+	actionlist_data_t *alist_data;
+
+	alist_data = malloc(sizeof(actionlist_data_t));
+	if (alist_data == NULL) {
+		return NULL;
+	}
+
+	return alist_data;
+}
+
+LOCAL VOID actionlist_data_delete(actionlist_data_t *cache_data)
+{
+	QueRemove(&(cache_data->queue));
+	free(cache_data);
+}
+
+LOCAL W actionlist_appenddata(actionlist_t *alist, RECT r, W type, UB *start, UB *end)
+{
+	actionlist_data_t *alist_data;
+
+	alist_data = actionlist_data_new(r, type, start, end);
+	if (alist_data == NULL) {
+		return -1; /* TODO */
+	}
+	QueInsert(&(alist_data->queue), &(alist->sentinel.queue));
+
+	return 0; /* TODO */
+}
+
+EXPORT W actionlist_findboard(actionlist_t *alist, PNT pos, RECT *r, W *type, UB **start, W *len)
+{
+	actionlist_data_t *alist_data;
+	W n;
+
+	alist_data = &(alist->sentinel);
+	for (;;) {
+		alist_data = actionlist_data_next(&alist->sentinel);
+		if (alist_data == &(alist->sentinel)) {
+			break;
+		}
+		n = inrect(alist_data->r, pos);
+		if (n == 1) {
+			*r = alist_data->r;
+			*type = alist_data->type;
+			*start = alist_data->start;
+			*len = alist_data->end - alist_data->start;
+			return 1;
+		}
+	}
+
+	return 0;
+}
+
+EXPORT actionlist_t* actionlist_new()
+{
+	actionlist_t *alist;
+
+	alist = (actionlist_t*)malloc(sizeof(actionlist_t));
+	if (alist == NULL) {
+		return NULL;
+	}
+	QueInit(&(alist->sentinel.queue));
+	return alist;
+}
+
+EXPORT VOID actionlist_delete(actionlist_t *alist)
+{
+	actionlist_data_t *alist_data;
+	Bool ok;
+
+	for (;;) {
+		ok = isQueEmpty(&(alist->sentinel.queue));
+		if (ok == True) {
+			break;
+		}
+		alist_data = actionlist_data_next(&alist->sentinel);
+		actionlist_data_delete(alist_data);
+	}
+	free(alist);
+}
+
 typedef struct tadlib_calcdrawsize_t_ tadlib_calcdrawsize_t;
 struct tadlib_calcdrawsize_t_ {
 	GID gid;
@@ -258,7 +362,7 @@ LOCAL W tadlib_calcdrawsize_bchanappl(VP arg, UB subid)
 	return 0;
 }
 
-EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz)
+EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **alist)
 {
 	W err;
 	tadlib_calcdrawsize_t ctx;
