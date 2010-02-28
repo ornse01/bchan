@@ -48,7 +48,7 @@ typedef W (*iterate_callback_ch)(VP arg, TC ch);
 typedef W (*iterate_callback_br)(VP arg);
 typedef W (*iterate_callback_chratio)(VP arg, RATIO w_ratio, RATIO h_ratio);
 typedef W (*iterate_callback_chcolor)(VP arg, COLOR color);
-typedef W (*iterate_callback_bchanappl)(VP arg, UB subid);
+typedef W (*iterate_callback_bchanappl)(VP arg, UB *seg, UB subid);
 
 typedef struct iterate_callbacks_t_ iterate_callbacks_t;
 struct iterate_callbacks_t_ {
@@ -83,7 +83,7 @@ LOCAL VOID parse_fusen_TS_TAPPL(UB *data, iterate_callbacks_t *callbacks, VP arg
 	TT_BCHAN *fsn = (TT_BCHAN*)data;
 
 	if ((fsn->appl[0] == 0x8000)&&(fsn->appl[1] == 0xC053)&&(fsn->appl[2] == 0x8000)) {
-		(*callbacks->callback_bchanappl)(arg, fsn->subid);		
+		(*callbacks->callback_bchanappl)(arg, data, fsn->subid);		
 	}
 }
 
@@ -209,6 +209,10 @@ LOCAL actionlist_data_t* actionlist_data_new(RECT r, W type, UB *start, UB *end)
 	if (alist_data == NULL) {
 		return NULL;
 	}
+	alist_data->r = r;
+	alist_data->type = type;
+	alist_data->start = start;
+	alist_data->end = end;
 
 	return alist_data;
 }
@@ -239,7 +243,7 @@ EXPORT W actionlist_findboard(actionlist_t *alist, PNT pos, RECT *r, W *type, UB
 
 	alist_data = &(alist->sentinel);
 	for (;;) {
-		alist_data = actionlist_data_next(&alist->sentinel);
+		alist_data = actionlist_data_next(alist_data);
 		if (alist_data == &(alist->sentinel)) {
 			break;
 		}
@@ -290,6 +294,9 @@ struct tadlib_calcdrawsize_t_ {
 	SIZE sz;
 	H ln_width;
 	Bool isHankaku;
+	actionlist_t *alist;
+	PNT astart;
+	UB *startseg;
 };
 
 LOCAL W tadlib_calcdrawsize_ch(VP arg, TC ch)
@@ -357,9 +364,42 @@ LOCAL W tadlib_calcdrawsize_chcolor(VP arg, COLOR color)
 	return 0;
 }
 
-LOCAL W tadlib_calcdrawsize_bchanappl(VP arg, UB subid)
+LOCAL W tadlib_calcdrawsize_bchanappl(VP arg, UB *seg, UB subid)
 {
-	return 0;
+	tadlib_calcdrawsize_t *ctx;
+	RECT r;
+	W err = 0;
+
+	ctx = (tadlib_calcdrawsize_t*)arg;
+
+	switch (subid) {
+	case TT_BCHAN_SUBID_ANCHOR_START:
+		ctx->astart.x = ctx->ln_width;
+		ctx->astart.y = ctx->sz.v;
+		ctx->startseg = seg;
+		break;
+	case TT_BCHAN_SUBID_ANCHOR_END:
+		r.c.left = ctx->astart.x;
+		r.c.top = ctx->astart.y - 16;
+		r.c.right = ctx->ln_width;
+		r.c.bottom = ctx->astart.y;
+		err = actionlist_appenddata(ctx->alist, r, ACTIONLIST_ACTIONTYPE_ANCHOR, ctx->startseg, seg);
+		break;
+	case TT_BCHAN_SUBID_URL_START:
+		ctx->astart.x = ctx->ln_width;
+		ctx->astart.y = ctx->sz.v;
+		ctx->startseg = seg;
+		break;
+	case TT_BCHAN_SUBID_URL_END:
+		r.c.left = ctx->astart.x;
+		r.c.top = ctx->astart.y - 16;
+		r.c.right = ctx->ln_width;
+		r.c.bottom = ctx->astart.y;
+		err = actionlist_appenddata(ctx->alist, r, ACTIONLIST_ACTIONTYPE_URL, ctx->startseg, seg);
+		break;
+	}
+
+	return err;
 }
 
 EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **alist)
@@ -373,6 +413,10 @@ EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **a
 	ctx.sz.v = 16;
 	ctx.sz.h = 0;
 	ctx.ln_width = 0;
+	ctx.alist = actionlist_new();
+	if (ctx.alist == NULL) {
+		return -1; /* TODO */
+	}
 
 	callbacks.callback_chcolor = tadlib_calcdrawsize_chcolor;
 	callbacks.callback_chratio = tadlib_calcdrawsize_chratio;
@@ -389,6 +433,7 @@ EXPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **a
 		ctx.sz.h = ctx.ln_width;
 	}
 	*sz = ctx.sz;
+	*alist = ctx.alist;
 
 	return 0;
 }
@@ -473,7 +518,7 @@ LOCAL W tadlib_drawtext_chcolor(VP arg, COLOR color)
 	return gset_chc(gid, color, /*tmp*/0x10efefef);
 }
 
-LOCAL W tadlib_drawtext_bchanappl(VP arg, UB subid)
+LOCAL W tadlib_drawtext_bchanappl(VP arg, UB *seg, UB subid)
 {
 	tadlib_drawtext_t *ctx;
 	GID gid;
