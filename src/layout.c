@@ -36,6 +36,14 @@
 #include	<btron/dp.h>
 #include	<tad.h>
 
+#ifdef BCHAN_CONFIG_DEBUG
+# define DP(arg) printf arg
+# define DP_ER(msg, err) printf("%s (%d/%x)\n", msg, err>>16, err)
+#else
+# define DP(arg) /**/
+# define DP_ER(msg, err) /**/
+#endif
+
 typedef struct datlayout_box_t_ datlayout_box_t;
 struct datlayout_box_t_ {
 	W l,t,r,b;
@@ -81,6 +89,14 @@ LOCAL VOID datlayout_box_getoffsetrect(datlayout_box_t *box, datlayout_style_t *
 	*t = box->t - (style->margin_width_top + style->border_width_top + style->padding_width_top);
 	*r = box->r + (style->margin_width_right + style->border_width_right + style->padding_width_right);
 	*b = box->b + (style->margin_width_bottom + style->border_width_bottom + style->padding_width_bottom);
+}
+
+LOCAL VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t *style, W *l, W *t, W *r, W *b)
+{
+	*l = box->l;
+	*t = box->t;
+	*r = box->r;
+	*b = box->b;
 }
 
 LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
@@ -207,6 +223,16 @@ LOCAL W datlayout_res_calcsize(datlayout_res_t *layout_res, datlayout_style_t *r
 EXPORT VOID datlayout_res_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
 {
 	datlayout_box_getoffsetrect(&(res->box.res), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_resheader_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getoffsetrect(&(res->box.resheader), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
 }
 
 LOCAL W datlayout_setupgid(datlayout_t *layout, GID gid)
@@ -753,6 +779,49 @@ EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 	err = datdraw_bodyborderdraw(draw, r);
 	if (err < 0) {
 		return err;
+	}
+
+	return 0;
+}
+
+LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, RECT *rect, W *type, UB **start, W *len)
+{
+	W l,t,r,b;
+	PNT pos;
+
+	datlayout_res_getviewrect(entry, resstyle, &l, &t, &r, &b);
+	if (!((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b))) {
+		return 0;
+	}
+	datlayout_resheader_getviewrect(entry, resheaderstyle, &l, &t, &r, &b);
+	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
+		return 0;
+	}
+	datlayout_resmessage_getcontentrect(entry, resmessagestyle, &l, &t, &r, &b);
+	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
+		pos.x = abs_x - l;
+		pos.y = abs_y - t;
+		return actionlist_findboard(entry->action.body, pos, rect, type, start, len);
+	}
+	return 0;
+}
+
+EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len)
+{
+	W i,abs_x,abs_y,fnd;
+	datlayout_t *layout;
+	datlayout_res_t *res;
+
+	layout = draw->layout;
+	abs_x = rel_pos.x + draw->view_l;
+	abs_y = rel_pos.y + draw->view_t;
+
+	for (i=0;i < layout->len;i++) {
+		res = layout->layout_res[i];
+		fnd = datdraw_findentryaction(res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), abs_x, abs_y, r, type, start, len);
+		if (fnd == 1) {
+			return 1;
+		}
 	}
 
 	return 0;
