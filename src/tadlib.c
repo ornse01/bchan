@@ -78,12 +78,12 @@ LOCAL VOID parse_fusen_chcolor(UB attr, UB *data, iterate_callbacks_t *callbacks
 	(*callbacks->callback_chcolor)(arg, color);
 }
 
-LOCAL VOID parse_fusen_TS_TAPPL(UB *data, iterate_callbacks_t *callbacks, VP arg)
+LOCAL VOID parse_fusen_TS_TAPPL(LTADSEG *seg, UB *data, iterate_callbacks_t *callbacks, VP arg)
 {
 	TT_BCHAN *fsn = (TT_BCHAN*)data;
 
 	if ((fsn->appl[0] == 0x8000)&&(fsn->appl[1] == 0xC053)&&(fsn->appl[2] == 0x8000)) {
-		(*callbacks->callback_bchanappl)(arg, data, fsn->subid);		
+		(*callbacks->callback_bchanappl)(arg, (UB*)seg, fsn->subid);		
 	}
 }
 
@@ -115,7 +115,7 @@ LOCAL VOID parse_fusen(LTADSEG *seg, iterate_callbacks_t *callbacks, VP arg)
 			break;
 		}
 	} else if (segid == TS_TAPPL) {
-		parse_fusen_TS_TAPPL(data, callbacks, arg);
+		parse_fusen_TS_TAPPL(seg, data, callbacks, arg);
 	}
 }
 
