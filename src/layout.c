@@ -784,10 +784,12 @@ EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 	return 0;
 }
 
-LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, RECT *rect, W *type, UB **start, W *len)
+LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, W *al, W *at, W *ar, W *ab, W *type, UB **start, W *len)
 {
 	W l,t,r,b;
 	PNT pos;
+	W fnd;
+	RECT rect;
 
 	datlayout_res_getviewrect(entry, resstyle, &l, &t, &r, &b);
 	if (!((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b))) {
@@ -801,14 +803,22 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
 		pos.x = abs_x - l;
 		pos.y = abs_y - t;
-		return actionlist_findboard(entry->action.body, pos, rect, type, start, len);
+		fnd = actionlist_findboard(entry->action.body, pos, &rect, type, start, len);
+		if (fnd != 0) {
+			*al = rect.c.left + l;
+			*at = rect.c.top + t;
+			*ar = rect.c.right + l;
+			*ab = rect.c.bottom + t;
+			return fnd;
+		}
 	}
 	return 0;
 }
 
-EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len)
+EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, UB **start, W *len)
 {
 	W i,abs_x,abs_y,fnd;
+	W l,t,r,b;
 	datlayout_t *layout;
 	datlayout_res_t *res;
 
@@ -818,8 +828,12 @@ EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB *
 
 	for (i=0;i < layout->len;i++) {
 		res = layout->layout_res[i];
-		fnd = datdraw_findentryaction(res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), abs_x, abs_y, r, type, start, len);
+		fnd = datdraw_findentryaction(res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
 		if (fnd == 1) {
+			rect->c.left = l - draw->view_l;
+			rect->c.top = t - draw->view_t;
+			rect->c.right = r - draw->view_l;
+			rect->c.bottom = b - draw->view_t;
 			return 1;
 		}
 	}
