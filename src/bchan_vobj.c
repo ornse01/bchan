@@ -31,6 +31,7 @@
 #include	<bstdio.h>
 #include	<btron/btron.h>
 #include	<btron/vobj.h>
+#include	<btron/hmi.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -55,11 +56,14 @@ EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_
 	seg->chsz = 16;
 	seg->frcol = 0x10000000;
 	seg->chcol = 0x10000000;
-	seg->tbcol = 0x10ffffff; /* TODO: get value from wget_inf */
+	err = wget_inf(WI_VOBJBGCOL, &seg->tbcol, sizeof(COLOR));
+	if (err < 0) {
+		seg->tbcol = 0x10ffffff;
+	}
 	seg->bgcol = 0x10ffffff;
 	seg->dlen = 0;
 
-	fd = cre_fil(lnk, (TC*)taddata, NULL, 1, F_FLOAT);
+	fd = cre_fil(lnk, (TC*)taddata, NULL, 0x31, F_FLOAT);
 	if (fd < 0) {
 		DP_ER("cre_fil error", fd);
 		return fd;
@@ -96,12 +100,11 @@ EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_
 		return fd;
 	}
 	base->id = 0xFFE0;
-	base->len = 8;
+	base->len = 6;
 	infoseg->subid = 0;
 	infoseg->sublen = 2;
-	infoseg->data[0] = 0; /* tmp */
-	infoseg->data[1] = 0; /* tmp */
-	err = wri_rec(fd, -1, bin, 4+8, NULL, NULL, 0);
+	infoseg->data[0] = 0x0122;
+	err = wri_rec(fd, -1, bin, 4+6, NULL, NULL, 0);
 	if (err < 0) {
 		DP_ER("wri_rec:infoseg error", err);
 		cls_fil(fd);
