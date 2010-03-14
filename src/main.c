@@ -78,6 +78,7 @@
 #define BCHAN_DBX_FFUSEN_BBB 34
 #define BCHAN_DBX_FFUSEN_TEXEDIT 35
 #define BCHAN_DBX_FFUSEN_VIEWER 36
+#define BCHAN_DBX_MSGTEXT_NOTFOUND	37
 
 #define BCHAN_MENU_WINDOW 3
 
@@ -92,6 +93,7 @@ struct bchan_hmistate_t_ {
 	TC *msg_postdenied;
 	TC *msg_posterror;
 	TC *msg_networkerror;
+	TC *msg_notfound;
 };
 
 LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
@@ -135,6 +137,7 @@ struct bchan_t_ {
 #define BCHAN_MESSAGE_RETRIEVER_RELAYOUT 2
 #define BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED 3
 #define BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE 4
+#define BCHAN_MESSAGE_RETRIEVER_NOTFOUND 5
 #define BCHAN_MESSAGE_RETRIEVER_ERROR -1
 
 static	WEVENT	wev0;
@@ -703,6 +706,11 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 		DP_ER("dget_dtp: message network error error", err);
 		hmistate->msg_networkerror = NULL;
 	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_NOTFOUND, (void**)&hmistate->msg_notfound);
+	if (err < 0) {
+		DP_ER("dget_dtp: message notfound error", err);
+		hmistate->msg_notfound = NULL;
+	}
 }
 
 LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
@@ -937,6 +945,10 @@ LOCAL VOID bchan_retriever_task(W arg)
 		case DATRETRIEVER_REQUEST_NON_AUTHORITATIVE:
 			req_tmg(0, BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE);
 			break;
+		case DATRETRIEVER_REQUEST_NOT_FOUND:
+			req_tmg(0, BCHAN_MESSAGE_RETRIEVER_NOTFOUND);
+			break;
+		case DATRETRIEVER_REQUEST_UNEXPECTED:
 		default:
 			DP_ER("datretreiver_request error:",err);
 			DATRETRIEVER_DP(retr);
@@ -1134,6 +1146,10 @@ LOCAL VOID receive_message(bchan_t *bchan)
 			case BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE:
 				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
 				pdsp_msg(bchan->hmistate.msg_nonauthoritative);
+				break;
+			case BCHAN_MESSAGE_RETRIEVER_NOTFOUND:
+				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+				pdsp_msg(bchan->hmistate.msg_notfound);
 				break;
 			case BCHAN_MESSAGE_RETRIEVER_ERROR:
 				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);

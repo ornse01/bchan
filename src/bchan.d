@@ -47,6 +47,7 @@
 .FFUSEN_BBB		=	34
 .FFUSEN_TEXEDIT		=	35
 .FFUSEN_VIEWER		=	36
+.MSGTEXT_NOTFOUND	=	37
 
 ---------
 -- data type = PARTS_DATA
@@ -106,6 +107,9 @@
 
 	{# MSGTEXT_NETWORKERROR 0 0}	-- data number
 	"ネットワークエラーが発生しました\0"
+
+	{# MSGTEXT_NOTFOUND 0 0}	-- data number
+	"スレッドが見つかりませんでした\0"
 
 ---------
 -- data type = MENU_DATA
