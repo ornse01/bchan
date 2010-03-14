@@ -59,6 +59,7 @@ IMPORT VOID datlayout_delete(datlayout_t *layout);
 IMPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res);
 IMPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b);
 IMPORT TC* datlayout_gettitle(datlayout_t *layout);
+IMPORT W datlayout_gettitlelen(datlayout_t *layout);
 IMPORT VOID datlayout_clear(datlayout_t *layout);
 IMPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b);
 

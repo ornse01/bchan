@@ -209,6 +209,113 @@ LOCAL VOID bchan_close(VP arg)
 	killme(bchan);
 }
 
+LOCAL VOID bchan_pushstringtotray(TC *str, W len)
+{
+	W err;
+	TRAYREC trayrec[2];
+	UB bin[4+24];
+	TADSEG *base = (TADSEG*)bin;
+	TEXTSEG *textseg = (TEXTSEG*)(bin + 4);
+
+	base->id = 0xFFE1;
+	base->len = 24;
+	textseg->view = (RECT){{0, 0, 0, 0}};
+	textseg->draw = (RECT){{0, 0, 0, 0}};
+	textseg->h_unit = -120;
+	textseg->v_unit = -120;
+	textseg->lang = 0x21;
+	textseg->bgpat = 0;
+
+	trayrec[0].id = 0xE1;
+	trayrec[0].len = 28;
+	trayrec[0].dt = bin;
+	trayrec[1].id = TR_TEXT;
+	trayrec[1].len = len * sizeof(TC);
+	trayrec[1].dt = (B*)str;
+
+	err = tpsh_dat(trayrec, 2, NULL);
+	if (err < 0) {
+		DP_ER("tpsh_dat", err);
+	}
+}
+
+LOCAL VOID bchan_pushthreadtitle(bchan_t *bchan)
+{
+	W len;
+	TC *str;
+
+	str = datlayout_gettitle(bchan->layout);
+	len = datlayout_gettitlelen(bchan->layout);
+	bchan_pushstringtotray(str, len);
+}
+
+LOCAL VOID bchan_pushthreadurl(bchan_t *bchan)
+{
+	W host_len, board_len, thread_len, len, i, ret;
+	UB *host, *board, *thread;
+	TC *str;
+
+	datcache_gethost(bchan->cache, &host, &host_len);
+	datcache_getborad(bchan->cache, &board, &board_len);
+	datcache_getthread(bchan->cache, &thread, &thread_len);
+
+	len = 7 + host_len + 15 + board_len + 1 + thread_len + 1;
+	str = malloc(sizeof(TC)*len);
+
+	str[0] = TK_h;
+	str[1] = TK_t;
+	str[2] = TK_t;
+	str[3] = TK_p;
+	str[4] = TK_COLN;
+	str[5] = TK_SLSH;
+	str[6] = TK_SLSH;
+	for (i = 0; i < host_len; i++) {
+		ret = sjtotc(str + 7 + i, host + i);
+		if (ret != 1) {
+			DP(("invalid charactor\n"));
+			free(str);
+			return;
+		}
+	}
+	str[7 + host_len] = TK_SLSH;
+	str[7 + host_len + 1] = TK_t;
+	str[7 + host_len + 2] = TK_e;
+	str[7 + host_len + 3] = TK_s;
+	str[7 + host_len + 4] = TK_t;
+	str[7 + host_len + 5] = TK_SLSH;
+	str[7 + host_len + 6] = TK_r;
+	str[7 + host_len + 7] = TK_e;
+	str[7 + host_len + 8] = TK_a;
+	str[7 + host_len + 9] = TK_d;
+	str[7 + host_len + 10] = TK_PROD;
+	str[7 + host_len + 11] = TK_c;
+	str[7 + host_len + 12] = TK_g;
+	str[7 + host_len + 13] = TK_i;
+	str[7 + host_len + 14] = TK_SLSH;
+	for (i = 0; i < board_len; i++) {
+		ret = sjtotc(str + 7 + host_len + 15 + i, board + i);
+		if (ret != 1) {
+			DP(("invalid charactor\n"));
+			free(str);
+			return;
+		}
+	}
+	str[7 + host_len + 15 + board_len] = TK_SLSH;
+	for (i = 0; i < thread_len; i++) {
+		ret = sjtotc(str + 7 + host_len + 15 + board_len + 1 + i, thread + i);
+		if (ret != 1) {
+			DP(("invalid charactor\n"));
+			free(str);
+			return;
+		}
+	}
+	str[7 + host_len + 15 + board_len + 1 + thread_len] = TK_SLSH;
+
+	bchan_pushstringtotray(str, len);
+
+	free(str);
+}
+
 LOCAL Bool bchan_is_bbs_url(UB *data, W data_len)
 {
 	TC *str;
@@ -1071,6 +1178,16 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 
 LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 {
+	TC *str;
+
+	/* [操作] -> [スレタイをトレーに複写] */
+	str = datlayout_gettitle(bchan->layout);
+	if (str == NULL) {
+		mchg_atr(bchan->mnid, (2 << 8)|1, M_INACT);
+	} else {
+		mchg_atr(bchan->mnid, (2 << 8)|1, M_ACT);
+	}
+
 	wget_dmn(&(bchan->mnitem[BCHAN_MENU_WINDOW].ptr));
 	mset_itm(bchan->mnid, BCHAN_MENU_WINDOW, bchan->mnitem+BCHAN_MENU_WINDOW);
 	oget_men(0, NULL, &(bchan->mnitem[BCHAN_MENU_WINDOW+1].ptr), NULL, NULL);
@@ -1093,8 +1210,10 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 	case 2:	/* [操作] */
 		switch(i & 0xff) {
 		case 1: /* [スレタイをトレーに複写] */
+			bchan_pushthreadtitle(bchan);
 			break;
 		case 2: /* [スレッドＵＲＬをトレーに複写] */
+			bchan_pushthreadurl(bchan);
 			break;
 		}
 		break;

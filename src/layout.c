@@ -300,6 +300,14 @@ EXPORT TC* datlayout_gettitle(datlayout_t *layout)
 	return layout->layout_res[0]->parser_res->title;
 }
 
+EXPORT W datlayout_gettitlelen(datlayout_t *layout)
+{
+	if (layout->len <= 0) {
+		return NULL;
+	}
+	return layout->layout_res[0]->parser_res->title_len;
+}
+
 EXPORT VOID datlayout_clear(datlayout_t *layout)
 {
 	W i;
