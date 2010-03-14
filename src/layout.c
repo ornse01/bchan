@@ -318,6 +318,17 @@ EXPORT VOID datlayout_clear(datlayout_t *layout)
 	layout->body.b = layout->body.t;
 }
 
+EXPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b)
+{
+	if ((n < 0)||(layout->len <= n)) {
+		return 0;
+	}
+
+	datlayout_res_getviewrect(layout->layout_res[n], &(layout->style.res), l, t, r, b);
+
+	return 1;
+}
+
 LOCAL VOID datlayout_new_setdefaultstyle(datlayout_t *layout)
 {
 	layout->style.body.margin_width_left = 0;
