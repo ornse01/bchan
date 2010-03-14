@@ -386,10 +386,21 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 			http_close(retriever->http);
 			DP(("non-authoritative\n"));
 			return DATRETRIEVER_REQUEST_NON_AUTHORITATIVE;
+		} else if (status == 302) {
+			/* TODO: check Location header */
+			/*  Location:http://qb6.2ch.net/_403/ */
+			/*  Location:http://www2.2ch.net/403/ */
+			http_close(retriever->http);
+			DP(("Found\n"));
+			return DATRETRIEVER_REQUEST_NOT_FOUND;
+		} else if (status == 404) {
+			http_close(retriever->http);
+			DP(("not-found\n"));
+			return DATRETRIEVER_REQUEST_NOT_FOUND;
 		} else if (status != 200) {
 			DP(("another status = %d\n", status));
 			http_close(retriever->http);
-			return 0;
+			return DATRETRIEVER_REQUEST_UNEXPECTED;
 		}
 
 		ctx = http_startresponseread(retriever->http);
