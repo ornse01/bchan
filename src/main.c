@@ -80,7 +80,7 @@
 #define BCHAN_DBX_FFUSEN_VIEWER 36
 #define BCHAN_DBX_MSGTEXT_NOTFOUND	37
 
-#define BCHAN_MENU_WINDOW 3
+#define BCHAN_MENU_WINDOW 4
 
 typedef struct bchan_hmistate_t_ bchan_hmistate_t;
 struct bchan_hmistate_t_ {
@@ -1091,6 +1091,14 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 		}
 		break;
 	case 2:	/* [操作] */
+		switch(i & 0xff) {
+		case 1: /* [スレタイをトレーに複写] */
+			break;
+		case 2: /* [スレッドＵＲＬをトレーに複写] */
+			break;
+		}
+		break;
+	case 3:	/* [操作] */
 		switch(i & 0xff) {
 		case 1: /* [スレッド取得] */
 			bchan_networkrequest(bchan);

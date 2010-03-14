@@ -48,6 +48,7 @@
 .FFUSEN_TEXEDIT		=	35
 .FFUSEN_VIEWER		=	36
 .MSGTEXT_NOTFOUND	=	37
+.TEXT_MLIST3	=	38
 
 ---------
 -- data type = PARTS_DATA
@@ -84,6 +85,11 @@
 	MC_STR "操作"
 	MC_STR "スレッド取得\0"
 
+	{# TEXT_MLIST3 0 0}     -- data number
+	MC_STR "編集"
+	MC_STR "スレタイをトレーに複写"
+	MC_STR "スレッドＵＲＬをトレーに複写\0"
+
 	{# MSGTEXT_RETRIEVING 0 0}	-- data number
 	"スレッド取得中\0"
 
@@ -118,6 +124,7 @@
 	{# MENU_TEST 0 0} 	-- data number
 	0L 0L 0L TEXT_MLIST0:L 0L	-- mlist0
 	0L 0L 0L TEXT_MLIST1:L 0L	-- mlist1
+	0L 0L 0L TEXT_MLIST3:L 0L	-- mlist3
 	0L 0L 0L TEXT_MLIST2:L 0L	-- mlist2
 	0L 0L 0L 0L 0L	-- [ウィンドウ]
 	0L 0L 0L 0L 0L	-- [小物]
