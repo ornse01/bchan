@@ -31,5 +31,6 @@
 #define __BCHAN_VOBJ_H__
 
 IMPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_texedit_len, UB *taddata, W taddata_len, VOBJSEG *vseg, LINK *lnk);
+IMPORT W bchan_createviewervobj(TC *title, UB *fsn, W fsn_len, UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, VOBJSEG *seg, LINK *lnk);
 
 #endif

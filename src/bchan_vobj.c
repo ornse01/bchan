@@ -33,6 +33,8 @@
 #include	<btron/vobj.h>
 #include	<btron/hmi.h>
 
+#include    "cache.h"
+
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
 # define DP_ER(msg, err) printf("%s (%d/%x)\n", msg, err>>16, err)
@@ -41,15 +43,11 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_texedit_len, UB *taddata, W taddata_len, VOBJSEG *seg, LINK *lnk)
+LOCAL W adjust_vobj(VOBJSEG *seg, VLINK *vlnk)
 {
-	W fd, err;
-	VID vid;
 	RECT newr;
-	UB bin[4+24];
-	TADSEG *base = (TADSEG*)bin;
-	INFOSEG *infoseg = (INFOSEG*)(bin + 4);
-	TEXTSEG *textseg = (TEXTSEG*)(bin + 4);
+	VID vid;
+	W err;
 
 	seg->view = (RECT){{0,0,300,20}};
 	seg->height = 100;
@@ -62,6 +60,35 @@ EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_
 	}
 	seg->bgcol = 0x10ffffff;
 	seg->dlen = 0;
+
+	vid = oreg_vob(vlnk, seg, -1, V_NODISP);
+	if (vid < 0) {
+		DP_ER("oreg_vob", vid);
+		return vid;
+	}
+	err = orsz_vob(vid, &newr, V_ADJUST1|V_NODISP);
+	if (err < 0) {
+		DP_ER("orsz_vob", vid);
+		odel_vob(vid, 0);
+		return err;
+	}
+	seg->view = newr;
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		DP_ER("odel_vob", err);
+		return err;
+	}
+
+	return 0;
+}
+
+EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_texedit_len, UB *taddata, W taddata_len, VOBJSEG *seg, LINK *lnk)
+{
+	W fd, err;
+	UB bin[4+24];
+	TADSEG *base = (TADSEG*)bin;
+	INFOSEG *infoseg = (INFOSEG*)(bin + 4);
+	TEXTSEG *textseg = (TEXTSEG*)(bin + 4);
 
 	fd = cre_fil(lnk, (TC*)taddata, NULL, 0x31, F_FLOAT);
 	if (fd < 0) {
@@ -145,23 +172,97 @@ EXPORT W bchan_createbbbvobj(UB *fsn_bbb, W fsn_bbb_len, UB *fsn_texedit, W fsn_
 
 	cls_fil(fd);
 
-	vid = oreg_vob((VLINK*)lnk, seg, -1, V_NODISP);
-	if (vid < 0) {
-		DP_ER("oreg_vob", vid);
-		del_fil(NULL, lnk, 0);
-		return vid;
-	}
-	err = orsz_vob(vid, &newr, V_ADJUST1|V_NODISP);
+	err = adjust_vobj(seg, (VLINK*)lnk);
 	if (err < 0) {
-		DP_ER("orsz_vob", vid);
-		odel_vob(vid, 0);
+		DP_ER("adjust_vobj", err);
 		del_fil(NULL, lnk, 0);
 		return err;
 	}
-	seg->view = newr;
-	err = odel_vob(vid, 0);
+
+	return 0;
+}
+
+EXPORT W bchan_createviewervobj(TC *title, UB *fsn, W fsn_len, UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, VOBJSEG *seg, LINK *lnk)
+{
+	W fd, err;
+
+	fd = cre_fil(lnk, title, NULL, 1, F_FLOAT);
+	if (fd < 0) {
+		DP_ER("cre_fil error", fd);
+		return fd;
+	}
+
+	err = apd_rec(fd, fsn, fsn_len, 8, 0, 0);
 	if (err < 0) {
-		DP_ER("odel_vob", err);
+		DP_ER("apd_rec:fusen rec error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+
+	err = apd_rec(fd, NULL, NULL, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
+	if (err < 0) {
+		DP_ER("apd_rec:retrieve info error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = see_rec(fd, -1, -1, NULL);
+	if (err < 0) {
+		DP_ER("see_rec error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+
+	err = wri_rec(fd, -1, host, host_len, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:host error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = wri_rec(fd, -1, "\n", 1, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:host error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = wri_rec(fd, -1, board, board_len, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:board error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = wri_rec(fd, -1, "\n", 1, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:board error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = wri_rec(fd, -1, thread, thread_len, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:thread error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+	err = wri_rec(fd, -1, "\n", 1, NULL, NULL, 0);
+	if (err < 0) {
+		DP_ER("wri_rec:thread error", err);
+		cls_fil(fd);
+		del_fil(NULL, lnk, 0);
+		return fd;
+	}
+
+	cls_fil(fd);
+
+	err = adjust_vobj(seg, (VLINK*)lnk);
+	if (err < 0) {
+		DP_ER("adjust_vobj", err);
 		del_fil(NULL, lnk, 0);
 		return err;
 	}
