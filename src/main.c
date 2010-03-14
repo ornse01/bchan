@@ -32,6 +32,7 @@
 #include	<tstring.h>
 #include	<keycode.h>
 #include	<tcode.h>
+#include	<tctype.h>
 #include	<btron/btron.h>
 #include	<btron/dp.h>
 #include	<btron/hmi.h>
@@ -48,6 +49,9 @@
 #include	"layout.h"
 #include	"retriever.h"
 #include	"submit.h"
+#include	"tadurl.h"
+#include	"sjisstring.h"
+#include	"bchan_vobj.h"
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -71,6 +75,9 @@
 #define BCHAN_DBX_TEXT_CONFIRM_TITLE 31
 #define BCHAN_DBX_MSGTEXT_NONAUTHORITATIVE 32
 #define BCHAN_DBX_MSGTEXT_NETWORKERROR	33
+#define BCHAN_DBX_FFUSEN_BBB 34
+#define BCHAN_DBX_FFUSEN_TEXEDIT 35
+#define BCHAN_DBX_FFUSEN_VIEWER 36
 
 #define BCHAN_MENU_WINDOW 3
 
@@ -197,6 +204,409 @@ LOCAL VOID bchan_close(VP arg)
 	/* TODO: guard request event W_DELETE and W_FINISH. */
 	datcache_writefile(bchan->cache);
 	killme(bchan);
+}
+
+LOCAL Bool bchan_is_bbs_url(UB *data, W data_len)
+{
+	TC *str;
+	W str_len, cmp, i, n_slsh = 0;
+
+	if ((tadurl_cmpscheme(data, data_len, "http", 4) != 0)
+		&&(tadurl_cmpscheme(data, data_len, "ttp", 3) != 0)) {
+		return False;
+	}
+
+	cmp = tadurl_cmppath(data, data_len, "test/read.cgi/", 14);
+	if (cmp != 0) {
+		return False;
+	}
+
+	str = (TC*)data;
+	str_len = data_len/2;
+
+	for (i=0; i<str_len; i++) {
+		if (n_slsh == 6) {
+			break;
+		}
+		if (str[i] == TK_SLSH) {
+			n_slsh++;
+		}
+	}
+
+	for (; i<str_len; i++) {
+		if (str[i] == TK_SLSH) {
+			break;
+		}
+		if (tc_isdigit(str[i]) == 0) {
+			return False;
+		}
+	}
+
+	return True;
+}
+
+LOCAL W bchan_createvobj_allocate_url(UB *data, W data_len, TC **url, W *url_len)
+{
+	TC *str;
+	W len;
+
+	if (tadurl_cmpscheme(data, data_len, "http", 4) == 0) {
+		len = data_len;
+		str = malloc(len);
+		if (str == NULL) {
+			return -1; /* TODO */
+		}
+		memcpy(str, data, data_len);
+	} else if (tadurl_cmpscheme(data, data_len, "ttp", 3) == 0) {
+		len = data_len + sizeof(TC)*1;
+		str = malloc(len);
+		if (str == NULL) {
+			return -1; /* TODO */
+		}
+		memcpy(str + 1, data, data_len);
+		str[0] = TK_h;
+	} else if (tadurl_cmpscheme(data, data_len, "sssp", 4) == 0) {
+		len = data_len;
+		str = malloc(len);
+		if (str == NULL) {
+			return -1; /* TODO */
+		}
+		memcpy(str + 4, data + 8, data_len - 8);
+		str[0] = TK_h;
+		str[1] = TK_t;
+		str[2] = TK_t;
+		str[3] = TK_p;
+	} else {
+		return -1; /* TODO */
+	}
+
+	*url = str;
+	*url_len = len/sizeof(TC);
+
+	return 0;
+}
+
+LOCAL VOID bchan_separete_bbs_url(UB *url, W url_len, UB **host, W *host_len, UB **board, W *board_len, UB **thread, W *thread_len)
+{
+	W i,n_slsh = 0;
+
+	for (i=0; i < url_len; i++) {
+		if (n_slsh == 2) {
+			break;
+		}
+		if (url[i] == '/') {
+			n_slsh++;
+		}
+	}
+	*host = url + i;
+	*host_len = 0;
+	for (; i < url_len; i++) {
+		if (n_slsh == 3) {
+			break;
+		}
+		if (url[i] == '/') {
+			n_slsh++;
+		} else {
+			(*host_len)++;
+		}
+	}
+	for (; i < url_len; i++) {
+		if (n_slsh == 5) {
+			break;
+		}
+		if (url[i] == '/') {
+			n_slsh++;
+		}
+	}
+	*board = url + i;
+	*board_len = 0;
+	for (; i < url_len; i++) {
+		if (n_slsh == 6) {
+			break;
+		}
+		if (url[i] == '/') {
+			n_slsh++;
+		} else {
+			(*board_len)++;
+		}
+	}
+	*thread = url + i;
+	*thread_len = 0;
+	for (; i < url_len; i++) {
+		if (n_slsh == 7) {
+			break;
+		}
+		if (url[i] == '/') {
+			n_slsh++;
+		} else {
+			(*thread_len)++;
+		}
+	}
+}
+
+#define BCHAN_CREATEVOBJ_CANCELED 0
+#define BCHAN_CREATEVOBJ_CREATED 1
+
+LOCAL W bchan_createvobj(bchan_t *bchan, UB *data, W data_len, VOBJSEG *vseg, LINK *lnk)
+{
+	W err, fsn_bbb_len, fsn_texedit_len, fsn_viewer_len, url_len, ascii_url_len;
+	TC *url;
+	void *fsn_bbb, *fsn_texedit, *fsn_viewer;
+	UB *ascii_url;
+	UB *host, *board, *thread;
+	W host_len, board_len, thread_len;
+	LTADSEG *lseg;
+	Bool is_bbs;
+	TC title[] = {TK_T, TK_h, TK_r, TK_e, TK_a, TK_d, TNULL}; /* tmp */
+
+	err = dget_dtp(64, BCHAN_DBX_FFUSEN_BBB, (void**)&fsn_bbb);
+	if (err < 0) {
+		DP_ER("dget_dtp: BCHAN_DBX_FFUSEN_BBB", err);
+		return err;
+	}
+	fsn_bbb_len = dget_siz((B*)fsn_bbb);
+	err = dget_dtp(64, BCHAN_DBX_FFUSEN_TEXEDIT, (void**)&fsn_texedit);
+	if (err < 0) {
+		DP_ER("dget_dtp: BCHAN_DBX_FFUSEN_TEXEDIT", err);
+		return err;
+	}
+	fsn_texedit_len = dget_siz((B*)fsn_texedit);
+	err = dget_dtp(64, BCHAN_DBX_FFUSEN_VIEWER, (void**)&fsn_viewer);
+	if (err < 0) {
+		DP_ER("dget_dtp: BCHAN_DBX_FFUSEN_VIEWER", err);
+		return err;
+	}
+	fsn_viewer_len = dget_siz((B*)fsn_viewer);
+
+	for (;;) {
+		if(((*(UH*)data) & 0xFF80) == 0xFF80) {
+			lseg = (LTADSEG*)(data);
+			if (lseg->len == 0xffff) {
+				data += lseg->llen + 8;
+				data_len -= lseg->llen + 8;
+			} else {
+				data += lseg->len + 4;
+				data_len -= lseg->len + 4;
+			}
+		} else {
+			break;
+		}
+	}
+
+	is_bbs = bchan_is_bbs_url(data, data_len);
+	if (is_bbs == True) {
+		ascii_url = NULL;
+		ascii_url_len = 0;
+		err = sjstring_appendconvartingTCstring(&ascii_url, &ascii_url_len, (TC*)data, data_len/2);
+		if (err < 0) {
+			return 0;
+		}
+
+		bchan_separete_bbs_url(ascii_url, ascii_url_len, &host, &host_len, &board, &board_len, &thread, &thread_len);
+		err = bchan_createviewervobj(title, fsn_viewer, fsn_viewer_len, host, host_len, board, board_len, thread, thread_len, vseg, lnk);
+		if (err < 0) {
+			return 0;
+		}
+
+		free(ascii_url);
+	} else {
+		err = bchan_createvobj_allocate_url(data, data_len, &url, &url_len);
+		if (err < 0) {
+			DP_ER("bchan_createvobj_allocate_url", err);
+			return err;
+		}
+
+		err = bchan_createbbbvobj(fsn_bbb, fsn_bbb_len, fsn_texedit, fsn_texedit_len, (UB*)url, url_len*2, vseg, lnk);
+		if (err < 0) {
+			DP_ER("bchan_createbbbvobj", err);
+			return err;
+		}
+
+		free(url);
+	}
+
+	return BCHAN_CREATEVOBJ_CREATED;
+}
+
+LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
+{
+	LTADSEG *lseg;
+	W num, len;
+	TC *str;
+	W fnd;
+	W cl, ct, cr, cb, tl, tt, tr, tb;
+
+	for (;;) {
+		if(((*(UH*)data) & 0xFF80) == 0xFF80) {
+			lseg = (LTADSEG*)(data);
+			if (lseg->len == 0xffff) {
+				data += lseg->llen + 8;
+				data_len -= lseg->llen + 8;
+			} else {
+				data += lseg->len + 4;
+				data_len -= lseg->len + 4;
+			}
+		} else {
+			break;
+		}
+	}
+
+	str = (TC*)data;
+	len = data_len;
+
+	num = tc_atoi(str + 2);
+	DP(("num = %d\n", num));
+
+	fnd = datlayout_getthreadviewrectbyindex(bchan->layout, num - 1, &tl, &tt, &tr, &tb);
+	if (fnd == 0) {
+		return;
+	}
+	datdraw_getviewrect(bchan->draw, &cl, &ct, &cr, &cb);
+	datwindow_scrollbyvalue(bchan->window, 0 - cl, tt - ct);
+}
+
+LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
+{
+	bchan_t *bchan = (bchan_t*)arg;
+	W fnd, event_type, type, len, dx, dy, err, size;
+	WID wid_butup;
+	GID gid;
+	RECT r, r0;
+	UB *start;
+	PNT p1, pos;
+	TR_VOBJREC vrec;
+	TRAYREC tr_rec;
+	WEVENT paste_ev;
+	SEL_RGN	sel;
+
+	/* TODO: change to same as bchanl's commonwindow */
+	switch (wchk_dck(wev->s.time)) {
+	case	W_CLICK:
+		fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len);
+		if (fnd == 0) {
+			return;
+		}
+		if (type != DATDRAW_FINDACTION_TYPE_ANCHOR) {
+			return;
+		}
+		bchan_scrollbyahcnor(bchan, start, len);
+		return;
+	case	W_DCLICK:
+	case	W_QPRESS:
+	default:
+		return;
+	case	W_PRESS:
+	}
+
+	fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len);
+	if (fnd == 0) {
+		return;
+	}
+	if (type != DATDRAW_FINDACTION_TYPE_URL) {
+		return;
+	}
+
+	gid = wsta_drg(bchan->wid, 0);
+	if (gid < 0) {
+		DP_ER("wsta_drg error:", gid);
+		return;
+	}
+
+	gget_fra(gid, &r0);
+	gset_vis(gid, r0);
+
+	dx = r.c.left - wev->s.pos.x;
+	dy = r.c.top - wev->s.pos.y;
+
+	p1 = wev->s.pos;
+	sel.sts = 0;
+	sel.rgn.r.c.left = r.c.left;
+	sel.rgn.r.c.top = r.c.top;
+	sel.rgn.r.c.right = r.c.right;
+	sel.rgn.r.c.bottom = r.c.bottom;
+	adsp_sel(gid, &sel, 1);
+
+	gset_ptr(PS_GRIP, NULL, -1, -1);
+	for (;;) {
+		event_type = wget_drg(&pos, wev);
+		if (event_type == EV_BUTUP) {
+			wid_butup = wev->s.wid;
+			break;
+		}
+		if (event_type != EV_NULL) {
+			continue;
+		}
+		if ((pos.x == p1.x)&&(pos.y == p1.y)) {
+			continue;
+		}
+		adsp_sel(gid, &sel, 0);
+		sel.rgn.r.c.left += pos.x - p1.x;
+		sel.rgn.r.c.top += pos.y - p1.y;
+		sel.rgn.r.c.right += pos.x - p1.x;
+		sel.rgn.r.c.bottom += pos.y - p1.y;
+		adsp_sel(gid, &sel, 1);
+		p1 = pos;
+	}
+	gset_ptr(PS_SELECT, NULL, -1, -1);
+	adsp_sel(gid, &sel, 0);
+	wend_drg();
+
+	/* BUTUP on self window or no window or system message panel */
+	if ((wid_butup == bchan->wid)||(wid_butup == 0)||(wid_butup == -1)) {
+		return;
+	}
+
+	err = oget_vob(-wid_butup, &vrec.vlnk, NULL, 0, &size);
+	if (err < 0) {
+		return;
+	}
+
+	err = bchan_createvobj(bchan, start, len, &vrec.vseg, (LINK*)&vrec.vlnk);
+	if (err < 0) {
+		DP_ER("bchan_createvobj error", err);
+		return;
+	}
+	if (err == BCHAN_CREATEVOBJ_CANCELED) {
+		DP(("canceled\n"));
+		return;
+	}
+
+	tr_rec.id = TR_VOBJ;
+	tr_rec.len = sizeof(TR_VOBJREC);
+	tr_rec.dt = (B*)&vrec;
+	err = tset_dat(&tr_rec, 1);
+	if (err < 0) {
+		err = del_fil(NULL, (LINK*)&vrec.vlnk, 0);
+		if (err < 0) {
+			DP_ER("error del_fil:", err);
+		}
+		return;
+	}
+
+	paste_ev.r.type = EV_REQUEST;
+	paste_ev.r.r.p.rightbot.x = wev->s.pos.x + dx;
+	paste_ev.r.r.p.rightbot.y = wev->s.pos.y + dy;
+	paste_ev.r.cmd = W_PASTE;
+	paste_ev.r.wid = wid_butup;
+	err = wsnd_evt(&paste_ev);
+	if (err < 0) {
+		tset_dat(NULL, 0);
+		err = del_fil(NULL, (LINK*)&vrec.vlnk, 0);
+		if (err < 0) {
+			DP_ER("error del_fil:", err);
+		}
+		return;
+	}
+	err = wwai_rsp(NULL, W_PASTE, 60000);
+	if (err != W_ACK) {
+		tset_dat(NULL, 0);
+		err = del_fil(NULL, (LINK*)&vrec.vlnk, 0);
+		if (err < 0) {
+			DP_ER("error del_fil:", err);
+		}
+	}
+
+	wswi_wnd(wid_butup, NULL);
 }
 
 LOCAL W bchan_paste(VP arg, WEVENT *wev)
@@ -334,7 +744,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("datdraw_new error", 0);
 		goto error_draw;
 	}
-	window = datwindow_new(wid, bchan_scroll, bchan_draw, bchan_resize, bchan_close, NULL, bchan_paste, bchan);
+	window = datwindow_new(wid, bchan_scroll, bchan_draw, bchan_resize, bchan_close, bchan_butdn, bchan_paste, bchan);
 	if (window == NULL) {
 		DP_ER("datwindow_new error", 0);
 		goto error_window;
