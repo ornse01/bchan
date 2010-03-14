@@ -29,6 +29,7 @@
 #include	<bstdio.h>
 #include	<bstring.h>
 #include	<bctype.h>
+#include	<tstring.h>
 
 #include    "sjisstring.h"
 
@@ -185,6 +186,40 @@ EXPORT W sjstring_appendurlencodestring(UB **dest, W *dest_len, UB *str, W len)
 	urlencode_convert(*dest + *dest_len, encoded_len, str, len);
 
 	*dest_len += encoded_len;
+	(*dest)[*dest_len] = '\0';
+
+	return 0;
+}
+
+EXPORT W sjstring_appendconvartingTCstring(UB **dest, W *dest_len, TC *str, W len)
+{
+	W i,j,converted_len = 0, ret;
+	UB conv[2];
+
+	for (i = 0; i < len; i++) {
+		ret = tctosj(NULL, str[i]);
+		if (ret == -1) {
+			return -1; /* TODO */
+		}
+		converted_len += ret;
+	}
+
+	*dest = realloc(*dest, *dest_len + converted_len + 1);
+	if (*dest == NULL) {
+		return -1; /* TODO */
+	}
+
+	j = 0;
+	for (i = 0; i < len; i++) {
+		ret = tctosj(conv, str[i]);
+		if (ret == -1) {
+			return -1; /* TODO */
+		}
+		memcpy(*(dest)+*dest_len+j, conv, ret);
+		j += ret;
+	}
+
+	*dest_len += converted_len;
 	(*dest)[*dest_len] = '\0';
 
 	return 0;
