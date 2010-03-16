@@ -1165,10 +1165,42 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		datwindow_scrollbyvalue(bchan->window, scr, 0);
 		break;
 	case KC_PG_U:
+		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		if (t < b - t) {
+			scr = -t;
+		} else {
+			scr = - (b - t);
+		}
+		datwindow_scrollbyvalue(bchan->window, 0, scr);
+		break;
 	case KC_PG_D:
+		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
+		if (b + (b - t) > b1) {
+			scr = b1 - b;
+		} else {
+			scr = (b - t);
+		}
+		datwindow_scrollbyvalue(bchan->window, 0, scr);
+		break;
 	case KC_PG_R:
+		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
+		if (r + (r - l) > r1) {
+			scr = r1 - r;
+		} else {
+			scr = (r - l);
+		}
+		datwindow_scrollbyvalue(bchan->window, scr, 0);
+		break;
 	case KC_PG_L:
-		/* TODO: area scroll */
+		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		if (l < r - l) {
+			scr = -l;
+		} else {
+			scr = - (r - l);
+		}
+		datwindow_scrollbyvalue(bchan->window, scr, 0);
 		break;
 	case KC_PF5:
 		bchan_networkrequest(bchan);
