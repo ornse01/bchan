@@ -1171,7 +1171,9 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		} else {
 			scr = 16;
 		}
-		datwindow_scrollbyvalue(bchan->window, 0, scr);
+		if (scr > 0) {
+			datwindow_scrollbyvalue(bchan->window, 0, scr);
+		}
 		break;
 	case KC_CC_R:
 		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
@@ -1181,7 +1183,9 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		} else {
 			scr = 16;
 		}
-		datwindow_scrollbyvalue(bchan->window, scr, 0);
+		if (scr > 0) {
+			datwindow_scrollbyvalue(bchan->window, scr, 0);
+		}
 		break;
 	case KC_CC_L:
 		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
@@ -1209,7 +1213,9 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		} else {
 			scr = (b - t);
 		}
-		datwindow_scrollbyvalue(bchan->window, 0, scr);
+		if (scr > 0) {
+			datwindow_scrollbyvalue(bchan->window, 0, scr);
+		}
 		break;
 	case KC_PG_R:
 		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
@@ -1219,7 +1225,9 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		} else {
 			scr = (r - l);
 		}
-		datwindow_scrollbyvalue(bchan->window, scr, 0);
+		if (scr > 0) {
+			datwindow_scrollbyvalue(bchan->window, scr, 0);
+		}
 		break;
 	case KC_PG_L:
 		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
