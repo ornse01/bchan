@@ -55,7 +55,7 @@ ifneq ($(mode), debug)
   CFLAGS += -Wall
 endif
 
-CFLAGS += $(BUILDOPTIONS) -DBCHANL_CONFIG_DEBUG
+CFLAGS += $(BUILDOPTIONS) -DBCHAN_CONFIG_DEBUG
 
 LOADLIBES += -limg
 
