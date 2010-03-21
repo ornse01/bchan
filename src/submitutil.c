@@ -26,6 +26,7 @@
 
 #include	<basic.h>
 #include	<bstdio.h>
+#include	<bstdlib.h>
 #include	<bstring.h>
 
 #include    "submitutil.h"
@@ -423,6 +424,41 @@ EXPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len,
 
 	*header = str;
 	*header_len = len;
+
+	return 0;
+}
+
+EXPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len)
+{
+	UB *ptr, *start, *end;
+	TC *ret;
+	W rem_len, ret_len;
+
+	*msg = NULL;
+	*msg_len = 0;
+
+	ptr = strstr(body, "<b>");
+	if (ptr == NULL) {
+		return 0; /* TODO */
+	}
+	start = ptr + 3;
+	rem_len = start - body;
+
+	end = sjstring_searchchar(start, rem_len, '<');
+	if (end == NULL) {
+		return 0; /* TODO */
+	}
+
+	ret_len = sjstring_totcs(start, end - start, NULL);
+	if (ret_len < 0) {
+		return 0;
+	}
+
+	ret = malloc(sizeof(TC)*ret_len);
+	sjstring_totcs(start, end - start, ret);
+
+	*msg = ret;
+	*msg_len = ret_len;
 
 	return 0;
 }
