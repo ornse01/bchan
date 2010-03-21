@@ -311,6 +311,50 @@ EXPORT UB* sjstring_searchchar(UB *str, W len, UB ch)
 	return NULL;
 }
 
+EXPORT W sjstring_totcs(UB *sjstr, UB sjstr_len, TC *tcstr)
+{
+	W i, ret, tclen = 0;
+
+	if (tcstr == NULL) {
+		for (i = 0; i < sjstr_len; i++) {
+			ret = sjtotc(NULL, sjstr + i);
+			switch (ret) {
+			case -1:
+				return -1;
+			case 0:
+				break;
+			case 1:
+				tclen++;
+				break;
+			case 2:
+				tclen++;
+				i++;
+				break;
+			}
+		}
+		return tclen;
+	}
+
+	for (i = 0; i < sjstr_len; i++) {
+		ret = sjtotc(tcstr + tclen, sjstr + i);
+		switch (ret) {
+		case -1:
+			return -1;
+		case 0:
+			break;
+		case 1:
+			tclen++;
+			break;
+		case 2:
+			tclen++;
+			i++;
+			break;
+		}
+	}
+
+	return tclen;
+}
+
 #ifdef BCHAN_CONFIG_DEBUG
 #include	<tstring.h>
 

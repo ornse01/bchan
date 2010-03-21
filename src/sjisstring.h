@@ -34,6 +34,8 @@ IMPORT W sjstring_appendUWstring(UB **dest, W *dlen, UW n);
 IMPORT W sjstring_appendurlencodestring(UB **dest, W *dest_len, UB *str, W len);
 IMPORT W sjstring_appendconvartingTCstring(UB **dest, W *dest_len, TC *str, W len);
 
+IMPORT W sjstring_totcs(UB *sjstr, UB sjstr_len, TC *tcstr);
+
 IMPORT W sjstring_appendformpoststring(UB **dest, W *dest_len, UB *str, W len);
 
 IMPORT UB* sjstring_searchchar(UB *str, W len, UB ch);
