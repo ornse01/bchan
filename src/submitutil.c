@@ -428,6 +428,32 @@ EXPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len,
 	return 0;
 }
 
+LOCAL UB* submitutil_makeerrormessage_search_b_elm(UB *body, W body_len)
+{
+	UB *ptr;
+	W i;
+
+	for (i = 0; i < body_len - 2; i++) {
+		if (body[i] != '<') { /* tmp */
+			continue;
+		}
+		if ((body[i+1] == 'b')||(body[i+1] == 'B')) {
+			if (body[i+2] == '>') {
+				return body + i + 3;
+			}
+			if (body[i+2] == ' ') {
+				ptr = sjstring_searchchar(body + i, body_len - i, '>');
+				if (ptr == NULL) {
+					return NULL;
+				}
+				return ptr + 1;
+			}
+		}
+	}
+
+	return NULL;
+}
+
 EXPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len)
 {
 	UB *ptr, *start, *end;
@@ -437,11 +463,11 @@ EXPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len)
 	*msg = NULL;
 	*msg_len = 0;
 
-	ptr = strstr(body, "<b>");
+	ptr = submitutil_makeerrormessage_search_b_elm(body, body_len);
 	if (ptr == NULL) {
 		return 0; /* TODO */
 	}
-	start = ptr + 3;
+	start = ptr;
 	rem_len = start - body;
 
 	end = sjstring_searchchar(start, rem_len, '<');
@@ -455,6 +481,9 @@ EXPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len)
 	}
 
 	ret = malloc(sizeof(TC)*ret_len);
+	if (ret == NULL) {
+		return -1; /* TODO */
+	}
 	sjstring_totcs(start, end - start, ret);
 
 	*msg = ret;
