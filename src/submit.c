@@ -131,7 +131,7 @@ LOCAL W ressubmit_makenextheader(ressubmit_t *submit, W body_len, UB *prev_heade
 	return submitutil_makenextheader(host, host_len, board, board_len, thread, thread_len, body_len, prev_header, prev_header_len, header, header_len);
 }
 
-EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
+EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed_msg, W *denyed_msg_len)
 {
 	UB *body, *header, *response_header, *responsebody;
 	W body_len, header_len, err, response_header_len, responsebody_len;
@@ -193,12 +193,15 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		free(responsebody);
 		return RESSUBMIT_RESPOST_SUCCEED;
 	case submitutil_poststatus_false:
+		submitutil_makeerrormessage(responsebody, responsebody_len, denyed_msg, denyed_msg_len);
 		free(responsebody);
 		return RESSUBMIT_RESPOST_DENIED;
 	case submitutil_poststatus_error:
+		submitutil_makeerrormessage(responsebody, responsebody_len, denyed_msg, denyed_msg_len);
 		free(responsebody);
 		return RESSUBMIT_RESPOST_DENIED;
 	case submitutil_poststatus_check:
+		submitutil_makeerrormessage(responsebody, responsebody_len, denyed_msg, denyed_msg_len);
 		free(responsebody);
 		return RESSUBMIT_RESPOST_DENIED;
 	default:
@@ -242,12 +245,6 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 	bodystatus = submitutil_checkresponse(next_response, next_response_len);
 	SUBMITUTIL_POSTSTATUS_DP(bodystatus);
 
-	free(next_header);
-	free(next_body);
-	free(next_response);
-
-	DP(("complete\n"));
-
 	switch (bodystatus) {
 	case submitutil_poststatus_notfound:
 		ret = RESSUBMIT_RESPOST_ERROR_CONTENT;
@@ -256,21 +253,31 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post)
 		ret = RESSUBMIT_RESPOST_SUCCEED;
 		break;
 	case submitutil_poststatus_false:
+		submitutil_makeerrormessage(next_response, next_response_len, denyed_msg, denyed_msg_len);
 		ret = RESSUBMIT_RESPOST_DENIED;
 		break;
 	case submitutil_poststatus_error:
+		submitutil_makeerrormessage(next_response, next_response_len, denyed_msg, denyed_msg_len);
 		ret = RESSUBMIT_RESPOST_DENIED;
 		break;
 	case submitutil_poststatus_check:
+		submitutil_makeerrormessage(next_response, next_response_len, denyed_msg, denyed_msg_len);
 		ret = RESSUBMIT_RESPOST_DENIED;
 		break;
 	case submitutil_poststatus_cookie:
+		submitutil_makeerrormessage(next_response, next_response_len, denyed_msg, denyed_msg_len);
 		ret = RESSUBMIT_RESPOST_DENIED;
 		break;
 	default:
 		ret = RESSUBMIT_RESPOST_ERROR_CLIENT;
 		break;
 	}
+
+	free(next_header);
+	free(next_body);
+	free(next_response);
+
+	DP(("complete\n"));
 
 	return ret;
 }

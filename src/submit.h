@@ -35,7 +35,7 @@ typedef struct ressubmit_t_ ressubmit_t;
 
 IMPORT ressubmit_t* ressubmit_new(datcache_t *cache);
 IMPORT VOID ressubmit_delete(ressubmit_t *submit);
-IMPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post);
+IMPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed_msg, W *denyed_msg_len);
 
 #define RESSUBMIT_RESPOST_ERROR_CLIENT -1
 #define RESSUBMIT_RESPOST_ERROR_STATUS -2

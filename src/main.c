@@ -106,6 +106,29 @@ LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
 	gset_ptr(hmistate->ptr, NULL, -1, -1);
 }
 
+LOCAL VOID bchan_hmistate_display_postdenied(bchan_hmistate_t *hmistate, TC *str, W len)
+{
+	W size, msg_len;
+	TC *msg;
+
+	size = tc_strlen(hmistate->msg_postdenied);
+	msg_len = size + len + 2;
+	msg = malloc((msg_len + 1)*sizeof(TC));
+	if (msg == NULL) {
+		pdsp_msg(hmistate->msg_postdenied);
+	}
+
+	tc_strcpy(msg, hmistate->msg_postdenied);
+	msg[size] = TK_LPAR;
+	memcpy((UB*)(msg + size + 1), str, len * sizeof(TC));
+	msg[msg_len - 1] = TK_RPAR;
+	msg[msg_len] = TNULL;
+
+	pdsp_msg(msg);
+
+	free(msg);
+}
+
 typedef struct bchan_t_ bchan_t;
 struct bchan_t_ {
 	W wid;
@@ -749,19 +772,20 @@ LOCAL W bchan_paste(VP arg, WEVENT *wev)
 LOCAL VOID bchan_recieveclose(VP arg, W send)
 {
 	bchan_t *bchan = (bchan_t*)arg;
-	W err;
+	TC *dmsg = NULL;
+	W dmsg_len, err;
 
 	DP(("bchan_recieveclose = %d\n", send));
 	if (send == 1) {
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_BUSY);
-		err = ressubmit_respost(bchan->submit, bchan->resdata);
+		err = ressubmit_respost(bchan->submit, bchan->resdata, &dmsg, &dmsg_len);
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
 		switch (err) {
 		case RESSUBMIT_RESPOST_SUCCEED:
 			pdsp_msg(bchan->hmistate.msg_postsucceed);
 			break;
 		case RESSUBMIT_RESPOST_DENIED:
-			pdsp_msg(bchan->hmistate.msg_postdenied);
+			bchan_hmistate_display_postdenied(&bchan->hmistate, dmsg, dmsg_len);
 			break;
 		case RESSUBMIT_RESPOST_ERROR_CLIENT:
 		case RESSUBMIT_RESPOST_ERROR_STATUS:
@@ -769,6 +793,9 @@ LOCAL VOID bchan_recieveclose(VP arg, W send)
 		default:
 			pdsp_msg(bchan->hmistate.msg_posterror);
 			break;
+		}
+		if (dmsg != NULL) {
+			free(dmsg);
 		}
 	}
 }
