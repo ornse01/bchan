@@ -52,6 +52,7 @@
 #include	"tadurl.h"
 #include	"sjisstring.h"
 #include	"bchan_vobj.h"
+#include	"bchan_panels.h"
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -1228,6 +1229,9 @@ LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 
 LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 {
+	UB *host, *board, *thread;
+	W host_len, board_len, thread_len;
+
 	switch(i >> 8) {
 	case 0: /* [終了] */
 		killme(bchan);
@@ -1236,6 +1240,12 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 		switch(i & 0xff) {
 		case 1: /* [再表示] */
 			wreq_dsp(bchan->wid);
+			break;
+		case 2: /* [スレッド情報を表示] */
+			datcache_gethost(bchan->cache, &host, &host_len);
+			datcache_getborad(bchan->cache, &board, &board_len);
+			datcache_getthread(bchan->cache, &thread, &thread_len);
+			bchan_panels_threadinfo(host, host_len, board, board_len, thread, thread_len);
 			break;
 		}
 		break;

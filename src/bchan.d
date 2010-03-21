@@ -49,6 +49,11 @@
 .FFUSEN_VIEWER		=	36
 .MSGTEXT_NOTFOUND	=	37
 .TEXT_MLIST3	=	38
+.MS_PANEL_OK	=	39
+.TEXT_SERVERNAME	=	40
+.TEXT_BOARDNAME	=	41
+.TEXT_THREADNUMBER	=	42
+.TEXT_THREADINFO	=	43
 
 ---------
 -- data type = PARTS_DATA
@@ -71,6 +76,14 @@
 	{0L 0L -1L 0L}		-- PARTDISP
 	MC_STR "取り消し\0"
 
+	{# MS_PANEL_OK 0 0} 	-- data number
+	MS_PARTS+P_DISP:L	-- type
+	{0H 0H 80H 24H}	-- r
+	0L			-- cv (unused)
+	OFFSET:L+20		-- name ()
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "確認\0"
+
 ---------
 -- data type = TEXT_DATA
 ---------
@@ -79,7 +92,9 @@
 	MC_STR+MC_STRKEY1 "Ｅ終了\0"
 
 	{# TEXT_MLIST1 0 0}	-- data number
-	MC_STR "表示" MC_STR "再表示\0"
+	MC_STR "表示"
+	MC_STR "再表示"
+	MC_STR "スレッド情報を表示\0"
 
 	{# TEXT_MLIST2 0 0}     -- data number
 	MC_STR "操作"
@@ -116,6 +131,18 @@
 
 	{# MSGTEXT_NOTFOUND 0 0}	-- data number
 	"スレッドが見つかりませんでした\0"
+
+	{# TEXT_SERVERNAME 0 0}	-- data number
+	"サーバー名：\0"
+
+	{# TEXT_BOARDNAME 0 0}	-- data number
+	"板名：\0"
+
+	{# TEXT_THREADNUMBER 0 0}	-- data number
+	"スレッド番号：\0"
+
+	{# TEXT_THREADINFO 0 0}	-- data number
+	"スレッド情報\0"
 
 ---------
 -- data type = MENU_DATA
