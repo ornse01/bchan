@@ -54,6 +54,7 @@
 .TEXT_BOARDNAME	=	41
 .TEXT_THREADNUMBER	=	42
 .TEXT_THREADINFO	=	43
+.MSGTEXT_CANTRETRIEVE	=	44
 
 ---------
 -- data type = PARTS_DATA
@@ -143,6 +144,9 @@
 
 	{# TEXT_THREADINFO 0 0}	-- data number
 	"スレッド情報\0"
+
+	{# MSGTEXT_CANTRETRIEVE 0 0}	-- data number
+	"スレッド情報が存在しないためこの操作はできません\0"
 
 ---------
 -- data type = MENU_DATA

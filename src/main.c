@@ -80,6 +80,7 @@
 #define BCHAN_DBX_FFUSEN_TEXEDIT 35
 #define BCHAN_DBX_FFUSEN_VIEWER 36
 #define BCHAN_DBX_MSGTEXT_NOTFOUND	37
+#define BCHAN_DBX_MSGTEXT_CANTRETRIEVE 44
 
 #define BCHAN_MENU_WINDOW 4
 
@@ -95,6 +96,7 @@ struct bchan_hmistate_t_ {
 	TC *msg_posterror;
 	TC *msg_networkerror;
 	TC *msg_notfound;
+	TC *msg_cantretrieve;
 };
 
 LOCAL VOID bchan_hmistate_updateptrstyle(bchan_hmistate_t *hmistate, PTRSTL ptr)
@@ -846,6 +848,11 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 		DP_ER("dget_dtp: message notfound error", err);
 		hmistate->msg_notfound = NULL;
 	}
+	err = dget_dtp(TEXT_DATA, BCHAN_DBX_MSGTEXT_CANTRETRIEVE, (void**)&hmistate->msg_cantretrieve);
+	if (err < 0) {
+		DP_ER("dget_dtp: message cantretrieve error", err);
+		hmistate->msg_cantretrieve = NULL;
+	}
 }
 
 LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
@@ -1100,6 +1107,9 @@ LOCAL W bchan_prepare_network(bchan_t *bchan)
 	if (bchan->retriever == NULL) {
 		return 0;
 	}
+	if (datretriever_isenablenetwork(bchan->retriever) == False) {
+		return 0;
+	}
 
 	bchan->mbfid = cre_mbf(sizeof(W), sizeof(W), DELEXIT);
 	if (bchan->mbfid < 0) {
@@ -1123,6 +1133,10 @@ LOCAL W bchan_networkrequest(bchan_t *bchan)
 	static UW lastrequest = 0;
 	UW etime;
 
+	if (datretriever_isenablenetwork(bchan->retriever) == False) {
+		pdsp_msg(bchan->hmistate.msg_cantretrieve);
+		return 0;
+	}
 	if (bchan->mbfid < 0) {
 		return 0;
 	}
@@ -1254,6 +1268,19 @@ LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 		mchg_atr(bchan->mnid, (2 << 8)|1, M_INACT);
 	} else {
 		mchg_atr(bchan->mnid, (2 << 8)|1, M_ACT);
+	}
+
+	/* [表示] -> [スレッド情報を表示] */
+	/* [編集] -> [スレッドＵＲＬをトレーに複写] */
+	/* [操作] -> [スレッド取得] */
+	if (datretriever_isenablenetwork(bchan->retriever) == False) {
+		mchg_atr(bchan->mnid, (1 << 8)|2, M_INACT);
+		mchg_atr(bchan->mnid, (2 << 8)|2, M_INACT);
+		mchg_atr(bchan->mnid, (3 << 8)|1, M_INACT);
+	} else {
+		mchg_atr(bchan->mnid, (1 << 8)|2, M_ACT);
+		mchg_atr(bchan->mnid, (2 << 8)|2, M_ACT);
+		mchg_atr(bchan->mnid, (3 << 8)|1, M_ACT);
 	}
 
 	wget_dmn(&(bchan->mnitem[BCHAN_MENU_WINDOW].ptr));
