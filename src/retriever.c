@@ -439,6 +439,16 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 	return ret;
 }
 
+EXPORT Bool datretriever_isenablenetwork(datretriever_t *retriever)
+{
+	if ((retriever->server != NULL)
+		&&(retriever->board != NULL)
+		&&(retriever->thread != NULL)) {
+		return True;
+	}
+	return False;
+}
+
 #ifdef BCHAN_CONFIG_DEBUG
 EXPORT VOID DATRETRIEVER_DP(datretriever_t *retriever)
 {
@@ -480,24 +490,19 @@ EXPORT VOID DATRETRIEVER_DP(datretriever_t *retriever)
 }
 #endif
 
-EXPORT datretriever_t* datretriever_new(datcache_t *cache)
+LOCAL W datretriever_new_prepareinfo(datretriever_t *retriever, datcache_t *cache)
 {
-	datretriever_t *retriever;
 	UB *str;
-	W len;
-
-	retriever = malloc(sizeof(datretriever_t));
-	if (retriever == NULL) {
-		goto error_fetch;
-	}
-	retriever->cache = cache;
+	W len, ret = -1;
 
 	datcache_gethost(cache, &str, &len);
 	if (str == NULL) {
+		ret = 0;
 		goto error_server;
 	}
 	retriever->server = malloc(sizeof(UB)*(len+1));
 	if (retriever->server == NULL) {
+		ret = -1; /* TODO */
 		goto error_server;
 	}
 	memcpy(retriever->server, str, len);
@@ -506,10 +511,12 @@ EXPORT datretriever_t* datretriever_new(datcache_t *cache)
 
 	datcache_getborad(cache, &str, &len);
 	if (str == NULL) {
+		ret = 0;
 		goto error_board;
 	}
 	retriever->board = malloc(sizeof(UB)*(len+1));
 	if (retriever->board == NULL) {
+		ret = -1; /* TODO */
 		goto error_board;
 	}
 	memcpy(retriever->board, str, len);
@@ -518,33 +525,59 @@ EXPORT datretriever_t* datretriever_new(datcache_t *cache)
 
 	datcache_getthread(cache, &str, &len);
 	if (str == NULL) {
+		ret = 0;
 		goto error_thread;
 	}
 	retriever->thread = malloc(sizeof(UB)*(len+1));
 	if (retriever->thread == NULL) {
+		ret = -1; /* TODO */
 		goto error_thread;
 	}
 	memcpy(retriever->thread, str, len);
 	retriever->thread[len] = '\0';
 	retriever->thread_len = len;
 
-	retriever->http = http_new();
-	if (retriever->http == NULL) {
-		goto error_http;
-	}
+	return 1;
 
-	return retriever;
-
-error_http:
-	free(retriever->thread);
 error_thread:
 	free(retriever->board);
 error_board:
 	free(retriever->server);
 error_server:
+	retriever->thread = NULL;
+	retriever->board = NULL;
+	retriever->server = NULL;
+	return ret;
+}
+
+EXPORT datretriever_t* datretriever_new(datcache_t *cache)
+{
+	datretriever_t *retriever;
+	W err;
+
+	retriever = malloc(sizeof(datretriever_t));
+	if (retriever == NULL) {
+		goto error_fetch;
+	}
+	retriever->cache = cache;
+
+	retriever->http = http_new();
+	if (retriever->http == NULL) {
+		goto error_http;
+	}
+
+	err = datretriever_new_prepareinfo(retriever, cache);
+	if (err < 0) {
+		goto error_info;
+	}
+
+	return retriever;
+
+error_info:
+	http_delete(retriever->http);
+error_http:
 	free(retriever);
 error_fetch:
-
 	return NULL;
 }
 

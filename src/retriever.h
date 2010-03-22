@@ -35,6 +35,7 @@ typedef struct datretriever_t_ datretriever_t;
 IMPORT datretriever_t* datretriever_new(datcache_t *cache);
 IMPORT VOID datretriever_delete(datretriever_t *retriever);
 IMPORT W datretriever_request(datretriever_t *retriever);
+IMPORT Bool datretriever_isenablenetwork(datretriever_t *retriever);
 
 #ifdef BCHAN_CONFIG_DEBUG
 IMPORT VOID DATRETRIEVER_DP(datretriever_t *retriever);
