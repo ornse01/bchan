@@ -743,6 +743,9 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	}
 
 	wswi_wnd(wid_butup, NULL);
+
+	/* temporary fix. to fix canceling layout. */
+	req_tmg(0, BCHAN_MESSAGE_RETRIEVER_UPDATE);
 }
 
 LOCAL W bchan_paste(VP arg, WEVENT *wev)
