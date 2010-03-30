@@ -360,7 +360,10 @@ LOCAL Bool bchan_is_bbs_url(UB *data, W data_len)
 	str = (TC*)data;
 	str_len = data_len/2;
 
-	for (i=0; i<str_len; i++) {
+	for (i=0;; i++) {
+		if (i >= str_len) {
+			return False;
+		}
 		if (n_slsh == 6) {
 			break;
 		}
@@ -369,7 +372,10 @@ LOCAL Bool bchan_is_bbs_url(UB *data, W data_len)
 		}
 	}
 
-	for (; i<str_len; i++) {
+	for (;; i++) {
+		if (i >= str_len) {
+			return False;
+		}
 		if (str[i] == TK_SLSH) {
 			break;
 		}
