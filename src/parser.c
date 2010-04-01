@@ -496,6 +496,17 @@ LOCAL W datparser_parsechar_charref_trigger(datparser_t *parser, UB ch, Bool iss
 			return err;
 		}
 		parser->state = STATE_START;
+	} else if (chref_result == CHARREFERPARSER_RESULT_INVALID) {
+		chref = '&';
+		err = datparser_outputconvertingstring(parser, &chref, 1, res);
+		if (err < 0) {
+			return err;
+		}
+		err = datparser_outputconvertingstring(parser, &ch, 1, res);
+		if (err < 0) {
+			return err;
+		}
+		parser->state = STATE_START;
 	}
 
 	return DATPARSER_PARSECHAR_CONTINUE;
