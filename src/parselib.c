@@ -170,7 +170,6 @@ EXPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *par
 		if (ch == ';') {
 			return CHARREFERPARSER_RESULT_INVALID;
 		}
-		/* TODO */
 		parser->state = NAMED;
 		parser->charnumber = -1;
 		ret = tokenchecker_inputchar(&parser->named, ch, &val);
@@ -214,22 +213,15 @@ EXPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *par
 	case NAMED:
 		ret = tokenchecker_inputchar(&parser->named, ch, &val);
 		if (ret == TOKENCHECKER_DETERMINE) {
-			if (ch == ';') {
-				parser->charnumber = val;
-				parser->state = DETERMINED;
-				return CHARREFERPARSER_RESULT_DETERMINE;
-			}
-			/* TODO */
+			parser->charnumber = val;
+			parser->state = DETERMINED;
+			return CHARREFERPARSER_RESULT_DETERMINE;
 		} else if (ret != TOKENCHECKER_CONTINUE) {
 			return CHARREFERPARSER_RESULT_INVALID;
 		}
 		return CHARREFERPARSER_RESULT_CONTINUE;
 	case INVALID:
-		if (ch == ';') {
-			parser->state = DETERMINED;
-			return CHARREFERPARSER_RESULT_DETERMINE;
-		}
-		return CHARREFERPARSER_RESULT_CONTINUE;
+		return CHARREFERPARSER_RESULT_INVALID;
 	case DETERMINED:
 		return CHARREFERPARSER_RESULT_INVALID;
 	}
@@ -243,6 +235,11 @@ EXPORT W charreferparser_getcharnumber(charreferparser_t *parser)
 		return -1;
 	}
 	return parser->charnumber;
+}
+
+EXPORT VOID charreferparser_getlastmatchedstring(charreferparser_t *parser, UB **str, W *len)
+{
+	tokenchecker_getlastmatchedstring(&parser->named, str, len);
 }
 
 EXPORT VOID charreferparser_resetstate(charreferparser_t *parser)

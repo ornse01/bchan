@@ -248,6 +248,318 @@ LOCAL TEST_RESULT test_character_reference_3()
 	return TEST_RESULT_PASS;
 }
 
+LOCAL TEST_RESULT test_character_reference_4()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&aaa;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 2) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 1) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_5()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 1) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 0) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_6()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&amm;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 3) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 2) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_7()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&amps;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 4) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 3) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_8()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&qqqq;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 2) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 1) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_9()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&quuu;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 3) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 2) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_10()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&quoo;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 4) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 3) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_character_reference_11()
+{
+	W i, len, err;
+	UB *str;
+	UB data[] = "&quott;";
+	charreferparser_t parser;
+
+	err = charreferparser_initialize(&parser);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	for (i = 0; data[i] != '\0'; i++) {
+		err = charreferparser_parsechar(&parser, data[i]);
+		if (err == CHARREFERPARSER_RESULT_INVALID) {
+			break;
+		}
+	}
+	if (i != 5) {
+		printf("failed to invalid position\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_getlastmatchedstring(&parser, &str, &len);
+	if (len != 4) {
+		printf("failed to get last matched string length\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	err = strncmp(data + 1, str, len);
+	if (err != 0) {
+		printf("failed to get last matched string\n");
+		charreferparser_finalize(&parser);
+		return TEST_RESULT_FAIL;
+	}
+	charreferparser_finalize(&parser);
+
+	return TEST_RESULT_PASS;
+}
+
 LOCAL tokenchecker_valuetuple_t test_tokenchecker_testdata_tuple_0001[] = {
 	{"aaa", 1},
 	{"ab", 2},
@@ -969,6 +1281,14 @@ EXPORT VOID test_parselib_main()
 	test_parselib_printresult(test_character_reference_1, "test_character_reference_1");
 	test_parselib_printresult(test_character_reference_2, "test_character_reference_2");
 	test_parselib_printresult(test_character_reference_3, "test_character_reference_3");
+	test_parselib_printresult(test_character_reference_4, "test_character_reference_4");
+	test_parselib_printresult(test_character_reference_5, "test_character_reference_5");
+	test_parselib_printresult(test_character_reference_6, "test_character_reference_6");
+	test_parselib_printresult(test_character_reference_7, "test_character_reference_7");
+	test_parselib_printresult(test_character_reference_8, "test_character_reference_8");
+	test_parselib_printresult(test_character_reference_9, "test_character_reference_9");
+	test_parselib_printresult(test_character_reference_10, "test_character_reference_10");
+	test_parselib_printresult(test_character_reference_11, "test_character_reference_11");
 	test_parselib_printresult(test_tokenchecker_1, "test_tokenchecker_1");
 	test_parselib_printresult(test_tokenchecker_2, "test_tokenchecker_2");
 	test_parselib_printresult(test_tokenchecker_3, "test_tokenchecker_3");

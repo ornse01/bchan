@@ -86,6 +86,7 @@ IMPORT W charreferparser_initialize(charreferparser_t *parser);
 IMPORT VOID charreferparser_finalize(charreferparser_t *parser);
 IMPORT charreferparser_result_t charreferparser_parsechar(charreferparser_t *parser, UB ch);
 IMPORT W charreferparser_getcharnumber(charreferparser_t *parser);
+IMPORT VOID charreferparser_getlastmatchedstring(charreferparser_t *parser, UB **str, W *len);
 IMPORT W charreferparser_parsestr(charreferparser_t *parser, UB *str, W len);
 IMPORT VOID charreferparser_resetstate(charreferparser_t *parser);
 
