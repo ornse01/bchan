@@ -484,9 +484,9 @@ LOCAL W datparser_parsechar_element_trigger(datparser_t *parser, UB ch, Bool iss
 
 LOCAL W datparser_parsechar_charref_trigger(datparser_t *parser, UB ch, Bool issecondbyte, datparser_res_t *res)
 {
-	W err;
+	W err, len;
 	charreferparser_result_t chref_result;
-	UB chref;
+	UB chref, *str;
 
 	chref_result = charreferparser_parsechar(&(parser->charref), ch);
 	if (chref_result == CHARREFERPARSER_RESULT_DETERMINE) {
@@ -502,11 +502,13 @@ LOCAL W datparser_parsechar_charref_trigger(datparser_t *parser, UB ch, Bool iss
 		if (err < 0) {
 			return err;
 		}
-		err = datparser_outputconvertingstring(parser, &ch, 1, res);
+		charreferparser_getlastmatchedstring(&(parser->charref), &str, &len);
+		err = datparser_outputconvertingstring(parser, str, len, res);
 		if (err < 0) {
 			return err;
 		}
 		parser->state = STATE_START;
+		return datparser_parsechar_start_trigger(parser, ch, issecondbyte, res);
 	}
 
 	return DATPARSER_PARSECHAR_CONTINUE;
