@@ -49,4 +49,7 @@ IMPORT VOID test_parselib_main();
 /* test_submitutil.c */
 IMPORT VOID test_submitutil_main();
 
+/* test_sjisstring.c */
+IMPORT VOID test_sjistring_main();
+
 #endif

@@ -48,6 +48,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_layout_main();
 	test_parselib_main();
 	test_submitutil_main();
+	test_sjistring_main();
 
 	return 0;
 }
