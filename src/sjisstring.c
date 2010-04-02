@@ -355,6 +355,117 @@ EXPORT W sjstring_totcs(UB *sjstr, UB sjstr_len, TC *tcstr)
 	return tclen;
 }
 
+/* from rfc1738. 2.2. URL Character Encoding Issues */
+/* should be more speed up. */
+EXPORT Bool sjstring_isurlusablecharacter(UB ch)
+{
+	/* No corresponding graphic US-ASCII */
+	if ((0x00 <= ch)&&(ch <= 0x1F)) {
+		return False;
+	}
+	if (ch == 0x7F) {
+		return False;
+	}
+	if ((0x80 <= ch)&&(ch <= 0xFF)) {
+		return False;
+	}
+
+	/* Unsafe */
+	if (ch == '<') {
+		return False;
+	}
+	if (ch == '>') {
+		return False;
+	}
+	if (ch == '"') {
+		return False;
+	}
+	if (ch == '{') {
+		return False;
+	}
+	if (ch == '}') {
+		return False;
+	}
+	if (ch == '|') {
+		return False;
+	}
+	if (ch == '\\') {
+		return False;
+	}
+	if (ch == '^') {
+		return False;
+	}
+	if (ch == '~') {
+		return False;
+	}
+	if (ch == '[') {
+		return False;
+	}
+	if (ch == ']') {
+		return False;
+	}
+	if (ch == '`') {
+		return False;
+	}
+
+	/* Reserved */
+	/*  ignore ";", "/", "?", ":", "@", "=" and "&" */
+	/*  to handling these, need parsing. */
+	/* special characters */
+	if (ch == '$') {
+		return False;
+	}
+	if (ch == '-') {
+		return False;
+	}
+	if (ch == '_') {
+		return False;
+	}
+	if (ch == '.') {
+		return False;
+	}
+	if (ch == '+') {
+		return False;
+	}
+	if (ch == '!') {
+		return False;
+	}
+	if (ch == '*') {
+		return False;
+	}
+	if (ch == '\'') {
+		return False;
+	}
+	if (ch == '(') {
+		return False;
+	}
+	if (ch == ')') {
+		return False;
+	}
+	if (ch == ',') {
+		return False;
+	}
+
+	/* whitespace */
+	/*  should be ignore? */
+	/*   by "APPENDIX: Recommendations for URLs in Context" */
+	/*  to handling these, need parsing. */
+	if (ch == ' ') {
+		return False;
+	}
+	if (ch == '\t') {
+		return False;
+	}
+	if (ch == '\n') {
+		return False;
+	}
+	if (ch == '\r') {
+		return False;
+	}
+
+	return True;
+}
+
 #ifdef BCHAN_CONFIG_DEBUG
 #include	<tstring.h>
 
