@@ -27,6 +27,7 @@
 #include    "cache.h"
 #include    "parser.h"
 #include    "parselib.h"
+#include    "sjisstring.h"
 #include    "tadlib.h"
 
 #include	<bstdio.h>
@@ -518,6 +519,7 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 {
 	W ret, err, len, val;
 	UB *str;
+	Bool usable;
 
 	if (parser->state_url_substate == STATE_URL_SUBSTATE_SCHEME) {
 		ret = tokenchecker_inputchar(&(parser->urlscheme), ch, &val);
@@ -527,17 +529,13 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 			if (err < 0) {
 				return err;
 			}
-			err = datparser_outputconvertingstring(parser, &ch, 1, res);
-			if (err < 0) {
-				return err;
-			}
 			tokenchecker_clear(&(parser->urlscheme));
 			if (ch == '<') {
 				parser->state = STATE_LSTN;
-			} else {
-				parser->state = STATE_START;
+				return DATPARSER_PARSECHAR_CONTINUE;
 			}
-			return DATPARSER_PARSECHAR_CONTINUE;
+			parser->state = STATE_START;
+			return datparser_parsechar_start_trigger(parser, ch, issecondbyte, res);
 		}
 		if (ret == TOKENCHECKER_CONTINUE) {
 			return DATPARSER_PARSECHAR_CONTINUE;
@@ -560,18 +558,14 @@ LOCAL W datparser_parsechar_url_trigger(datparser_t *parser, UB ch, Bool issecon
 		tokenchecker_clear(&(parser->urlscheme));
 		parser->state_url_substate = STATE_URL_SUBSTATE_REM;
 	} else if (parser->state_url_substate == STATE_URL_SUBSTATE_REM) {
-		if ((ch == ' ')||(ch == '\n')) { /* check other chars. */
+		usable = sjstring_isurlusablecharacter(ch);
+		if (usable == False) {
 			err = datparser_appendbchanapplfusen(parser, TT_BCHAN_SUBID_URL_END, res);
 			if (err < 0) {
 				return err;
 			}
 			parser->state = STATE_START;
-		} else if (ch == '<') {
-			err = datparser_appendchcolorfusen(parser, 0x10000000, res);
-			if (err < 0) {
-				return err;
-			}
-			parser->state = STATE_LSTN;
+			return datparser_parsechar_start_trigger(parser, ch, issecondbyte, res);
 		}
 		err = datparser_outputconvertingstring(parser, &ch, 1, res);
 		if (err < 0) {
