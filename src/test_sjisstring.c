@@ -83,44 +83,6 @@ LOCAL Bool test_sjistring_isurlusablecharacter_testdata(UB ch)
 		return False;
 	}
 
-	/* Reserved */
-	/*  ignore ";", "/", "?", ":", "@", "=" and "&" */
-	/*  to handling these, need parsing. */
-	/* special characters */
-	if (ch == '$') {
-		return False;
-	}
-	if (ch == '-') {
-		return False;
-	}
-	if (ch == '_') {
-		return False;
-	}
-	if (ch == '.') {
-		return False;
-	}
-	if (ch == '+') {
-		return False;
-	}
-	if (ch == '!') {
-		return False;
-	}
-	if (ch == '*') {
-		return False;
-	}
-	if (ch == '\'') {
-		return False;
-	}
-	if (ch == '(') {
-		return False;
-	}
-	if (ch == ')') {
-		return False;
-	}
-	if (ch == ',') {
-		return False;
-	}
-
 	/* whitespace */
 	/*  should be ignore? */
 	/*   by "APPENDIX: Recommendations for URLs in Context" */
