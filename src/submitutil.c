@@ -69,7 +69,7 @@ EXPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_le
 	MAKEHEADER_NUM_ERR(&str, &len, content_length);
 	MAKEHEADER_ERR(&str, &len, "\r\n");
 	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.200)\r\nConnection: close\r\n\r\n");
+	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.201)\r\nConnection: close\r\n\r\n");
 
 	*header = str;
 	*header_len = len;
@@ -420,7 +420,7 @@ EXPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len,
 		return err;
 	}
 	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.200)\r\nConnection: close\r\n\r\n");
+	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.201)\r\nConnection: close\r\n\r\n");
 
 	*header = str;
 	*header_len = len;
