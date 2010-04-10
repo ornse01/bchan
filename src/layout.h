@@ -74,6 +74,7 @@ IMPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv);
 /* these value should be same in tadlib.h */
 #define DATDRAW_FINDACTION_TYPE_ANCHOR 0
 #define DATDRAW_FINDACTION_TYPE_URL    1
-IMPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len);
+#define DATDRAW_FINDACTION_TYPE_NUMBER 2
+IMPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len, W *resindex);
 
 #endif

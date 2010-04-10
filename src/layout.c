@@ -230,6 +230,11 @@ EXPORT VOID datlayout_resheader_getviewrect(datlayout_res_t *res, datlayout_styl
 	datlayout_box_getoffsetrect(&(res->box.resheader), resstyle, l, t, r, b);
 }
 
+EXPORT VOID datlayout_resheader_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getcontentrect(&(res->box.resheader), resstyle, l, t, r, b);
+}
+
 EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
 {
 	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
@@ -267,6 +272,7 @@ EXPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res)
 
 	datlayout_setupgid(layout, layout->target);
 
+	layout_res->index = len - 1;
 	datlayout_res_calcsize(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), layout->target, layout->body.l, layout->body.b);
 	datlayout_res_getviewrect(layout_res, &(layout->style.res), &l, &t, &r, &b);
 
@@ -805,7 +811,7 @@ EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 
 LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, W *al, W *at, W *ar, W *ab, W *type, UB **start, W *len)
 {
-	W l,t,r,b;
+	W l,t,r,b,resnum;
 	PNT pos;
 	W fnd;
 	RECT rect;
@@ -814,9 +820,52 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 	if (!((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b))) {
 		return 0;
 	}
-	datlayout_resheader_getviewrect(entry, resheaderstyle, &l, &t, &r, &b);
+	datlayout_resheader_getcontentrect(entry, resheaderstyle, &l, &t, &r, &b);
 	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
-		return 0;
+		pos.x = abs_x - l;
+		pos.y = abs_y - t;
+		if (pos.y < 0) {
+			DP(("A\n"));
+			return 0;
+		}
+		if (pos.y > 16) {
+			DP(("B\n"));
+			return 0;
+		}
+		if (pos.x < 0) {
+			DP(("C\n"));
+			return 0;
+		}
+		resnum = entry->index + 1;
+		printf("resnum = %d, pos = {%d, %d}\n", resnum, pos.x, pos.y);
+		if ((0 <= resnum)&&(resnum < 10)) {
+			DP(("D\n"));
+			if (pos.x > 16) {
+				return 0;
+			}
+		} else if ((10 <= resnum)&&(resnum < 100)) {
+			DP(("E\n"));
+			if (pos.x > 16*2) {
+				return 0;
+			}
+		} else if ((100 <= resnum)&&(resnum < 1000)) {
+			DP(("F\n"));
+			if (pos.x > 16*3) {
+				return 0;
+			}
+		} else if ((1000 <= resnum)&&(resnum < 10000)) {
+			DP(("G\n"));
+			if (pos.x > 16*4) {
+				return 0;
+			}
+		} else {
+			/* should be handling over 10000 res? */
+			DP(("H\n"));
+			return 0;
+		}
+		*type = DATDRAW_FINDACTION_TYPE_NUMBER;
+		DP(("I\n"));
+		return 1;
 	}
 	datlayout_resmessage_getcontentrect(entry, resmessagestyle, &l, &t, &r, &b);
 	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
@@ -834,7 +883,7 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 	return 0;
 }
 
-EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, UB **start, W *len)
+EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, UB **start, W *len, W *resindex)
 {
 	W i,abs_x,abs_y,fnd;
 	W l,t,r,b;
@@ -853,6 +902,7 @@ EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, U
 			rect->c.top = t - draw->view_t;
 			rect->c.right = r - draw->view_l;
 			rect->c.bottom = b - draw->view_t;
+			*resindex = i;
 			return 1;
 		}
 	}

@@ -610,7 +610,7 @@ LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
 LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 {
 	bchan_t *bchan = (bchan_t*)arg;
-	W fnd, event_type, type, len, dx, dy, err, size;
+	W fnd, event_type, type, len, dx, dy, err, size, resindex;
 	WID wid_butup;
 	GID gid;
 	RECT r, r0;
@@ -624,7 +624,7 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	/* TODO: change to same as bchanl's commonwindow */
 	switch (wchk_dck(wev->s.time)) {
 	case	W_CLICK:
-		fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len);
+		fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len, &resindex);
 		if (fnd == 0) {
 			return;
 		}
@@ -640,8 +640,12 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	case	W_PRESS:
 	}
 
-	fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len);
+	fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len, &resindex);
 	if (fnd == 0) {
+		return;
+	}
+	if (type == DATDRAW_FINDACTION_TYPE_NUMBER) {
+		DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
 		return;
 	}
 	if (type != DATDRAW_FINDACTION_TYPE_URL) {

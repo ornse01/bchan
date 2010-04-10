@@ -34,6 +34,7 @@ typedef struct actionlist_t_ actionlist_t;
 
 #define ACTIONLIST_ACTIONTYPE_ANCHOR 0
 #define ACTIONLIST_ACTIONTYPE_URL    1
+#define ACTIONLIST_ACTIONTYPE_NUMBER 2
 IMPORT actionlist_t* actionlist_new();
 IMPORT VOID actionlist_delete(actionlist_t *alist);
 IMPORT W actionlist_findboard(actionlist_t *alist, PNT pos, RECT *r, W *type, UB **start, W *len);
