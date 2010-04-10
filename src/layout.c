@@ -825,46 +825,36 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 		pos.x = abs_x - l;
 		pos.y = abs_y - t;
 		if (pos.y < 0) {
-			DP(("A\n"));
 			return 0;
 		}
 		if (pos.y > 16) {
-			DP(("B\n"));
 			return 0;
 		}
 		if (pos.x < 0) {
-			DP(("C\n"));
 			return 0;
 		}
 		resnum = entry->index + 1;
-		printf("resnum = %d, pos = {%d, %d}\n", resnum, pos.x, pos.y);
 		if ((0 <= resnum)&&(resnum < 10)) {
-			DP(("D\n"));
 			if (pos.x > 16) {
 				return 0;
 			}
 		} else if ((10 <= resnum)&&(resnum < 100)) {
-			DP(("E\n"));
 			if (pos.x > 16*2) {
 				return 0;
 			}
 		} else if ((100 <= resnum)&&(resnum < 1000)) {
-			DP(("F\n"));
 			if (pos.x > 16*3) {
 				return 0;
 			}
 		} else if ((1000 <= resnum)&&(resnum < 10000)) {
-			DP(("G\n"));
 			if (pos.x > 16*4) {
 				return 0;
 			}
 		} else {
 			/* should be handling over 10000 res? */
-			DP(("H\n"));
 			return 0;
 		}
 		*type = DATDRAW_FINDACTION_TYPE_NUMBER;
-		DP(("I\n"));
 		return 1;
 	}
 	datlayout_resmessage_getcontentrect(entry, resmessagestyle, &l, &t, &r, &b);
