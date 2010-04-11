@@ -562,3 +562,137 @@ EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 
 	return parse_tad(str, len, &callbacks, &ctx);
 }
+
+struct taditerator_t_ {
+	TC *bin;
+	W len;
+	W index;
+};
+typedef struct taditerator_t_ taditerator_t;
+
+enum TADITERATOR_RESULT_T_ {
+	TADITERATOR_RESULT_CHARCTOR,
+	TADITERATOR_RESULT_SEGMENT,
+	TADITERATOR_RESULT_END,
+};
+typedef enum TADITERATOR_RESULT_T_ TADITERATOR_RESULT_T;
+
+EXPORT W taditerator_next(taditerator_t *iterator, TC *segment, LTADSEG **seg, W *segsize, UB **data)
+{
+	TC *ch;
+	LTADSEG *seg0;
+
+	ch = iterator->bin + iterator->index;
+
+	if (iterator->index >= iterator->len) {
+		return TADITERATOR_RESULT_END;
+	}
+
+	if ((*ch & 0xFF80) == 0xFF80) {
+		*segment = *ch & 0xFF;
+		seg0 = (LTADSEG*)ch;
+		if (seg0->len == 0xffff) {
+			iterator->index += 1 + seg0->llen / 2 + 3;
+			*segsize = seg0->llen;
+			*data = ((UB*)seg0) + 8;
+			*seg = seg0;
+		} else {
+			iterator->index += 1 + seg0->len / 2 + 1;
+			*segsize = seg0->len;
+			*data = ((UB*)seg0) + 4;
+			*seg = seg0;
+		}
+		return TADITERATOR_RESULT_SEGMENT;
+	} else {
+		*segment = *ch;
+		*seg = NULL;
+		*segsize = 2;
+		*data = NULL;
+		iterator->index++;
+		return TADITERATOR_RESULT_CHARCTOR;
+	}
+}
+
+EXPORT VOID taditrerator_initialize(taditerator_t *iterator, TC *bin, W strlen)
+{
+	iterator->bin = bin;
+	iterator->len = strlen;
+	iterator->index = 0;
+}
+
+EXPORT VOID taditerator_finalize(taditerator_t *iterator)
+{
+}
+
+EXPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len)
+{
+	taditerator_t iter;
+	TC ch;
+	LTADSEG *seg;
+	W size;
+	UB *data;
+	TADITERATOR_RESULT_T ret;
+	W allsize;
+
+	taditrerator_initialize(&iter, str, len);
+
+	allsize = 0;
+	for (;;) {
+		ret = taditerator_next(&iter, &ch, &seg, &size, &data);
+		if (ret == TADITERATOR_RESULT_CHARCTOR) {
+			allsize += size;
+		} else if (ret == TADITERATOR_RESULT_SEGMENT) {
+			if (ch != TS_TAPPL) {
+				if (seg->len == 0xffff) {
+					allsize += seg->llen + 8;
+				} else {
+					allsize += seg->len + 4;
+				}
+			}
+		} else if (ret == TADITERATOR_RESULT_END) {
+			break;
+		}
+	}
+
+	taditerator_finalize(&iter);
+
+	return allsize;
+}
+
+EXPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *data, W data_len)
+{
+	taditerator_t iter;
+	TC ch;
+	LTADSEG *seg;
+	W size, i;
+	UB *data0, *dest;
+	TADITERATOR_RESULT_T ret;
+
+	taditrerator_initialize(&iter, str, len);
+
+	i = 0;
+	dest = (UB*)data;
+	for (;;) {
+		ret = taditerator_next(&iter, &ch, &seg, &size, &data0);
+		if (ret == TADITERATOR_RESULT_CHARCTOR) {
+			memcpy(dest + i, &ch, size);
+			i += size;
+		} else if (ret == TADITERATOR_RESULT_SEGMENT) {
+			if (ch != TS_TAPPL) {
+				if (seg->len == 0xffff) {
+					size = seg->llen + 8;
+				} else {
+					size = seg->len + 4;
+				}
+				memcpy(dest + i, seg, size);
+				i += size;
+			}
+		} else if (ret == TADITERATOR_RESULT_END) {
+			break;
+		}
+	}
+
+	taditerator_finalize(&iter);
+
+	return i;
+}

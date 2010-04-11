@@ -41,6 +41,8 @@ IMPORT W actionlist_findboard(actionlist_t *alist, PNT pos, RECT *r, W *type, UB
 
 IMPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **alist);
 IMPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv);
+IMPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len);
+IMPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *dest, W dest_len);
 
 typedef struct {
 #if BIGENDIAN
