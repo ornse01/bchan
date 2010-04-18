@@ -1,7 +1,7 @@
 /*
  * http.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -181,7 +181,7 @@ EXPORT UB* http_getheader(http_t *http)
 
 EXPORT W http_getheaderlength(http_t *http)
 {
-	return http->header_buffer_len;
+	return http->header_len;
 }
 
 LOCAL W http_checkheader_content_encoding(http_t *http)
