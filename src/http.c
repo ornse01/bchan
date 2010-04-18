@@ -210,15 +210,29 @@ LOCAL W http_checkheader_transfer_encoding(http_t *http)
 	return 0;
 }
 
+LOCAL W http_checkheader_content_length(http_t *http)
+{
+	B *str;
+
+	str = strstr(http->header_buffer, "Content-Length:");
+	if (str == NULL) {
+		return -1;
+	}
+	str += 15;
+	return atoi(str);
+}
+
 typedef struct {
 	http_t *http;
 	Bool is_chunked;
+	W content_length; /* for not chunked response. should be separete. */
 	UB *buffer;
 	W buffer_len;
 	W buffer_rcv_len;
 	W buffer_push_len;
 	W current_chunked_len;
 	W current_chunked_push_len;
+	W total_push_len;
 } http_chunkediterator_t;
 
 LOCAL W http_startchunkediterator(http_t *http, http_chunkediterator_t *iterator)
@@ -229,8 +243,10 @@ LOCAL W http_startchunkediterator(http_t *http, http_chunkediterator_t *iterator
 	is_chunked = http_checkheader_transfer_encoding(http);
 	if (is_chunked) {
 		iterator->is_chunked = True;
+		iterator->content_length = -1;
 	} else {
 		iterator->is_chunked = False;
+		iterator->content_length = http_checkheader_content_length(http);
 	}
 	iterator->buffer_len = 1024;
 	iterator->buffer = malloc(iterator->buffer_len);
@@ -245,6 +261,7 @@ LOCAL W http_startchunkediterator(http_t *http, http_chunkediterator_t *iterator
 	iterator->buffer_push_len = 0;
 	iterator->current_chunked_len = 0;
 	iterator->current_chunked_push_len = 0;
+	iterator->total_push_len = 0;
 
 	return 0;
 }
@@ -339,14 +356,25 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 {
 	W rcvlen, err;
 
+	if ((iterator->is_chunked == False)
+		&&(iterator->content_length >= 0)
+		&&(iterator->total_push_len > iterator->content_length)) {
+		DP(("http_chunkediterator_getnext: finish by Content-Length\n"));
+		*ptr = NULL;
+		*len = 0;
+		return 0;
+	}
+
 	if (iterator->buffer_rcv_len == iterator->buffer_push_len) {
 		rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
 		if (rcvlen == EX_CONNABORTED) {
+			DP(("http_chunkediterator_getnext: finish by EX_CONNABORTED\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
 		}
 		if (rcvlen == 0) {
+			DP(("http_chunkediterator_getnext: finish by rcvlen == 0\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
@@ -363,6 +391,11 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 		*ptr = iterator->buffer;
 		*len = iterator->buffer_rcv_len;
 		iterator->buffer_push_len += *len;
+		iterator->total_push_len += *len;
+		if ((iterator->content_length >= 0)
+			&&(iterator->total_push_len > iterator->content_length)) {
+			*len -= iterator->total_push_len - iterator->content_length;
+		}
 		return 0;
 	}
 
@@ -387,6 +420,7 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 	}
 	iterator->current_chunked_push_len += *len;
 	iterator->buffer_push_len += *len;
+	iterator->total_push_len += *len;
 
 	return 0;
 }
