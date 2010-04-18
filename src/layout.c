@@ -99,6 +99,96 @@ LOCAL VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t 
 	*b = box->b;
 }
 
+LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9};
+
+LOCAL W datlayout_res_totraytextdata_write_zenkaku(TC *str)
+{
+	TADSEG *seg = (TADSEG*)str;
+
+	if (str == NULL) {
+		return 10;
+	}
+
+	seg->id = 0xFF00|TS_TFONT;
+	seg->len = 6;
+	*(UH*)(str + 2) = 3 << 8;
+	*(RATIO*)(str + 3) = 0x0101;
+	*(RATIO*)(str + 4) = 0x0101;
+
+	return 10;
+}
+
+LOCAL W datlayout_res_totraytextdata(datlayout_res_t *res, B *data, W data_len)
+{
+	W i = 0, num, digit, draw = 0;
+	TC *str = (TC*)data;
+
+	if (data != NULL) {
+		num = res->index + 1;
+		i += datlayout_res_totraytextdata_write_zenkaku(str + i) / 2;
+		digit = num / 1000 % 10;
+		if ((digit != 0)||(draw != 0)) {
+			str[i++] = dec[digit];
+			draw = 1;
+		}
+		digit = num / 100 % 10;
+		if ((digit != 0)||(draw != 0)) {
+			str[i++] = dec[digit];
+			draw = 1;
+		}
+		digit = num / 10 % 10;
+		if ((digit != 0)||(draw != 0)) {
+			str[i++] = dec[digit];
+			draw = 1;
+		}
+		digit = num % 10;
+		if ((digit != 0)||(draw != 0)) {
+			str[i++] = dec[digit];
+			draw = 1;
+		}
+		str[i++] = TK_KSP;
+		i += tadlib_remove_TA_APPL(res->parser_res->name, res->parser_res->name_len, str + i, data_len - i / 2) / 2;
+		str[i++] = TK_KSP;
+		i += datlayout_res_totraytextdata_write_zenkaku(str + i) / 2;
+		str[i++] = TK_LABR;
+		i += tadlib_remove_TA_APPL(res->parser_res->mail, res->parser_res->mail_len, str + i, data_len - i / 2) / 2;
+		i += datlayout_res_totraytextdata_write_zenkaku(str + i) / 2;
+		str[i++] = TK_RABR;
+		str[i++] = TK_KSP;
+		i += tadlib_remove_TA_APPL(res->parser_res->date, res->parser_res->date_len, str + i, data_len - i / 2) / 2;
+		str[i++] = TK_NL;
+		i += datlayout_res_totraytextdata_write_zenkaku(str + i) / 2;
+		i += tadlib_remove_TA_APPL(res->parser_res->body, res->parser_res->body_len, str + i, data_len - i / 2) / 2;
+	} else {
+		num = res->index + 1;
+		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
+		if ((0 <= num)&&(num < 10)) {
+			i += 1;
+		} else if ((10 <= num)&&(num < 100)) {
+			i += 2;
+		} else if ((100 <= num)&&(num < 1000)) {
+			i += 3;
+		} else if (1000 <= num) {
+			i += 4;
+		}
+		i++; /* TK_KSP */
+		i += tadlib_remove_TA_APPL_calcsize(res->parser_res->name, res->parser_res->name_len) / 2;
+		i++; /* TK_KSP */
+		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
+		i++; /* TO_LABR */
+		i += tadlib_remove_TA_APPL_calcsize(res->parser_res->mail, res->parser_res->mail_len) / 2;
+		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
+		i++; /* TO_RABR */
+		i++; /* TK_KSP */
+		i += tadlib_remove_TA_APPL_calcsize(res->parser_res->date, res->parser_res->date_len) / 2;
+		i++; /* TK_NL */
+		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
+		i += tadlib_remove_TA_APPL_calcsize(res->parser_res->body, res->parser_res->body_len) / 2;
+	}
+
+	return i * sizeof(TC);
+}
+
 LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
 {
 	datlayout_res_t *layout_res;
@@ -238,6 +328,14 @@ EXPORT VOID datlayout_resheader_getcontentrect(datlayout_res_t *res, datlayout_s
 EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
 {
 	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
+}
+
+EXPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len)
+{
+	if ((n < 0)||(layout->len <= n)) {
+		return -1; /* TODO */
+	}
+	return datlayout_res_totraytextdata(layout->layout_res[n], data, data_len);
 }
 
 LOCAL W datlayout_setupgid(datlayout_t *layout, GID gid)
@@ -478,8 +576,6 @@ LOCAL W datdraw_entrydraw_drawdate(datlayout_res_t *entry, GID gid, W dh, W dv)
 	W len = entry->parser_res->date_len;
 	return tadlib_drawtext(str, len, gid, dh, dv);
 }
-
-LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9};
 
 LOCAL W datdraw_entrydraw_resnumber(datlayout_res_t *entry, W resnum, GID target)
 {
