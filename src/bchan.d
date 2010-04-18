@@ -55,6 +55,8 @@
 .TEXT_THREADNUMBER	=	42
 .TEXT_THREADINFO	=	43
 .MSGTEXT_CANTRETRIEVE	=	44
+.GMENU_RESNUMBER	=	45
+.MLIST_RESNUMBER	=	46
 
 ---------
 -- data type = PARTS_DATA
@@ -148,6 +150,10 @@
 	{# MSGTEXT_CANTRETRIEVE 0 0}	-- data number
 	"スレッド情報が存在しないためこの操作はできません\0"
 
+	{# MLIST_RESNUMBER 0 0}     -- data number
+	MC_STR+MC_IND "レスのＮＧ指定"
+	MC_STR "このレスをトレーに複写\0"
+
 ---------
 -- data type = MENU_DATA
 ---------
@@ -159,6 +165,25 @@
 	0L 0L 0L TEXT_MLIST2:L 0L	-- mlist2
 	0L 0L 0L 0L 0L	-- [ウィンドウ]
 	0L 0L 0L 0L 0L	-- [小物]
+
+---------
+-- data type = GMENU_DATA
+---------
+	{% 9 0}			-- datatype GMENU_DATA
+	{# GMENU_RESNUMBER 0 0} 	-- data number
+	1L	-- frame
+	0L	-- bgpat
+	0L	-- indpat
+	-1L	-- chcol
+	0H 0H 250H 40H	-- area
+	0L	-- inact
+	0L	-- select
+	0L	-- desc
+	MLIST_RESNUMBER:L	-- dnum
+	0L	-- ptr
+	2L	-- nitem
+	26H 3H 240H 19H	-- r[0]
+	10H 21H 240H 37H	-- r[1]
 
 ---------
 -- data type = USER_DATA

@@ -38,7 +38,7 @@ VPATH = $(S)
 HEADER := $(S) $(HEADER)
 
 # ソースファイル
-SRC =	main.c cache.c parser.c layout.c window.c retriever.c tadlib.c confirm.c poptray.c postres.c http.c submit.c sjisstring.c parselib.c submitutil.c bchan_vobj.c tadurl.c bchan_panels.c
+SRC =	main.c cache.c parser.c layout.c window.c retriever.c tadlib.c confirm.c poptray.c postres.c http.c submit.c sjisstring.c parselib.c submitutil.c bchan_vobj.c tadurl.c bchan_panels.c bchan_menus.c
 
 # データボックスソースファイル
 DBSRC =

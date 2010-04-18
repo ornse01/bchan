@@ -53,6 +53,7 @@
 #include	"sjisstring.h"
 #include	"bchan_vobj.h"
 #include	"bchan_panels.h"
+#include	"bchan_menus.h"
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -81,6 +82,7 @@
 #define BCHAN_DBX_FFUSEN_VIEWER 36
 #define BCHAN_DBX_MSGTEXT_NOTFOUND	37
 #define BCHAN_DBX_MSGTEXT_CANTRETRIEVE 44
+#define BCHAN_DBX_GMENU_RESNUMBER 45
 
 #define BCHAN_MENU_WINDOW 4
 
@@ -146,6 +148,7 @@ struct bchan_t_ {
 	MNID mnid;
 
 	bchan_hmistate_t hmistate;
+	bchan_resmenu_t resmenu;
 
 	datretriever_t *retriever;
 	datcache_t *cache;
@@ -172,6 +175,7 @@ void	killme(bchan_t *bchan)
 {
 	gset_ptr(PS_BUSY, NULL, -1, -1);
 	pdsp_msg(NULL);
+	bchan_resmenu_finalize(&bchan->resmenu);
 	if (bchan->exectype == EXECREQ) {
 		oend_prc(bchan->vid, NULL, 0);
 	}
@@ -607,6 +611,29 @@ LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
 	datwindow_scrollbyvalue(bchan->window, 0 - cl, tt - ct);
 }
 
+LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
+{
+	W size, err;
+	PNT pos;
+	B *data;
+
+	DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
+	pos.x = wev->s.pos.x;
+	pos.y = wev->s.pos.y;
+	gcnv_abs(bchan->gid, &pos);
+	err = bchan_resmenu_select(&bchan->resmenu, pos);
+	if (err == BCHAN_RESMENU_SELECT_PUSHTRAY) {
+		size = datlayout_resindextotraytextdata(bchan->layout, resindex, NULL, 0);
+		data = malloc(size);
+		if (data == NULL) {
+			return;
+		}
+		datlayout_resindextotraytextdata(bchan->layout, resindex, data, size);
+		bchan_pushstringtotray((TC*)data, size/2);
+		free(data);
+	}
+}
+
 LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 {
 	bchan_t *bchan = (bchan_t*)arg;
@@ -645,7 +672,7 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 		return;
 	}
 	if (type == DATDRAW_FINDACTION_TYPE_NUMBER) {
-		DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
+		bchan_butdn_pressnumber(bchan, wev, resindex);
 		return;
 	}
 	if (type != DATDRAW_FINDACTION_TYPE_URL) {
@@ -944,6 +971,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("mcre_men error", mnid);
 		goto error_mcre_men;
 	}
+	err = bchan_resmenu_initialize(&bchan->resmenu, BCHAN_DBX_GMENU_RESNUMBER);
+	if (err < 0) {
+		DP_ER("bchan_resmenu_initialize", err);
+		goto error_resmenu_initialize;
+	}
 
 	bchan_hmistate_initialize(&bchan->hmistate);
 
@@ -976,6 +1008,8 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 
 	return 0;
 
+error_resmenu_initialize:
+	mdel_men(mnid);
 error_mcre_men:
 	free(mnitem);
 error_mnitem:
