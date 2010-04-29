@@ -233,9 +233,9 @@ typedef struct {
 	W current_chunked_len;
 	W current_chunked_push_len;
 	W total_push_len;
-} http_chunkediterator_t;
+} http_transferencodeiterator_t;
 
-LOCAL W http_startchunkediterator(http_t *http, http_chunkediterator_t *iterator)
+LOCAL W http_starttransferencodeiterator(http_t *http, http_transferencodeiterator_t *iterator)
 {
 	W is_chunked;
 
@@ -266,7 +266,7 @@ LOCAL W http_startchunkediterator(http_t *http, http_chunkediterator_t *iterator
 	return 0;
 }
 
-LOCAL W http_chunkediterator_getnext_readchunksize(http_chunkediterator_t *iterator)
+LOCAL W http_transferencodeiterator_getnext_readchunksize(http_transferencodeiterator_t *iterator)
 {
 	UB ch;
 	W i, len = 0, rcvlen;
@@ -352,14 +352,14 @@ LOCAL W http_chunkediterator_getnext_readchunksize(http_chunkediterator_t *itera
 	return 0;
 }
 
-LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr, W *len)
+LOCAL W http_transferencodeiterator_getnext(http_transferencodeiterator_t *iterator, UB **ptr, W *len)
 {
 	W rcvlen, err;
 
 	if ((iterator->is_chunked == False)
 		&&(iterator->content_length >= 0)
 		&&(iterator->total_push_len > iterator->content_length)) {
-		DP(("http_chunkediterator_getnext: finish by Content-Length\n"));
+		DP(("http_transferencodeiterator_getnext: finish by Content-Length\n"));
 		*ptr = NULL;
 		*len = 0;
 		return 0;
@@ -368,13 +368,13 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 	if (iterator->buffer_rcv_len == iterator->buffer_push_len) {
 		rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
 		if (rcvlen == EX_CONNABORTED) {
-			DP(("http_chunkediterator_getnext: finish by EX_CONNABORTED\n"));
+			DP(("http_transferencodeiterator_getnext: finish by EX_CONNABORTED\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
 		}
 		if (rcvlen == 0) {
-			DP(("http_chunkediterator_getnext: finish by rcvlen == 0\n"));
+			DP(("http_transferencodeiterator_getnext: finish by rcvlen == 0\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
@@ -400,9 +400,9 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 	}
 
 	if (iterator->current_chunked_len == iterator->current_chunked_push_len) {
-		err = http_chunkediterator_getnext_readchunksize(iterator);
+		err = http_transferencodeiterator_getnext_readchunksize(iterator);
 		if (err < 0) {
-			DP_ER("http_chunkediterator_getnext_readchunksize:", err);
+			DP_ER("http_transferencodeiterator_getnext_readchunksize:", err);
 			return err;
 		}
 	}
@@ -425,7 +425,7 @@ LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr,
 	return 0;
 }
 
-LOCAL VOID http_chunkediterator_finalize(http_chunkediterator_t *iterator)
+LOCAL VOID http_transferencodeiterator_finalize(http_transferencodeiterator_t *iterator)
 {
 	free(iterator->buffer);
 }
@@ -471,7 +471,7 @@ LOCAL W gzip_headercheck(UB *buf)
 
 typedef struct {
 	http_t *http;
-	http_chunkediterator_t iter;
+	http_transferencodeiterator_t iter;
 	z_stream z;
 	Bool is_gziped;
 	Bool is_finished;
@@ -491,7 +491,7 @@ LOCAL W http_startgzipiterator(http_t *http, http_gzipiterator_t *iterator)
 	}
 
 	iterator->http = http;
-	http_startchunkediterator(http, &(iterator->iter));
+	http_starttransferencodeiterator(http, &(iterator->iter));
 	if (err == 0) {
 		iterator->is_gziped = False;
 		return 0; /* not compressed */
@@ -506,9 +506,9 @@ LOCAL W http_startgzipiterator(http_t *http, http_gzipiterator_t *iterator)
 		return -1;
 	}
 
-	err = http_chunkediterator_getnext(&(iterator->iter), &bin, &bin_len);
+	err = http_transferencodeiterator_getnext(&(iterator->iter), &bin, &bin_len);
 	if (err < 0) {
-		DP_ER("http_chunkediterator_getnext error", err);
+		DP_ER("http_transferencodeiterator_getnext error", err);
 		free(iterator->buffer);
 		return -1;
 	}
@@ -548,7 +548,7 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
 	W c_len, err;
 
 	if (iterator->is_gziped == False) {
-		return http_chunkediterator_getnext(&(iterator->iter), ptr, len);
+		return http_transferencodeiterator_getnext(&(iterator->iter), ptr, len);
 	}
 	if (iterator->is_finished == True) {
 		*ptr = NULL;
@@ -558,9 +558,9 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
 
 	for (;;) {
 		if (iterator->z.avail_in == 0) {
-			err = http_chunkediterator_getnext(&(iterator->iter), &c_bin, &c_len);
+			err = http_transferencodeiterator_getnext(&(iterator->iter), &c_bin, &c_len);
 			if (err < 0) {
-				DP_ER("http_chunkediterator_getnext error:", err);
+				DP_ER("http_transferencodeiterator_getnext error:", err);
 				return err;
 			}
 			if (c_bin == NULL) {
@@ -595,7 +595,7 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
 
 LOCAL VOID http_gzipiterator_finalize(http_gzipiterator_t *iterator)
 {
-	http_chunkediterator_finalize(&(iterator->iter));
+	http_transferencodeiterator_finalize(&(iterator->iter));
 	if (iterator->is_gziped == False) {
 		return;
 	}
