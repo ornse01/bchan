@@ -224,30 +224,17 @@ LOCAL W http_checkheader_content_length(http_t *http)
 
 typedef struct {
 	http_t *http;
-	Bool is_chunked;
-	W content_length; /* for not chunked response. should be separete. */
-	UB *buffer;
+	UB *buffer; /* should refactor buffer handling. common with identity */
 	W buffer_len;
 	W buffer_rcv_len;
 	W buffer_push_len;
 	W current_chunked_len;
 	W current_chunked_push_len;
-	W total_push_len;
-} http_transferencodeiterator_t;
+} http_chunkediterator_t;
 
-LOCAL W http_starttransferencodeiterator(http_t *http, http_transferencodeiterator_t *iterator)
+LOCAL W http_chunkediterator_start(http_chunkediterator_t *iterator, http_t *http)
 {
-	W is_chunked;
-
 	iterator->http = http;
-	is_chunked = http_checkheader_transfer_encoding(http);
-	if (is_chunked) {
-		iterator->is_chunked = True;
-		iterator->content_length = -1;
-	} else {
-		iterator->is_chunked = False;
-		iterator->content_length = http_checkheader_content_length(http);
-	}
 	iterator->buffer_len = 1024;
 	iterator->buffer = malloc(iterator->buffer_len);
 	if (iterator->buffer == NULL) {
@@ -261,12 +248,11 @@ LOCAL W http_starttransferencodeiterator(http_t *http, http_transferencodeiterat
 	iterator->buffer_push_len = 0;
 	iterator->current_chunked_len = 0;
 	iterator->current_chunked_push_len = 0;
-	iterator->total_push_len = 0;
 
 	return 0;
 }
 
-LOCAL W http_transferencodeiterator_getnext_readchunksize(http_transferencodeiterator_t *iterator)
+LOCAL W http_chunkediterator_getnext_readchunksize(http_chunkediterator_t *iterator)
 {
 	UB ch;
 	W i, len = 0, rcvlen;
@@ -352,29 +338,20 @@ LOCAL W http_transferencodeiterator_getnext_readchunksize(http_transferencodeite
 	return 0;
 }
 
-LOCAL W http_transferencodeiterator_getnext(http_transferencodeiterator_t *iterator, UB **ptr, W *len)
+LOCAL W http_chunkediterator_getnext(http_chunkediterator_t *iterator, UB **ptr, W *len)
 {
-	W rcvlen, err;
-
-	if ((iterator->is_chunked == False)
-		&&(iterator->content_length >= 0)
-		&&(iterator->total_push_len > iterator->content_length)) {
-		DP(("http_transferencodeiterator_getnext: finish by Content-Length\n"));
-		*ptr = NULL;
-		*len = 0;
-		return 0;
-	}
+	W err, rcvlen;
 
 	if (iterator->buffer_rcv_len == iterator->buffer_push_len) {
 		rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
 		if (rcvlen == EX_CONNABORTED) {
-			DP(("http_transferencodeiterator_getnext: finish by EX_CONNABORTED\n"));
+			DP(("http_chunkediterator_getnext: finish by EX_CONNABORTED\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
 		}
 		if (rcvlen == 0) {
-			DP(("http_transferencodeiterator_getnext: finish by rcvlen == 0\n"));
+			DP(("http_chunkediterator_getnext: finish by rcvlen == 0\n"));
 			*ptr = NULL;
 			*len = 0;
 			return 0;
@@ -387,22 +364,10 @@ LOCAL W http_transferencodeiterator_getnext(http_transferencodeiterator_t *itera
 		iterator->buffer_push_len = 0;
 	}
 
-	if (iterator->is_chunked == False) {
-		*ptr = iterator->buffer;
-		*len = iterator->buffer_rcv_len;
-		iterator->buffer_push_len += *len;
-		iterator->total_push_len += *len;
-		if ((iterator->content_length >= 0)
-			&&(iterator->total_push_len > iterator->content_length)) {
-			*len -= iterator->total_push_len - iterator->content_length;
-		}
-		return 0;
-	}
-
 	if (iterator->current_chunked_len == iterator->current_chunked_push_len) {
-		err = http_transferencodeiterator_getnext_readchunksize(iterator);
+		err = http_chunkediterator_getnext_readchunksize(iterator);
 		if (err < 0) {
-			DP_ER("http_transferencodeiterator_getnext_readchunksize:", err);
+			DP_ER("http_chunkediterator_getnext_readchunksize:", err);
 			return err;
 		}
 	}
@@ -420,14 +385,151 @@ LOCAL W http_transferencodeiterator_getnext(http_transferencodeiterator_t *itera
 	}
 	iterator->current_chunked_push_len += *len;
 	iterator->buffer_push_len += *len;
-	iterator->total_push_len += *len;
 
 	return 0;
 }
 
-LOCAL VOID http_transferencodeiterator_finalize(http_transferencodeiterator_t *iterator)
+LOCAL VOID http_chunkediterator_finalize(http_chunkediterator_t *iterator)
 {
 	free(iterator->buffer);
+}
+
+struct http_identityiterator_t_ {
+	http_t *http;
+	W content_length;
+	UB *buffer; /* should refactor buffer handling. common with chunked */
+	W buffer_len;
+	W buffer_rcv_len;
+	W buffer_push_len;
+	W current_chunked_len;
+	W current_chunked_push_len;
+	W total_push_len;
+};
+typedef struct http_identityiterator_t_ http_identityiterator_t;
+
+LOCAL W http_identityiterator_start(http_identityiterator_t *iterator, http_t *http)
+{
+	iterator->http = http;
+	iterator->content_length = http_checkheader_content_length(http);
+	iterator->buffer_len = 1024;
+	iterator->buffer = malloc(iterator->buffer_len);
+	if (iterator->buffer == NULL) {
+		return -1;
+	}
+
+	iterator->buffer_rcv_len = http->header_buffer_rcv_len - (http->header_len + 4);
+	if (iterator->buffer_rcv_len > 0) {
+		memcpy(iterator->buffer, http->header_buffer + http->header_len + 4, iterator->buffer_rcv_len);
+	}
+	iterator->buffer_push_len = 0;
+	iterator->current_chunked_len = 0;
+	iterator->current_chunked_push_len = 0;
+	iterator->total_push_len = 0;
+
+	return 0;
+}
+
+LOCAL W http_identityiterator_getnext(http_identityiterator_t *iterator, UB **ptr, W *len)
+{
+	W rcvlen;
+
+	if ((iterator->content_length >= 0)
+		&&(iterator->total_push_len > iterator->content_length)) {
+		DP(("http_identityiterator_getnext: finish by Content-Length\n"));
+		*ptr = NULL;
+		*len = 0;
+		return 0;
+	}
+
+	if (iterator->buffer_rcv_len == iterator->buffer_push_len) {
+		rcvlen = so_recv(iterator->http->sockid, iterator->buffer, iterator->buffer_len, 0);
+		if (rcvlen == EX_CONNABORTED) {
+			DP(("http_identityiterator_getnext: finish by EX_CONNABORTED\n"));
+			*ptr = NULL;
+			*len = 0;
+			return 0;
+		}
+		if (rcvlen == 0) {
+			DP(("http_identityiterator_getnext: finish by rcvlen == 0\n"));
+			*ptr = NULL;
+			*len = 0;
+			return 0;
+		}
+		if (rcvlen < 0) {
+			DP_ER("so_recv error:", rcvlen);
+			return rcvlen;
+		}
+		iterator->buffer_rcv_len = rcvlen;
+		iterator->buffer_push_len = 0;
+	}
+
+	*ptr = iterator->buffer;
+	*len = iterator->buffer_rcv_len;
+	iterator->buffer_push_len += *len;
+	iterator->total_push_len += *len;
+	if ((iterator->content_length >= 0)
+		&&(iterator->total_push_len > iterator->content_length)) {
+		*len -= iterator->total_push_len - iterator->content_length;
+	}
+
+	return 0;
+}
+
+LOCAL VOID http_identityiterator_finalize(http_identityiterator_t *iterator)
+{
+	free(iterator->buffer);
+}
+
+enum HTTP_TRANSFERENCODEITERATOR_TYPE_T_ {
+	HTTP_TRANSFERENCODEITERATOR_TYPE_IDENTITY,
+	HTTP_TRANSFERENCODEITERATOR_TYPE_CHUNKED,
+};
+typedef enum HTTP_TRANSFERENCODEITERATOR_TYPE_T_ HTTP_TRANSFERENCODEITERATOR_TYPE_T;
+
+typedef struct {
+	http_t *http;
+	HTTP_TRANSFERENCODEITERATOR_TYPE_T type;
+	http_identityiterator_t identity;
+	http_chunkediterator_t chunked;
+} http_transferencodeiterator_t;
+
+LOCAL W http_starttransferencodeiterator(http_t *http, http_transferencodeiterator_t *iterator)
+{
+	W is_chunked;
+
+	is_chunked = http_checkheader_transfer_encoding(http);
+	if (is_chunked) {
+		DP(("Transfer-Encoding: chunked\n"));
+		iterator->type = HTTP_TRANSFERENCODEITERATOR_TYPE_CHUNKED;
+		return http_chunkediterator_start(&iterator->chunked, http);
+	} else {
+		DP(("Transfer-Encoding: identity\n"));
+		iterator->type = HTTP_TRANSFERENCODEITERATOR_TYPE_IDENTITY;
+		return http_identityiterator_start(&iterator->identity, http);
+	}
+}
+
+LOCAL W http_transferencodeiterator_getnext(http_transferencodeiterator_t *iterator, UB **ptr, W *len)
+{
+	switch (iterator->type) {
+	case HTTP_TRANSFERENCODEITERATOR_TYPE_IDENTITY:
+		return http_identityiterator_getnext(&iterator->identity, ptr, len);
+	case HTTP_TRANSFERENCODEITERATOR_TYPE_CHUNKED:
+		return http_chunkediterator_getnext(&iterator->chunked, ptr, len);
+	}
+	return -1; /* TODO */
+}
+
+LOCAL VOID http_transferencodeiterator_finalize(http_transferencodeiterator_t *iterator)
+{
+	switch (iterator->type) {
+	case HTTP_TRANSFERENCODEITERATOR_TYPE_IDENTITY:
+		http_identityiterator_finalize(&iterator->identity);
+		break;
+	case HTTP_TRANSFERENCODEITERATOR_TYPE_CHUNKED:
+		http_chunkediterator_finalize(&iterator->chunked);
+		break;
+	}
 }
 
 /* http://ghanyan.monazilla.org/gzip.html */
