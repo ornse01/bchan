@@ -217,7 +217,7 @@ LOCAL W datparser_outputconvertingstring(datparser_t *parser, UB *str, W len, da
 	case COLUMN_MAIL:
 		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->mail), &(res->mail_len));
 	case COLUMN_DATE:
-		return datparser_convert_str(parser, str, len, TF_ATTR_CONT|TF_ATTR_SUPPRESS_FUSEN, &(res->date), &(res->date_len));
+		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->date), &(res->date_len));
 	case COLUMN_BODY:
 		return datparser_convert_str(parser, str, len, TF_ATTR_CONT, &(res->body), &(res->body_len));
 	case COLUMN_TITLE:

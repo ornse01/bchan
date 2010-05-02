@@ -577,18 +577,23 @@ enum TADITERATOR_RESULT_T_ {
 };
 typedef enum TADITERATOR_RESULT_T_ TADITERATOR_RESULT_T;
 
-EXPORT W taditerator_next(taditerator_t *iterator, TC *segment, LTADSEG **seg, W *segsize, UB **data)
+EXPORT W taditerator_next(taditerator_t *iterator, TC **pos, TC *segment, LTADSEG **seg, W *segsize, UB **data)
 {
-	TC *ch;
+	TC *ch, *dummy_pos;
 	LTADSEG *seg0;
 
 	ch = iterator->bin + iterator->index;
+	if (pos == NULL) {
+		pos = &dummy_pos;
+	}
 
 	if (iterator->index >= iterator->len) {
+		*pos = ch;
 		return TADITERATOR_RESULT_END;
 	}
 
 	if ((*ch & 0xFF80) == 0xFF80) {
+		*pos = ch;
 		*segment = *ch & 0xFF;
 		seg0 = (LTADSEG*)ch;
 		if (seg0->len == 0xffff) {
@@ -604,6 +609,7 @@ EXPORT W taditerator_next(taditerator_t *iterator, TC *segment, LTADSEG **seg, W
 		}
 		return TADITERATOR_RESULT_SEGMENT;
 	} else {
+		*pos = ch;
 		*segment = *ch;
 		*seg = NULL;
 		*segsize = 2;
@@ -638,7 +644,7 @@ EXPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len)
 
 	allsize = 0;
 	for (;;) {
-		ret = taditerator_next(&iter, &ch, &seg, &size, &data);
+		ret = taditerator_next(&iter, NULL, &ch, &seg, &size, &data);
 		if (ret == TADITERATOR_RESULT_CHARCTOR) {
 			allsize += size;
 		} else if (ret == TADITERATOR_RESULT_SEGMENT) {
@@ -673,7 +679,7 @@ EXPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *data, W data_len)
 	i = 0;
 	dest = (UB*)data;
 	for (;;) {
-		ret = taditerator_next(&iter, &ch, &seg, &size, &data0);
+		ret = taditerator_next(&iter, NULL, &ch, &seg, &size, &data0);
 		if (ret == TADITERATOR_RESULT_CHARCTOR) {
 			memcpy(dest + i, &ch, size);
 			i += size;
@@ -695,4 +701,87 @@ EXPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *data, W data_len)
 	taditerator_finalize(&iter);
 
 	return i;
+}
+
+EXPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC **id, W *id_len, TC **beid, W *beid_len)
+{
+	taditerator_t iter;
+	TC ch, *pos;
+	LTADSEG *seg;
+	W size;
+	UB *data0;
+	TADITERATOR_RESULT_T ret;
+	Bool checktype = False;
+	enum {
+		PARSEDATE_DATE,
+		PARSEDATE_ID,
+		PARSEDATE_BEID
+	} target = PARSEDATE_DATE;
+
+	*date = str;
+	*date_len = 0;
+	*id = NULL;
+	*id_len = 0;
+	*beid = NULL;
+	*beid_len = 0;
+
+	taditrerator_initialize(&iter, str, len);
+
+	for (;;) {
+		ret = taditerator_next(&iter, &pos, &ch, &seg, &size, &data0);
+		if (ret == TADITERATOR_RESULT_CHARCTOR) {
+			if (checktype == True) {
+				if (ch == TK_I) {
+					switch (target) {
+					case PARSEDATE_DATE:
+						*date_len = pos - *date - 1;
+						break;
+					case PARSEDATE_ID:
+						*id_len = pos - *id - 1;
+						break;
+					case PARSEDATE_BEID:
+						*beid_len = pos - *beid - 1;
+						break;
+					}
+					*id = pos;
+					target = PARSEDATE_ID;
+				} else if (ch == TK_B) {
+					switch (target) {
+					case PARSEDATE_DATE:
+						*date_len = pos - *date - 1;
+						break;
+					case PARSEDATE_ID:
+						*id_len = pos - *id - 1;
+						break;
+					case PARSEDATE_BEID:
+						*beid_len = pos - *beid - 1;
+						break;
+					}
+					*beid = pos;
+					target = PARSEDATE_BEID;
+				}
+				checktype = False;
+			} else {
+				if (ch == TK_KSP) {
+					checktype = True;
+				}
+			}
+		} else if (ret == TADITERATOR_RESULT_SEGMENT) {
+		} else if (ret == TADITERATOR_RESULT_END) {
+			switch (target) {
+			case PARSEDATE_DATE:
+				*date_len = pos - *date;
+				break;
+			case PARSEDATE_ID:
+				*id_len = pos - *id;
+				break;
+			case PARSEDATE_BEID:
+				*beid_len = pos - *beid;
+				break;
+			}
+			break;
+		}
+	}
+
+	taditerator_finalize(&iter);
 }

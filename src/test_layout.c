@@ -1,7 +1,7 @@
 /*
  * test_layout.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -219,6 +219,156 @@ LOCAL TEST_RESULT test_layout_1()
 	return result;
 }
 
+/* tmp */
+#include    "tadlib.h"
+
+LOCAL UB test_layout_datepart_01[] = {
+"name<>sage<>2008/12/12(X) 17:28:35<> body <>title
+name<><>2008/12/19(X) 18:03:53 ID:XXXXXXX<> body <>
+name<>sage<>2008/12/12(X) 20:28:38 ID:???<> body <>
+name<>sage<>2008/12/13(X) 02:11:04 ID:XXXXXXX BE:999999999-DIA(20000)<> body <>
+name<>sage<>2008/12/16(X) 22:08:27 ID:??? BE:999999999-DIA(20000)<> body <>
+name<>sage<>2008/12/13(X) 02:11:04 BE:999999999-DIA(20000)<> body <>
+name<>sage<>2008/12/16(X) 22:08:27 BE:999999999-DIA(20000)<> body <>
+"
+};
+
+LOCAL TEST_RESULT test_layout_datepart_1()
+{
+	LINK test_lnk;
+	TC *date, *id, *beid;
+	W date_len, id_len, beid_len;
+	W i, fd, err;
+	VID vid;
+	datcache_t *cache;
+	datparser_t *parser;
+	datparser_res_t *res = NULL;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_parser_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+	datcache_appenddata(cache, test_layout_datepart_01, strlen(test_layout_datepart_01));
+
+	parser = datparser_new(cache);
+
+	for (i = 0;; i++) {
+		err = datparser_getnextres(parser, &res);
+		if (err != 1) {
+			break;
+		}
+		if (res != NULL) {
+			tadlib_separete_datepart(res->date, res->date_len, &date, &date_len, &id, &id_len, &beid, &beid_len);
+			//printf("date len = %d, id len = %d, beid len = %d\n", date_len, id_len, beid_len);
+			switch (i) { /* TODO: should compair result TAD. */
+			case 0:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 1:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 10) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 2:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 6) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 3:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 10) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 23) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 4:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 6) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 23) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 5:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 23) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			case 6:
+				if (date_len != 27) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (id_len != 0) {
+					result = TEST_RESULT_FAIL;
+				}
+				if (beid_len != 23) {
+					result = TEST_RESULT_FAIL;
+				}
+				break;
+			default:
+				result = TEST_RESULT_FAIL;
+				break;
+			}
+		} else {
+			break;
+		}
+	}
+
+	datparser_delete(parser);
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
 LOCAL VOID test_layout_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -237,4 +387,5 @@ LOCAL VOID test_layout_printresult(TEST_RESULT (*proc)(), B *test_name)
 EXPORT VOID test_layout_main()
 {
 	test_layout_printresult(test_layout_1, "test_layout_1");
+	test_layout_printresult(test_layout_datepart_1, "test_layout_datepart_1");
 }

@@ -43,6 +43,7 @@ IMPORT W tadlib_calcdrawsize(TC *str, W len, GID gid, SIZE *sz, actionlist_t **a
 IMPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv);
 IMPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len);
 IMPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *dest, W dest_len);
+IMPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC **id, W *id_len, TC **beid, W *beid_len);
 
 typedef struct {
 #if BIGENDIAN
