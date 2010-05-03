@@ -34,6 +34,7 @@
 #include	<tcode.h>
 #include	<btron/btron.h>
 #include	<btron/dp.h>
+#include	<btron/libapp.h>
 #include	<tad.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
@@ -59,9 +60,18 @@ struct datlayout_res_t_ {
 		datlayout_box_t resmessage;
 	} box;
 	struct {
+		TC *date;
+		W date_len;
+		TC *id;
+		W id_len;
+		TC *beid;
+		W beid_len;
+		RECT rel_number_pos;
+		RECT rel_id_pos;
+	} headerinfo;
+	struct {
 		actionlist_t *name;
 		actionlist_t *mail;
-		actionlist_t *date;
 		actionlist_t *body;
 	} action;
 };
@@ -100,6 +110,39 @@ LOCAL VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t 
 }
 
 LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9};
+
+LOCAL W datlayout_res_UW_to_str(UW num, TC *dest)
+{
+	W i = 0, digit, draw = 0;
+	TC dummy_str[10];
+
+	if (dest == NULL) {
+		dest = dummy_str;
+	}
+
+	digit = num / 1000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = num / 100 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = num / 10 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = num % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+
+	return i;
+}
 
 LOCAL W datlayout_res_totraytextdata_write_zenkaku(TC *str)
 {
@@ -204,7 +247,6 @@ LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
 	layout_res->box.res.b = 0;
 	layout_res->action.name = NULL;
 	layout_res->action.mail = NULL;
-	layout_res->action.date = NULL;
 	layout_res->action.body = NULL;
 
 	return layout_res;
@@ -214,9 +256,6 @@ LOCAL VOID datlayout_res_delete(datlayout_res_t *layout_res)
 {
 	if (layout_res->action.body != NULL) {
 		actionlist_delete(layout_res->action.body);
-	}
-	if (layout_res->action.date != NULL) {
-		actionlist_delete(layout_res->action.date);
 	}
 	if (layout_res->action.mail != NULL) {
 		actionlist_delete(layout_res->action.mail);
@@ -245,23 +284,72 @@ LOCAL W datlayout_res_setupgid(GID gid)
 
 LOCAL W datlayout_res_calcresheaderdrawsize(datlayout_res_t *layout_res, GID gid, SIZE *sz)
 {
-	SIZE sz_name = {0,0}, sz_mail = {0,0}, sz_date = {0,0};
+	SIZE sz_number = {0,0}, sz_name = {0,0}, sz_mail = {0,0}, sz_date = {0,0}, sz_id = {0,0}, sz_beid = {0,0};
+	actionlist_t *alist_tmp;
+	TC numstr[10];
+	W numstr_len, chwidth;
+	H id_left = 0;
+
+	numstr_len = datlayout_res_UW_to_str(layout_res->index + 1, numstr);
+	tadlib_separete_datepart(layout_res->parser_res->date,
+							 layout_res->parser_res->date_len,
+							 &layout_res->headerinfo.date, &layout_res->headerinfo.date_len,
+							 &layout_res->headerinfo.id, &layout_res->headerinfo.id_len,
+							 &layout_res->headerinfo.beid, &layout_res->headerinfo.beid_len);
 
 	datlayout_res_setupgid(gid);
+	tadlib_calcdrawsize(numstr, numstr_len, gid, &sz_number, &alist_tmp);
+	actionlist_delete(alist_tmp);
+
 	tadlib_calcdrawsize(layout_res->parser_res->name, layout_res->parser_res->name_len, gid, &sz_name, &layout_res->action.name);
+
 	datlayout_res_setupgid(gid);
 	tadlib_calcdrawsize(layout_res->parser_res->mail, layout_res->parser_res->mail_len, gid, &sz_mail, &layout_res->action.mail);
 	datlayout_res_setupgid(gid);
-	tadlib_calcdrawsize(layout_res->parser_res->date, layout_res->parser_res->date_len, gid, &sz_date, &layout_res->action.date);
+	chwidth = gget_stw(gid, (TC[]){TK_LABR, TK_RABR}, 2, NULL, NULL);
+	if (chwidth > 0) { /* should calc here ? */
+		sz_mail.h += chwidth;
+	}
 
-	sz->h = sz_name.h + sz_mail.h + sz_date.h + 16*(4+1+1+1+1);
-	sz->v = sz_name.v;
+	datlayout_res_setupgid(gid);
+	tadlib_calcdrawsize(layout_res->headerinfo.date, layout_res->headerinfo.date_len, gid, &sz_date, &alist_tmp);
+	actionlist_delete(alist_tmp);
+	tadlib_calcdrawsize(layout_res->headerinfo.id, layout_res->headerinfo.id_len, gid, &sz_id, &alist_tmp);
+	actionlist_delete(alist_tmp);
+	tadlib_calcdrawsize(layout_res->headerinfo.beid, layout_res->headerinfo.beid_len, gid, &sz_beid, &alist_tmp);
+	actionlist_delete(alist_tmp);
+
+	sz->h = sz_number.h + sz_name.h + sz_mail.h + 16*(1+1);
+	if (layout_res->headerinfo.date != NULL) {
+		sz->h += 16 + sz_date.h;
+	}
+	if (layout_res->headerinfo.id != NULL) {
+		id_left = sz->h + 16;
+		sz->h += 16 + sz_id.h;
+	}
+	if (layout_res->headerinfo.beid != NULL) {
+		sz->h += 16 + sz_beid.h;
+	}
+
+	sz->v = sz_number.v;
+	if (sz_name.v > sz->v) {
+		sz->v = sz_name.v;
+	}
 	if (sz_mail.v > sz->v) {
 		sz->v = sz_mail.v;
 	}
 	if (sz_date.v > sz->v) {
 		sz->v = sz_date.v;
 	}
+
+	layout_res->headerinfo.rel_number_pos.c.left = 0;
+	layout_res->headerinfo.rel_number_pos.c.top = 0;
+	layout_res->headerinfo.rel_number_pos.c.right = sz_number.h;
+	layout_res->headerinfo.rel_number_pos.c.bottom = sz_number.v;
+	layout_res->headerinfo.rel_id_pos.c.left = id_left;
+	layout_res->headerinfo.rel_id_pos.c.top = 0;
+	layout_res->headerinfo.rel_id_pos.c.right = id_left + sz_id.h;
+	layout_res->headerinfo.rel_id_pos.c.bottom = sz_id.v;
 
 	return 0;
 }
@@ -570,11 +658,53 @@ LOCAL W datdraw_entrydraw_drawmail(datlayout_res_t *entry, GID gid, W dh, W dv)
 	return tadlib_drawtext(str, len, gid, dh, dv);
 }
 
-LOCAL W datdraw_entrydraw_drawdate(datlayout_res_t *entry, GID gid, W dh, W dv)
+LOCAL W datdraw_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh, W dv)
 {
+	TC *str;
+	W len, err;
+
+	if (entry->headerinfo.date != NULL) {
+		err = gset_chp(gid, 16, 0, 0);
+		if (err < 0) {
+			return err;
+		}
+		str = entry->headerinfo.date;
+		len = entry->headerinfo.date_len;
+		err = tadlib_drawtext(str, len, gid, dh, dv);
+		if (err < 0) {
+			return err;
+		}
+	}
+	if (entry->headerinfo.id != NULL) {
+		err = gset_chp(gid, 16, 0, 0);
+		if (err < 0) {
+			return err;
+		}
+		str = entry->headerinfo.id;
+		len = entry->headerinfo.id_len;
+		err = tadlib_drawtext(str, len, gid, dh, dv);
+		if (err < 0) {
+			return err;
+		}
+	}
+	if (entry->headerinfo.beid != NULL) {
+		err = gset_chp(gid, 16, 0, 0);
+		if (err < 0) {
+			return err;
+		}
+		str = entry->headerinfo.beid;
+		len = entry->headerinfo.beid_len;
+		err = tadlib_drawtext(str, len, gid, dh, dv);
+		if (err < 0) {
+			return err;
+		}
+	}
+	return 0;
+#if 0
 	TC *str = entry->parser_res->date;
 	W len = entry->parser_res->date_len;
 	return tadlib_drawtext(str, len, gid, dh, dv);
+#endif
 }
 
 LOCAL W datdraw_entrydraw_resnumber(datlayout_res_t *entry, W resnum, GID target)
@@ -852,14 +982,12 @@ LOCAL W datdraw_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle, d
 	}
 	datdraw_entrydraw_resetchsize(target);
 	gdra_chr(target, TK_RABR, G_STORE);
-	err = gset_chp(target, 16, 0, 0);
+
+	err = datdraw_entrydraw_drawdateidbeid(entry, target, dh, dv);
 	if (err < 0) {
 		return err;
 	}
-	err = datdraw_entrydraw_drawdate(entry, target, dh, dv);
-	if (err < 0) {
-		return err;
-	}
+
 	err = gset_chp(target, entry->box.resmessage.l - dh, entry->box.resmessage.t + 16 - dv, 1);
 	if (err < 0) {
 		return err;
@@ -907,7 +1035,7 @@ EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 
 LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, W *al, W *at, W *ar, W *ab, W *type, UB **start, W *len)
 {
-	W l,t,r,b,resnum;
+	W l,t,r,b,in;
 	PNT pos;
 	W fnd;
 	RECT rect;
@@ -929,29 +1057,17 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 		if (pos.x < 0) {
 			return 0;
 		}
-		resnum = entry->index + 1;
-		if ((0 <= resnum)&&(resnum < 10)) {
-			if (pos.x > 16) {
-				return 0;
-			}
-		} else if ((10 <= resnum)&&(resnum < 100)) {
-			if (pos.x > 16*2) {
-				return 0;
-			}
-		} else if ((100 <= resnum)&&(resnum < 1000)) {
-			if (pos.x > 16*3) {
-				return 0;
-			}
-		} else if ((1000 <= resnum)&&(resnum < 10000)) {
-			if (pos.x > 16*4) {
-				return 0;
-			}
-		} else {
-			/* should be handling over 10000 res? */
-			return 0;
+		in = inrect(entry->headerinfo.rel_number_pos, pos);
+		if (in == 1) {
+			*type = DATDRAW_FINDACTION_TYPE_NUMBER;
+			return 1;
 		}
-		*type = DATDRAW_FINDACTION_TYPE_NUMBER;
-		return 1;
+		in = inrect(entry->headerinfo.rel_id_pos, pos);
+		if (in == 1) {
+			*type = DATDRAW_FINDACTION_TYPE_RESID;
+			return 1;
+		}
+		return 0;
 	}
 	datlayout_resmessage_getcontentrect(entry, resmessagestyle, &l, &t, &r, &b);
 	if ((l <= abs_x)&&(abs_x < r)&&(t <= abs_y)&&(abs_y < b)) {
