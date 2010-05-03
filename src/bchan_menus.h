@@ -30,18 +30,18 @@
 #ifndef __BCHAN_MENUS_H__
 #define __BCHAN_MENUS_H__
 
-struct bchan_resmenu_t_ {
+struct bchan_resnumbermenu_t_ {
 	MNID mnid;
 };
-typedef struct bchan_resmenu_t_ bchan_resmenu_t;
+typedef struct bchan_resnumbermenu_t_ bchan_resnumbermenu_t;
 
-IMPORT W bchan_resmenu_initialize(bchan_resmenu_t *resmenu, W dnum);
-IMPORT VOID bchan_resmenu_finalize(bchan_resmenu_t *resmenu);
-IMPORT W bchan_resmenu_setngselected(bchan_resmenu_t *resmenu, Bool selected);
-#define BCHAN_RESMENU_SELECT_NOSELECT 0
-#define BCHAN_RESMENU_SELECT_NG 1
-#define BCHAN_RESMENU_SELECT_PUSHTRAY 2
-IMPORT W bchan_resmenu_select(bchan_resmenu_t *resmenu, PNT pos);
+IMPORT W bchan_resnumbermenu_initialize(bchan_resnumbermenu_t *resnumbermenu, W dnum);
+IMPORT VOID bchan_resnumbermenu_finalize(bchan_resnumbermenu_t *resnumbermenu);
+IMPORT W bchan_resnumbermenu_setngselected(bchan_resnumbermenu_t *resnumbermenu, Bool selected);
+#define BCHAN_RESNUMBERMENU_SELECT_NOSELECT 0
+#define BCHAN_RESNUMBERMENU_SELECT_NG 1
+#define BCHAN_RESNUMBERMENU_SELECT_PUSHTRAY 2
+IMPORT W bchan_resnumbermenu_select(bchan_resnumbermenu_t *resnumbermenu, PNT pos);
 
 struct bchan_residmenu_t_ {
 	MNID mnid;

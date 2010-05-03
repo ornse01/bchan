@@ -39,24 +39,24 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-EXPORT W bchan_resmenu_setngselected(bchan_resmenu_t *resmenu, Bool selected)
+EXPORT W bchan_resnumbermenu_setngselected(bchan_resnumbermenu_t *resnumbermenu, Bool selected)
 {
 	W err;
 
 	if (selected == True) {
-		err = mchg_gat(resmenu->mnid, 1, M_SEL);
+		err = mchg_gat(resnumbermenu->mnid, 1, M_SEL);
 	} else {
-		err = mchg_gat(resmenu->mnid, 1, M_NOSEL);
+		err = mchg_gat(resnumbermenu->mnid, 1, M_NOSEL);
 	}
 
 	return err;
 }
 
-EXPORT W bchan_resmenu_select(bchan_resmenu_t *resmenu, PNT pos)
+EXPORT W bchan_resnumbermenu_select(bchan_resnumbermenu_t *resnumbermenu, PNT pos)
 {
 	W err, ret;
 
-	err = msel_gmn(resmenu->mnid, pos);
+	err = msel_gmn(resnumbermenu->mnid, pos);
 	if (err < 0) {
 		DP_ER("msel_gmn", err);
 		return err;
@@ -64,20 +64,20 @@ EXPORT W bchan_resmenu_select(bchan_resmenu_t *resmenu, PNT pos)
 
 	switch (err) {
 	case 1: /* [レスのＮＧ指定] */
-		ret = BCHAN_RESMENU_SELECT_NG;
+		ret = BCHAN_RESNUMBERMENU_SELECT_NG;
 		break;
 	case 2: /* [このレスをトレーに複写] */
-		ret = BCHAN_RESMENU_SELECT_PUSHTRAY;
+		ret = BCHAN_RESNUMBERMENU_SELECT_PUSHTRAY;
 		break;
 	default:
-		ret = BCHAN_RESMENU_SELECT_NOSELECT;
+		ret = BCHAN_RESNUMBERMENU_SELECT_NOSELECT;
 		break;
 	}
 
 	return ret;
 }
 
-EXPORT W bchan_resmenu_initialize(bchan_resmenu_t *resmenu, W dnum)
+EXPORT W bchan_resnumbermenu_initialize(bchan_resnumbermenu_t *resnumbermenu, W dnum)
 {
 	W err;
 
@@ -87,14 +87,14 @@ EXPORT W bchan_resmenu_initialize(bchan_resmenu_t *resmenu, W dnum)
 		return err;
 	}
 
-	resmenu->mnid = err;
+	resnumbermenu->mnid = err;
 
 	return 0;
 }
 
-EXPORT VOID bchan_resmenu_finalize(bchan_resmenu_t *resmenu)
+EXPORT VOID bchan_resnumbermenu_finalize(bchan_resnumbermenu_t *resnumbermenu)
 {
-	mdel_gmn(resmenu->mnid);
+	mdel_gmn(resnumbermenu->mnid);
 }
 
 EXPORT W bchan_residmenu_setngselected(bchan_residmenu_t *residmenu, Bool selected)

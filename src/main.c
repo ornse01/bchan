@@ -149,7 +149,7 @@ struct bchan_t_ {
 	MNID mnid;
 
 	bchan_hmistate_t hmistate;
-	bchan_resmenu_t resmenu;
+	bchan_resnumbermenu_t resnumbermenu;
 	bchan_residmenu_t residmenu;
 
 	datretriever_t *retriever;
@@ -178,7 +178,7 @@ void	killme(bchan_t *bchan)
 	gset_ptr(PS_BUSY, NULL, -1, -1);
 	pdsp_msg(NULL);
 	bchan_residmenu_finalize(&bchan->residmenu);
-	bchan_resmenu_finalize(&bchan->resmenu);
+	bchan_resnumbermenu_finalize(&bchan->resnumbermenu);
 	if (bchan->exectype == EXECREQ) {
 		oend_prc(bchan->vid, NULL, 0);
 	}
@@ -624,8 +624,8 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	pos.x = wev->s.pos.x;
 	pos.y = wev->s.pos.y;
 	gcnv_abs(bchan->gid, &pos);
-	err = bchan_resmenu_select(&bchan->resmenu, pos);
-	if (err == BCHAN_RESMENU_SELECT_PUSHTRAY) {
+	err = bchan_resnumbermenu_select(&bchan->resnumbermenu, pos);
+	if (err == BCHAN_RESNUMBERMENU_SELECT_PUSHTRAY) {
 		size = datlayout_resindextotraytextdata(bchan->layout, resindex, NULL, 0);
 		data = malloc(size);
 		if (data == NULL) {
@@ -1009,10 +1009,10 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("mcre_men error", mnid);
 		goto error_mcre_men;
 	}
-	err = bchan_resmenu_initialize(&bchan->resmenu, BCHAN_DBX_GMENU_RESNUMBER);
+	err = bchan_resnumbermenu_initialize(&bchan->resnumbermenu, BCHAN_DBX_GMENU_RESNUMBER);
 	if (err < 0) {
-		DP_ER("bchan_resmenu_initialize", err);
-		goto error_resmenu_initialize;
+		DP_ER("bchan_resnumbermenu_initialize", err);
+		goto error_resnumbermenu_initialize;
 	}
 	err = bchan_residmenu_initialize(&bchan->residmenu, BCHAN_DBX_GMENU_RESID);
 	if (err < 0) {
@@ -1052,8 +1052,8 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	return 0;
 
 error_residmenu_initialize:
-	bchan_resmenu_finalize(&bchan->resmenu);
-error_resmenu_initialize:
+	bchan_resnumbermenu_finalize(&bchan->resnumbermenu);
+error_resnumbermenu_initialize:
 	mdel_men(mnid);
 error_mcre_men:
 	free(mnitem);
