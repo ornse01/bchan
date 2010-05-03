@@ -83,6 +83,7 @@
 #define BCHAN_DBX_MSGTEXT_NOTFOUND	37
 #define BCHAN_DBX_MSGTEXT_CANTRETRIEVE 44
 #define BCHAN_DBX_GMENU_RESNUMBER 45
+#define BCHAN_DBX_GMENU_RESID 47
 
 #define BCHAN_MENU_WINDOW 4
 
@@ -149,6 +150,7 @@ struct bchan_t_ {
 
 	bchan_hmistate_t hmistate;
 	bchan_resmenu_t resmenu;
+	bchan_residmenu_t residmenu;
 
 	datretriever_t *retriever;
 	datcache_t *cache;
@@ -175,6 +177,7 @@ void	killme(bchan_t *bchan)
 {
 	gset_ptr(PS_BUSY, NULL, -1, -1);
 	pdsp_msg(NULL);
+	bchan_residmenu_finalize(&bchan->residmenu);
 	bchan_resmenu_finalize(&bchan->resmenu);
 	if (bchan->exectype == EXECREQ) {
 		oend_prc(bchan->vid, NULL, 0);
@@ -634,6 +637,37 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	}
 }
 
+LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
+{
+	W id_len, size, err;
+	TC *id;
+	PNT pos;
+	B *data;
+
+	DP(("press DATDRAW_FINDACTION_TYPE_ID\n"));
+
+	datlayout_getidfromindex(bchan->layout, resindex, &id, &id_len);
+	if (id == NULL) {
+		DP(("      id is not exist\n"));
+		return;
+	}
+
+	pos.x = wev->s.pos.x;
+	pos.y = wev->s.pos.y;
+	gcnv_abs(bchan->gid, &pos);
+	err = bchan_residmenu_select(&bchan->residmenu, pos);
+	if (err == BCHAN_RESIDMENU_SELECT_PUSHTRAY) {
+		size = datlayout_idtotraytextdata(bchan->layout, id, id_len, NULL, 0);
+		data = malloc(size);
+		if (data == NULL) {
+			return;
+		}
+		datlayout_idtotraytextdata(bchan->layout, id, id_len, data, size);
+		bchan_pushstringtotray((TC*)data, size/2);
+		free(data);
+	}
+}
+
 LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 {
 	bchan_t *bchan = (bchan_t*)arg;
@@ -673,6 +707,10 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	}
 	if (type == DATDRAW_FINDACTION_TYPE_NUMBER) {
 		bchan_butdn_pressnumber(bchan, wev, resindex);
+		return;
+	}
+	if (type == DATDRAW_FINDACTION_TYPE_RESID) {
+		bchan_butdn_pressresheaderid(bchan, wev, resindex);
 		return;
 	}
 	if (type != DATDRAW_FINDACTION_TYPE_URL) {
@@ -976,6 +1014,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("bchan_resmenu_initialize", err);
 		goto error_resmenu_initialize;
 	}
+	err = bchan_residmenu_initialize(&bchan->residmenu, BCHAN_DBX_GMENU_RESID);
+	if (err < 0) {
+		DP_ER("bchan_residmenu_initialize", err);
+		goto error_residmenu_initialize;
+	}
 
 	bchan_hmistate_initialize(&bchan->hmistate);
 
@@ -1008,6 +1051,8 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 
 	return 0;
 
+error_residmenu_initialize:
+	bchan_resmenu_finalize(&bchan->resmenu);
 error_resmenu_initialize:
 	mdel_men(mnid);
 error_mcre_men:
