@@ -202,6 +202,7 @@ LOCAL W datlayout_res_totraytextdata(datlayout_res_t *res, B *data, W data_len)
 		str[i++] = TK_NL;
 		i += datlayout_res_totraytextdata_write_zenkaku(str + i) / 2;
 		i += tadlib_remove_TA_APPL(res->parser_res->body, res->parser_res->body_len, str + i, data_len - i / 2) / 2;
+		str[i++] = TK_NL;
 	} else {
 		num = res->index + 1;
 		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
@@ -227,9 +228,30 @@ LOCAL W datlayout_res_totraytextdata(datlayout_res_t *res, B *data, W data_len)
 		i++; /* TK_NL */
 		i += datlayout_res_totraytextdata_write_zenkaku(NULL) / 2;
 		i += tadlib_remove_TA_APPL_calcsize(res->parser_res->body, res->parser_res->body_len) / 2;
+		i++; /* TK_NL */
 	}
 
 	return i * sizeof(TC);
+}
+
+/* without "ID:" */
+LOCAL Bool datlayout_res_issameid(datlayout_res_t *res, TC *id, W id_len)
+{
+	W result;
+
+	if (res->headerinfo.id == NULL) {
+		return False;
+	}
+	if (res->headerinfo.id_len - 3 != id_len) {
+		return False;
+	}
+
+	result = tc_strncmp(res->headerinfo.id + 3, id, id_len);
+	if (result != 0) {
+		return False;
+	}
+
+	return True;
 }
 
 LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
@@ -418,12 +440,62 @@ EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_
 	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
 }
 
+EXPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_len)
+{
+	datlayout_res_t *res;
+
+	if ((n < 0)||(layout->len <= n)) {
+		*id = NULL;
+		*id_len = 0;
+		return;
+	}
+
+	res = layout->layout_res[n];
+	if (res->headerinfo.id == NULL) {
+		*id = NULL;
+		*id_len = 0;
+		return;
+	}
+
+	/* except "ID:" */
+	*id = res->headerinfo.id + 3;
+	*id_len = res->headerinfo.id_len - 3;
+}
+
 EXPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len)
 {
 	if ((n < 0)||(layout->len <= n)) {
 		return -1; /* TODO */
 	}
 	return datlayout_res_totraytextdata(layout->layout_res[n], data, data_len);
+}
+
+EXPORT W datlayout_idtotraytextdata(datlayout_t *layout, TC *id, W id_len, B *data, W data_len)
+{
+	W i, result, sum = 0;
+	Bool haveid;
+	datlayout_res_t *res;
+
+	for (i = 0; i < layout->len; i++) {
+		res = layout->layout_res[i];
+		haveid = datlayout_res_issameid(res, id, id_len);
+		if (haveid == True) {
+			if (data == NULL) {
+				result = datlayout_res_totraytextdata(res, NULL, 0);
+				if (result < 0) {
+					return result;
+				}
+			} else {
+				result = datlayout_res_totraytextdata(res, data + sum, data_len - sum);
+				if (result < 0) {
+					return result;
+				}
+			}
+			sum += result;
+		}
+	}
+
+	return sum;
 }
 
 LOCAL W datlayout_setupgid(datlayout_t *layout, GID gid)
