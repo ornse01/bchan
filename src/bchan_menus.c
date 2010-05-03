@@ -96,3 +96,61 @@ EXPORT VOID bchan_resmenu_finalize(bchan_resmenu_t *resmenu)
 {
 	mdel_gmn(resmenu->mnid);
 }
+
+EXPORT W bchan_residmenu_setngselected(bchan_residmenu_t *residmenu, Bool selected)
+{
+	W err;
+
+	if (selected == True) {
+		err = mchg_gat(residmenu->mnid, 1, M_SEL);
+	} else {
+		err = mchg_gat(residmenu->mnid, 1, M_NOSEL);
+	}
+
+	return err;
+}
+
+EXPORT W bchan_residmenu_select(bchan_residmenu_t *residmenu, PNT pos)
+{
+	W err, ret;
+
+	err = msel_gmn(residmenu->mnid, pos);
+	if (err < 0) {
+		DP_ER("msel_gmn", err);
+		return err;
+	}
+
+	switch (err) {
+	case 1: /* [このＩＤのＮＧ指定] */
+		ret = BCHAN_RESIDMENU_SELECT_NG;
+		break;
+	case 2: /* [このＩＤのレスをトレーに複写] */
+		ret = BCHAN_RESIDMENU_SELECT_PUSHTRAY;
+		break;
+	default:
+		ret = BCHAN_RESIDMENU_SELECT_NOSELECT;
+		break;
+	}
+
+	return ret;
+}
+
+EXPORT W bchan_residmenu_initialize(bchan_residmenu_t *residmenu, W dnum)
+{
+	W err;
+
+	err = mopn_gmn(dnum);
+	if (err < 0) {
+		DP_ER("mopn_gmn", err);
+		return err;
+	}
+
+	residmenu->mnid = err;
+
+	return 0;
+}
+
+EXPORT VOID bchan_residmenu_finalize(bchan_residmenu_t *residmenu)
+{
+	mdel_gmn(residmenu->mnid);
+}

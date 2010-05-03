@@ -43,4 +43,17 @@ IMPORT W bchan_resmenu_setngselected(bchan_resmenu_t *resmenu, Bool selected);
 #define BCHAN_RESMENU_SELECT_PUSHTRAY 2
 IMPORT W bchan_resmenu_select(bchan_resmenu_t *resmenu, PNT pos);
 
+struct bchan_residmenu_t_ {
+	MNID mnid;
+};
+typedef struct bchan_residmenu_t_ bchan_residmenu_t;
+
+IMPORT W bchan_residmenu_initialize(bchan_residmenu_t *residmenu, W dnum);
+IMPORT VOID bchan_residmenu_finalize(bchan_residmenu_t *residmenu);
+IMPORT W bchan_residmenu_setngselected(bchan_residmenu_t *residmenu, Bool selected);
+#define BCHAN_RESIDMENU_SELECT_NOSELECT 0
+#define BCHAN_RESIDMENU_SELECT_NG 1
+#define BCHAN_RESIDMENU_SELECT_PUSHTRAY 2
+IMPORT W bchan_residmenu_select(bchan_residmenu_t *residmenu, PNT pos);
+
 #endif
