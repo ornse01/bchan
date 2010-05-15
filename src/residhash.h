@@ -1,7 +1,7 @@
 /*
- * test_main.c
+ * residhash.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -25,31 +25,36 @@
  */
 
 #include	<basic.h>
-#include	<bstdlib.h>
-#include	<bstdio.h>
-#include	<bstring.h>
-#include	<errcode.h>
-#include	<tstring.h>
-#include	<keycode.h>
-#include	<tcode.h>
-#include	<btron/btron.h>
+#include	<bsys/queue.h>
 #include	<btron/dp.h>
-#include	<btron/hmi.h>
-#include	<btron/vobj.h>
-#include	<btron/libapp.h>
-#include	<btron/bsocket.h>
 
-#include    "test.h"
+#ifndef __RESIDHASH_H__
+#define __RESIDHASH_H__
 
-EXPORT	W	MAIN(MESSAGE *msg)
-{
-	test_cache_main();
-	test_parser_main();
-	test_layout_main();
-	test_parselib_main();
-	test_submitutil_main();
-	test_sjistring_main();
-	test_residhash_main();
+#ifndef RESIDHASH_BASE
+#define RESIDHASH_BASE 10 
+#endif
 
-	return 0;
-}
+typedef struct residhash_node_t_ {
+	QUEUE queue;
+	UB *id;
+	W id_len;
+	UW attr;
+	COLOR color;
+} residhash_node_t;
+
+struct residhash_t_ {
+	W datanum;
+	residhash_node_t tbl[RESIDHASH_BASE];
+};
+typedef struct residhash_t_ residhash_t;
+
+IMPORT W residhash_initialize(residhash_t *residhash);
+IMPORT VOID residhash_finalize(residhash_t *residhash);
+IMPORT W residhash_adddata(residhash_t *residhash, UB *idstr, W idstr_len, UW attr, COLOR color);
+#define RESIDHASH_SEARCHDATA_NOTFOUND 0
+#define RESIDHASH_SEARCHDATA_FOUND    1
+IMPORT W residhash_searchdata(residhash_t *residhash, UB *idstr, W idstr_len, UW *attr, COLOR *color);
+IMPORT VOID residhash_removedata(residhash_t *residhash, UB *idstr, W idstr_len);
+
+#endif

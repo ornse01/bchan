@@ -52,4 +52,7 @@ IMPORT VOID test_submitutil_main();
 /* test_sjisstring.c */
 IMPORT VOID test_sjistring_main();
 
+/* test_residhash.c */
+IMPORT VOID test_residhash_main();
+
 #endif
