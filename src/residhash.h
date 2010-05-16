@@ -37,7 +37,7 @@
 
 typedef struct residhash_node_t_ {
 	QUEUE queue;
-	UB *id;
+	TC *id;
 	W id_len;
 	UW attr;
 	COLOR color;
@@ -51,10 +51,10 @@ typedef struct residhash_t_ residhash_t;
 
 IMPORT W residhash_initialize(residhash_t *residhash);
 IMPORT VOID residhash_finalize(residhash_t *residhash);
-IMPORT W residhash_adddata(residhash_t *residhash, UB *idstr, W idstr_len, UW attr, COLOR color);
+IMPORT W residhash_adddata(residhash_t *residhash, TC *idstr, W idstr_len, UW attr, COLOR color);
 #define RESIDHASH_SEARCHDATA_NOTFOUND 0
 #define RESIDHASH_SEARCHDATA_FOUND    1
-IMPORT W residhash_searchdata(residhash_t *residhash, UB *idstr, W idstr_len, UW *attr, COLOR *color);
-IMPORT VOID residhash_removedata(residhash_t *residhash, UB *idstr, W idstr_len);
+IMPORT W residhash_searchdata(residhash_t *residhash, TC *idstr, W idstr_len, UW *attr, COLOR *color);
+IMPORT VOID residhash_removedata(residhash_t *residhash, TC *idstr, W idstr_len);
 
 #endif

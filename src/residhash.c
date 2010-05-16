@@ -38,7 +38,7 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-LOCAL residhash_node_t* residhash_node_new(UB *idstr, W idstr_len, UW attr, COLOR color)
+LOCAL residhash_node_t* residhash_node_new(TC *idstr, W idstr_len, UW attr, COLOR color)
 {
 	residhash_node_t *node;
 
@@ -47,12 +47,12 @@ LOCAL residhash_node_t* residhash_node_new(UB *idstr, W idstr_len, UW attr, COLO
 		return NULL;
 	}
 
-	node->id = malloc(sizeof(UB)*idstr_len);
+	node->id = malloc(sizeof(TC)*idstr_len);
 	if (node->id == NULL) {
 		free(node);
 		return NULL;
 	}
-	memcpy(node->id, idstr, sizeof(UB)*idstr_len);
+	memcpy(node->id, idstr, sizeof(TC)*idstr_len);
 	node->id_len = idstr_len;
 	QueInit(&(node->queue));
 	node->attr = attr;
@@ -68,7 +68,7 @@ LOCAL VOID residhash_node_delete(residhash_node_t *hashnode)
 	free(hashnode);
 }
 
-LOCAL W residhash_calchashvalue(UB *idstr, W idstr_len)
+LOCAL W residhash_calchashvalue(TC *idstr, W idstr_len)
 {
 	W i,num = 0;
 
@@ -79,7 +79,7 @@ LOCAL W residhash_calchashvalue(UB *idstr, W idstr_len)
 	return num % RESIDHASH_BASE;
 }
 
-LOCAL residhash_node_t* residhash_searchnode(residhash_t *residhash, UB *idstr, W idstr_len)
+LOCAL residhash_node_t* residhash_searchnode(residhash_t *residhash, TC *idstr, W idstr_len)
 {
 	W hashval;
 	residhash_node_t *node, *buf;
@@ -100,7 +100,7 @@ LOCAL residhash_node_t* residhash_searchnode(residhash_t *residhash, UB *idstr, 
 	return NULL;
 }
 
-EXPORT W residhash_adddata(residhash_t *residhash, UB *idstr, W idstr_len, UW attr, COLOR color)
+EXPORT W residhash_adddata(residhash_t *residhash, TC *idstr, W idstr_len, UW attr, COLOR color)
 {
 	residhash_node_t *hashnode, *buf;
 	W hashval;
@@ -126,7 +126,7 @@ EXPORT W residhash_adddata(residhash_t *residhash, UB *idstr, W idstr_len, UW at
 	return 0;
 }
 
-EXPORT W residhash_searchdata(residhash_t *residhash, UB *idstr, W idstr_len, UW *attr, COLOR *color)
+EXPORT W residhash_searchdata(residhash_t *residhash, TC *idstr, W idstr_len, UW *attr, COLOR *color)
 {
 	residhash_node_t *hashnode;
 
@@ -140,7 +140,7 @@ EXPORT W residhash_searchdata(residhash_t *residhash, UB *idstr, W idstr_len, UW
 	return RESIDHASH_SEARCHDATA_FOUND;
 }
 
-EXPORT VOID residhash_removedata(residhash_t *residhash, UB *idstr, W idstr_len)
+EXPORT VOID residhash_removedata(residhash_t *residhash, TC *idstr, W idstr_len)
 {
 	residhash_node_t *hashnode;
 
