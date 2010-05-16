@@ -643,6 +643,8 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	TC *id;
 	PNT pos;
 	B *data;
+	COLOR color;
+	UW attr = 0;
 
 	DP(("press DATDRAW_FINDACTION_TYPE_ID\n"));
 
@@ -650,6 +652,18 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	if (id == NULL) {
 		DP(("      id is not exist\n"));
 		return;
+	}
+
+	err = datcache_searchresiddata(bchan->cache, id, id_len, &attr, &color);
+	if (err == DATCACHE_SEARCHRESIDDATA_FOUND) {
+		if ((attr & DATCACHE_RESIDDATA_FLAG_NG) != 0) {
+			err = bchan_residmenu_setngselected(&bchan->residmenu, True);
+		} else {
+			err = bchan_residmenu_setngselected(&bchan->residmenu, False);
+		}
+	} else {
+		attr = 0;
+		err = bchan_residmenu_setngselected(&bchan->residmenu, False);
 	}
 
 	pos.x = wev->s.pos.x;
@@ -665,6 +679,12 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 		datlayout_idtotraytextdata(bchan->layout, id, id_len, data, size);
 		bchan_pushstringtotray((TC*)data, size/2);
 		free(data);
+	} if (err == BCHAN_RESIDMENU_SELECT_NG) {
+		if ((attr & DATCACHE_RESIDDATA_FLAG_NG) != 0) {
+			datcache_removeresiddata(bchan->cache, id, id_len);
+		} else {
+			err = datcache_addresiddata(bchan->cache, id, id_len, DATCACHE_RESIDDATA_FLAG_NG, 0x10000000);
+		}
 	}
 }
 
