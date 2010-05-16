@@ -1,7 +1,7 @@
 /*
  * cache.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -35,6 +35,9 @@
 #define DATCACHE_RECORDSUBTYPE_RETRIEVE 0x0001
 #define DATCACHE_RECORDSUBTYPE_HEADER 0x0002
 
+#define DATCACHE_RESIDDATA_FLAG_NG    0x00000001
+#define DATCACHE_RESIDDATA_FLAG_COLOR 0x00000002
+
 typedef struct datcache_t_ datcache_t;
 typedef struct datcache_datareadcontext_t_ datcache_datareadcontext_t;
 
@@ -49,6 +52,11 @@ IMPORT VOID datcache_getborad(datcache_t *cache, UB **borad, W *len);
 IMPORT VOID datcache_getthread(datcache_t *cache, UB **thread, W *len);
 IMPORT W datcache_datasize(datcache_t *cache);
 IMPORT W datcache_writefile(datcache_t *cache);
+IMPORT W datcache_addresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW attr, COLOR color);
+#define DATCACHE_SEARCHRESIDDATA_NOTFOUND 0 /* RESIDHASH_SEARCHDATA_NOTFOUND */
+#define DATCACHE_SEARCHRESIDDATA_FOUND    1 /* RESIDHASH_SEARCHDATA_FOUND */
+IMPORT W datcache_searchresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW *attr, COLOR *color);
+IMPORT VOID datcache_removeresiddata(datcache_t *cache, TC *idstr, W idstr_len);
 IMPORT datcache_datareadcontext_t* datcache_startdataread(datcache_t *cache, W start);
 IMPORT VOID datcache_enddataread(datcache_t *cache, datcache_datareadcontext_t *context);
 

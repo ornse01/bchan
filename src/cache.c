@@ -1,7 +1,7 @@
 /*
  * cache.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -33,6 +33,7 @@
 #include	<bsys/queue.h>
 
 #include    "cache.h"
+#include    "residhash.h"
 
 typedef struct datcache_data_t_ datcache_data_t;
 
@@ -58,6 +59,7 @@ struct datcache_t_ {
 	W thread_len;
 	UB *latestheader;
 	W latestheader_len;
+	residhash_t residhash;
 };
 
 struct datcache_datareadcontext_t_ {
@@ -404,6 +406,21 @@ EXPORT W datcache_writefile(datcache_t *cache)
 	return 0;
 }
 
+EXPORT W datcache_addresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW attr, COLOR color)
+{
+	return residhash_adddata(&cache->residhash, idstr, idstr_len, attr, color);
+}
+
+EXPORT W datcache_searchresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW *attr, COLOR *color)
+{
+	return residhash_searchdata(&cache->residhash, idstr, idstr_len, attr, color);
+}
+
+EXPORT VOID datcache_removeresiddata(datcache_t *cache, TC *idstr, W idstr_len)
+{
+	residhash_removedata(&cache->residhash, idstr, idstr_len);
+}
+
 LOCAL W datcache_getrec_fromfile(W fd, W rectype, W subtype, UB **data, W *size)
 {
 	W err, size0;
@@ -523,6 +540,16 @@ EXPORT datcache_t* datcache_new(VID vid)
 	cache->latestheader = header;
 	cache->latestheader_len = header_len;
 
+	err = residhash_initialize(&cache->residhash);
+	if (err < 0) {
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
+
 	return cache;
 }
 
@@ -530,6 +557,8 @@ EXPORT VOID datcache_delete(datcache_t *cache)
 {
 	datcache_data_t *cache_data;
 	Bool ok;
+
+	residhash_finalize(&cache->residhash);
 
 	if (cache->latestheader != NULL) {
 		free(cache->latestheader);
