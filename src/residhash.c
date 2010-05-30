@@ -152,6 +152,11 @@ EXPORT VOID residhash_removedata(residhash_t *residhash, TC *idstr, W idstr_len)
 	residhash->datanum--;
 }
 
+EXPORT W residhash_datanum(residhash_t *residhash)
+{
+	return residhash->datanum;
+}
+
 EXPORT W residhash_initialize(residhash_t *residhash)
 {
 	W i;

@@ -56,6 +56,7 @@ IMPORT W residhash_adddata(residhash_t *residhash, TC *idstr, W idstr_len, UW at
 #define RESIDHASH_SEARCHDATA_FOUND    1
 IMPORT W residhash_searchdata(residhash_t *residhash, TC *idstr, W idstr_len, UW *attr, COLOR *color);
 IMPORT VOID residhash_removedata(residhash_t *residhash, TC *idstr, W idstr_len);
+IMPORT W residhash_datanum(residhash_t *residhash);
 
 struct residhash_iterator_t_ {
 	residhash_t *residhash;
