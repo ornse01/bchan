@@ -57,4 +57,15 @@ IMPORT W residhash_adddata(residhash_t *residhash, TC *idstr, W idstr_len, UW at
 IMPORT W residhash_searchdata(residhash_t *residhash, TC *idstr, W idstr_len, UW *attr, COLOR *color);
 IMPORT VOID residhash_removedata(residhash_t *residhash, TC *idstr, W idstr_len);
 
+struct residhash_iterator_t_ {
+	residhash_t *residhash;
+	W tbl_index;
+	residhash_node_t *node;
+};
+typedef struct residhash_iterator_t_ residhash_iterator_t;
+
+IMPORT VOID residhash_iterator_initialize(residhash_iterator_t *iter, residhash_t *target);
+IMPORT VOID residhash_iterator_finalize(residhash_iterator_t *iter);
+IMPORT Bool residhash_iterator_next(residhash_iterator_t *iter, TC **idstr, W *idstr_len, W *attr, W *color);
+
 #endif

@@ -273,6 +273,177 @@ LOCAL TEST_RESULT test_residhash_7()
 	return result;
 }
 
+LOCAL TEST_RESULT test_residhash_8()
+{
+	residhash_t residhash;
+	residhash_iterator_t iterator;
+	TC *idstr;
+	W ret, num, idstr_len;
+	UW attr;
+	COLOR color;
+	Bool next;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	ret = residhash_initialize(&residhash);
+	if (ret < 0) {
+		printf("residhash_initialize fail\n");
+		return TEST_RESULT_FAIL;
+	}
+
+
+	residhash_iterator_initialize(&iterator, &residhash);
+	num = 0;
+	for (;;) {
+		next = residhash_iterator_next(&iterator, &idstr, &idstr_len, &attr, &color);
+		if (next == False) {
+			break;
+		}
+		num++;
+	}
+	if (num != 0) {
+		printf("residhash_iterator unexpected length\n");
+		result = TEST_RESULT_FAIL;
+	}
+	residhash_iterator_finalize(&iterator);
+
+
+	residhash_finalize(&residhash);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_residhash_9()
+{
+	residhash_t residhash;
+	residhash_iterator_t iterator;
+	UB idstr1[] = "yZXmy7Om0";
+	TC idstr1_tc[9];
+	TC *idstr;
+	W ret, num, idstr_len, idstr1_len = strlen(idstr1);
+	UW attr, attr1 = 0x01010101;
+	COLOR color, color1 = 0x10FF00FF;
+	Bool next;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+
+	ret = residhash_initialize(&residhash);
+	if (ret < 0) {
+		printf("residhash_initialize fail\n");
+		return TEST_RESULT_FAIL;
+	}
+	ret = residhash_adddata(&residhash, idstr1_tc, idstr1_len, attr1, color1);
+	if (ret < 0) {
+		printf("residhash_adddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+
+	residhash_iterator_initialize(&iterator, &residhash);
+	num = 0;
+	for (;;) {
+		next = residhash_iterator_next(&iterator, &idstr, &idstr_len, &attr, &color);
+		if (next == False) {
+			break;
+		}
+		num++;
+		if ((idstr_len == idstr1_len)
+			&&(tc_strncmp(idstr, idstr1_tc, idstr1_len) == 0)) {
+			if (attr != attr1) {
+				result = TEST_RESULT_FAIL;
+			}
+			if (color != color1) {
+				result = TEST_RESULT_FAIL;
+			}
+		} else {
+			result = TEST_RESULT_FAIL;
+		}
+	}
+	if (num != 1) {
+		printf("residhash_iterator unexpected length\n");
+		result = TEST_RESULT_FAIL;
+	}
+	residhash_iterator_finalize(&iterator);
+
+
+	residhash_finalize(&residhash);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_residhash_10()
+{
+	residhash_t residhash;
+	residhash_iterator_t iterator;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao";
+	TC idstr1_tc[9], idstr2_tc[8];
+	TC *idstr;
+	W ret, num, idstr_len, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00;
+	Bool next;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+
+	ret = residhash_initialize(&residhash);
+	if (ret < 0) {
+		printf("residhash_initialize fail\n");
+		return TEST_RESULT_FAIL;
+	}
+	ret = residhash_adddata(&residhash, idstr1_tc, idstr1_len, attr1, color1);
+	if (ret < 0) {
+		printf("residhash_adddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = residhash_adddata(&residhash, idstr2_tc, idstr2_len, attr2, color2);
+	if (ret < 0) {
+		printf("residhash_adddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+
+	residhash_iterator_initialize(&iterator, &residhash);
+	num = 0;
+	for (;;) {
+		next = residhash_iterator_next(&iterator, &idstr, &idstr_len, &attr, &color);
+		if (next == False) {
+			break;
+		}
+		num++;
+		if ((idstr_len == idstr1_len)
+			&&(tc_strncmp(idstr, idstr1_tc, idstr1_len) == 0)) {
+			if (attr != attr1) {
+				result = TEST_RESULT_FAIL;
+			}
+			if (color != color1) {
+				result = TEST_RESULT_FAIL;
+			}
+		} else if ((idstr_len == idstr2_len)
+				   &&(tc_strncmp(idstr, idstr2_tc, idstr2_len) == 0)) {
+			if (attr != attr2) {
+				result = TEST_RESULT_FAIL;
+			}
+			if (color != color2) {
+				result = TEST_RESULT_FAIL;
+			}
+		} else {
+			result = TEST_RESULT_FAIL;
+		}
+	}
+	if (num != 2) {
+		printf("residhash_iterator unexpected length\n");
+		result = TEST_RESULT_FAIL;
+	}
+	residhash_iterator_finalize(&iterator);
+
+
+	residhash_finalize(&residhash);
+
+	return result;
+}
+
 LOCAL VOID test_residhash_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -297,4 +468,7 @@ EXPORT VOID test_residhash_main()
 	test_residhash_printresult(test_residhash_5, "test_residhash_5");
 	test_residhash_printresult(test_residhash_6, "test_residhash_6");
 	test_residhash_printresult(test_residhash_7, "test_residhash_7");
+	test_residhash_printresult(test_residhash_8, "test_residhash_8");
+	test_residhash_printresult(test_residhash_9, "test_residhash_9");
+	test_residhash_printresult(test_residhash_10, "test_residhash_10");
 }

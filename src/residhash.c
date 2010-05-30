@@ -179,3 +179,60 @@ EXPORT VOID residhash_finalize(residhash_t *residhash)
 		}
 	}
 }
+
+EXPORT Bool residhash_iterator_next(residhash_iterator_t *iter, TC **idstr, W *idstr_len, W *attr, W *color)
+{
+	residhash_t *hash;
+	residhash_node_t *node;
+
+	hash = iter->residhash;
+
+	if (iter->tbl_index == RESIDHASH_BASE) {
+		return False;
+	}
+
+	*idstr = iter->node->id;
+	*idstr_len = iter->node->id_len;
+	*attr = iter->node->attr;
+	*color = iter->node->color;
+
+	for (;;) {
+		node = (residhash_node_t*)iter->node->queue.next;
+		if (hash->tbl + iter->tbl_index != node) {
+			iter->node = node;
+			break;
+		}
+		iter->tbl_index++;
+		if (iter->tbl_index == RESIDHASH_BASE) {
+			break;
+		}
+		iter->node = hash->tbl + iter->tbl_index;
+	}
+
+	return True;
+}
+
+EXPORT VOID residhash_iterator_initialize(residhash_iterator_t *iter, residhash_t *target)
+{
+	residhash_node_t *node;
+
+	iter->residhash = target;
+	iter->tbl_index = 0;
+	iter->node = (residhash_node_t*)iter->residhash->tbl;
+	for (;;) {
+		node = (residhash_node_t*)iter->node->queue.next;
+		if (iter->residhash->tbl + iter->tbl_index != node) {
+			iter->node = node;
+			break;
+		}
+		iter->tbl_index++;
+		if (iter->tbl_index == RESIDHASH_BASE) {
+			break;
+		}
+		iter->node = iter->residhash->tbl + iter->tbl_index;
+	}
+}
+
+EXPORT VOID residhash_iterator_finalize(residhash_iterator_t *iter)
+{
+}
