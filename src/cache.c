@@ -363,9 +363,79 @@ LOCAL W datcache_preparerec_forwritefile(W fd, W rectype, W subtype)
 	return 0; /* TODO */
 }
 
+LOCAL W datcache_deleterec_forwritefile(W fd, W rectype, W subtype)
+{
+	W err;
+
+	err = fnd_rec(fd, F_TOPEND, 1 << rectype, subtype, NULL);
+	if (err == ER_REC) {
+		return 0; /* TODO */
+	} else if (err < 0) {
+		return -1; /* TODO */
+	}
+
+	err = del_rec(fd);
+	if (err < 0) {
+		return -1; /* TODO */
+	}
+
+	return 0; /* TODO */
+}
+
 EXPORT W datcache_datasize(datcache_t *cache)
 {
 	return cache->s_datsize;
+}
+
+LOCAL W datcache_writefile_residhash(datcache_t *cache)
+{
+	Bool cont;
+	W err, len;
+	residhash_iterator_t iter;
+	TC *idstr;
+	W idstr_len;
+	UW attr;
+	COLOR color;
+	UB bin[10];
+
+	len = residhash_datanum(&cache->residhash);
+	if (len > 0) {
+		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESIDINFO);
+		if (err < 0) {
+			return err;
+		}
+		residhash_iterator_initialize(&iter, &cache->residhash);
+		for (;;) {
+			cont = residhash_iterator_next(&iter, &idstr, &idstr_len, &attr, &color);
+			if (cont == False) {
+				break;
+			}
+			*(UH*)bin = idstr_len * 2;
+			err = wri_rec(cache->fd, -1, bin, 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			err = wri_rec(cache->fd, -1, (UB*)idstr, idstr_len * 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			*(UH*)bin = 8;
+			*(UW*)(bin + 2) = attr;
+			*(COLOR*)(bin + 2 + 4) = color;
+			err = wri_rec(cache->fd, -1, bin, 10, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+		}
+		residhash_iterator_finalize(&iter);
+	} else {
+		err = datcache_deleterec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESIDINFO);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	return 0;
 }
 
 EXPORT W datcache_writefile(datcache_t *cache)
@@ -401,6 +471,11 @@ EXPORT W datcache_writefile(datcache_t *cache)
 		if (err < 0) {
 			return err;
 		}
+	}
+
+	err = datcache_writefile_residhash(cache);
+	if (err < 0) {
+		return err;
 	}
 
 	return 0;
@@ -475,6 +550,52 @@ LOCAL W datcache_getheader_fromfile(W fd, UB **data, W *size)
 	return datcache_getrec_fromfile(fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, data, size);
 }
 
+LOCAL W datcache_readresidinfo(datcache_t *cache)
+{
+	UB *recdata;
+	W recsize, err = 0, idstr_len, i;
+	TC *idstr;
+	UW attr;
+	COLOR color;
+	UH chunksize;
+
+	err = datcache_getrec_fromfile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESIDINFO, &recdata, &recsize);
+	if (err < 0) {
+		return err;
+	}
+
+	if (recsize == 0) {
+		return 0; /* TODO */
+	}
+
+	for (i = 0; i < recsize; ) {
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		idstr = (TC*)(recdata + i);
+		idstr_len = chunksize / 2;
+		i += chunksize;
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		if (chunksize >= 4) {
+			attr = *(UW*)(recdata + i);
+			if (chunksize >= 8) {
+				color = *(COLOR*)(recdata + i + 4);
+			} else {
+				color = -1;
+			}
+			err = residhash_adddata(&cache->residhash, idstr, idstr_len, attr, color);
+			if (err < 0) {
+				break;
+			}
+		}
+		i += chunksize;
+	}
+
+	free(recdata);
+
+	return err;
+}
+
 EXPORT datcache_t* datcache_new(VID vid)
 {
 	datcache_t *cache;
@@ -542,6 +663,16 @@ EXPORT datcache_t* datcache_new(VID vid)
 
 	err = residhash_initialize(&cache->residhash);
 	if (err < 0) {
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
+	err = datcache_readresidinfo(cache);
+	if (err < 0) {
+		residhash_finalize(&cache->residhash);
 		free(retrinfo);
 		free(rawdat);
 		del_sem(semid);

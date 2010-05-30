@@ -1,7 +1,7 @@
 /*
  * test_cache.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -29,6 +29,7 @@
 #include    <bstdio.h>
 #include    <bstring.h>
 #include    <bstdlib.h>
+#include    <tstring.h>
 #include	<errcode.h>
 
 #include    "test.h"
@@ -1393,6 +1394,682 @@ LOCAL TEST_RESULT test_cache_15()
 	return result;
 }
 
+/* test_cache_residinfo_1 */
+
+LOCAL TEST_RESULT test_cache_residinfo_1()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr3) {
+		printf("residhash_searchdata 3 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color3) {
+		printf("residhash_searchdata 3 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_2 */
+
+LOCAL TEST_RESULT test_cache_residinfo_2()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_3 */
+
+LOCAL TEST_RESULT test_cache_residinfo_3()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101;
+	COLOR color, color1 = 0x10FF00FF;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_4 */
+
+LOCAL TEST_RESULT test_cache_residinfo_4()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr;
+	COLOR color;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_5 */
+
+LOCAL TEST_RESULT test_cache_residinfo_5()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresiddata(cache, idstr3_tc, idstr3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("residhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_6 */
+
+LOCAL TEST_RESULT test_cache_residinfo_6()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresiddata(cache, idstr2_tc, idstr2_len);
+	datcache_removeresiddata(cache, idstr3_tc, idstr3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("residhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_residinfo_7 */
+
+LOCAL TEST_RESULT test_cache_residinfo_7()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB idstr1[] = "yZXmy7Om0", idstr2[] = "GCQJ44Ao", idstr3[] = "V.jwWEDO";
+	TC idstr1_tc[9], idstr2_tc[8], idstr3_tc[8];
+	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(idstr1_tc, idstr1);
+	sjstotcs(idstr2_tc, idstr2);
+	sjstotcs(idstr3_tc, idstr3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresiddata(cache, idstr1_tc, idstr1_len);
+	datcache_removeresiddata(cache, idstr2_tc, idstr2_len);
+	datcache_removeresiddata(cache, idstr3_tc, idstr3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
+		printf("residhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
 LOCAL VOID test_cache_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -1425,4 +2102,11 @@ IMPORT VOID test_cache_main()
 	test_cache_printresult(test_cache_13, "test_cache_13");
 	test_cache_printresult(test_cache_14, "test_cache_14");
 	test_cache_printresult(test_cache_15, "test_cache_15");
+	test_cache_printresult(test_cache_residinfo_1, "test_cache_residinfo_1");
+	test_cache_printresult(test_cache_residinfo_2, "test_cache_residinfo_2");
+	test_cache_printresult(test_cache_residinfo_3, "test_cache_residinfo_3");
+	test_cache_printresult(test_cache_residinfo_4, "test_cache_residinfo_4");
+	test_cache_printresult(test_cache_residinfo_5, "test_cache_residinfo_5");
+	test_cache_printresult(test_cache_residinfo_6, "test_cache_residinfo_6");
+	test_cache_printresult(test_cache_residinfo_7, "test_cache_residinfo_7");
 }
