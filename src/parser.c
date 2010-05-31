@@ -109,6 +109,12 @@ EXPORT datparser_res_t* datparser_res_new()
 	res->body_len = 0;
 	res->title = NULL;
 	res->title_len = 0;
+	res->dateinfo.date = NULL;
+	res->dateinfo.date_len = 0;
+	res->dateinfo.id = NULL;
+	res->dateinfo.id_len = 0;
+	res->dateinfo.beid = NULL;
+	res->dateinfo.beid_len = 0;
 
 	return res;
 }
@@ -140,6 +146,12 @@ LOCAL VOID datparsr_res_clear(datparser_res_t *res)
 	res->body_len = 0;
 	res->title = NULL;
 	res->title_len = 0;
+	res->dateinfo.date = NULL;
+	res->dateinfo.date_len = 0;
+	res->dateinfo.id = NULL;
+	res->dateinfo.id_len = 0;
+	res->dateinfo.beid = NULL;
+	res->dateinfo.beid_len = 0;
 }
 
 EXPORT VOID datparser_res_delete(datparser_res_t *res)
@@ -643,6 +655,15 @@ EXPORT W datparser_getnextres(datparser_t *parser, datparser_res_t **res)
 			break;
 		}
 		if (err == 1) {
+			/* should datepart be parsed in datparser_parsechar()? */
+			tadlib_separete_datepart(parser->resbuffer->date,
+									 parser->resbuffer->date_len,
+									 &parser->resbuffer->dateinfo.date,
+									 &parser->resbuffer->dateinfo.date_len,
+									 &parser->resbuffer->dateinfo.id,
+									 &parser->resbuffer->dateinfo.id_len,
+									 &parser->resbuffer->dateinfo.beid,
+									 &parser->resbuffer->dateinfo.beid_len);
 			*res = parser->resbuffer;
 			parser->resbuffer = datparser_res_new();
 			break;

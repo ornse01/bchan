@@ -1,7 +1,7 @@
 /*
  * parser.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -45,6 +45,14 @@ struct datparser_res_t_ {
 	W body_len;
 	TC *title;
 	W title_len;
+	struct {
+		TC *date;
+		W date_len;
+		TC *id;
+		W id_len;
+		TC *beid;
+		W beid_len;
+	} dateinfo;
 };
 
 IMPORT datparser_t* datparser_new(datcache_t *parser);

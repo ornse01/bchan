@@ -60,12 +60,6 @@ struct datlayout_res_t_ {
 		datlayout_box_t resmessage;
 	} box;
 	struct {
-		TC *date;
-		W date_len;
-		TC *id;
-		W id_len;
-		TC *beid;
-		W beid_len;
 		RECT rel_number_pos;
 		RECT rel_id_pos;
 	} headerinfo;
@@ -239,14 +233,14 @@ LOCAL Bool datlayout_res_issameid(datlayout_res_t *res, TC *id, W id_len)
 {
 	W result;
 
-	if (res->headerinfo.id == NULL) {
+	if (res->parser_res->dateinfo.id == NULL) {
 		return False;
 	}
-	if (res->headerinfo.id_len - 3 != id_len) {
+	if (res->parser_res->dateinfo.id_len - 3 != id_len) {
 		return False;
 	}
 
-	result = tc_strncmp(res->headerinfo.id + 3, id, id_len);
+	result = tc_strncmp(res->parser_res->dateinfo.id + 3, id, id_len);
 	if (result != 0) {
 		return False;
 	}
@@ -313,11 +307,6 @@ LOCAL W datlayout_res_calcresheaderdrawsize(datlayout_res_t *layout_res, GID gid
 	H id_left = 0;
 
 	numstr_len = datlayout_res_UW_to_str(layout_res->index + 1, numstr);
-	tadlib_separete_datepart(layout_res->parser_res->date,
-							 layout_res->parser_res->date_len,
-							 &layout_res->headerinfo.date, &layout_res->headerinfo.date_len,
-							 &layout_res->headerinfo.id, &layout_res->headerinfo.id_len,
-							 &layout_res->headerinfo.beid, &layout_res->headerinfo.beid_len);
 
 	datlayout_res_setupgid(gid);
 	tadlib_calcdrawsize(numstr, numstr_len, gid, &sz_number, &alist_tmp);
@@ -334,22 +323,22 @@ LOCAL W datlayout_res_calcresheaderdrawsize(datlayout_res_t *layout_res, GID gid
 	}
 
 	datlayout_res_setupgid(gid);
-	tadlib_calcdrawsize(layout_res->headerinfo.date, layout_res->headerinfo.date_len, gid, &sz_date, &alist_tmp);
+	tadlib_calcdrawsize(layout_res->parser_res->dateinfo.date, layout_res->parser_res->dateinfo.date_len, gid, &sz_date, &alist_tmp);
 	actionlist_delete(alist_tmp);
-	tadlib_calcdrawsize(layout_res->headerinfo.id, layout_res->headerinfo.id_len, gid, &sz_id, &alist_tmp);
+	tadlib_calcdrawsize(layout_res->parser_res->dateinfo.id, layout_res->parser_res->dateinfo.id_len, gid, &sz_id, &alist_tmp);
 	actionlist_delete(alist_tmp);
-	tadlib_calcdrawsize(layout_res->headerinfo.beid, layout_res->headerinfo.beid_len, gid, &sz_beid, &alist_tmp);
+	tadlib_calcdrawsize(layout_res->parser_res->dateinfo.beid, layout_res->parser_res->dateinfo.beid_len, gid, &sz_beid, &alist_tmp);
 	actionlist_delete(alist_tmp);
 
 	sz->h = sz_number.h + sz_name.h + sz_mail.h + 16*(1+1);
-	if (layout_res->headerinfo.date != NULL) {
+	if (layout_res->parser_res->dateinfo.date != NULL) {
 		sz->h += 16 + sz_date.h;
 	}
-	if (layout_res->headerinfo.id != NULL) {
+	if (layout_res->parser_res->dateinfo.id != NULL) {
 		id_left = sz->h + 16;
 		sz->h += 16 + sz_id.h;
 	}
-	if (layout_res->headerinfo.beid != NULL) {
+	if (layout_res->parser_res->dateinfo.beid != NULL) {
 		sz->h += 16 + sz_beid.h;
 	}
 
@@ -451,15 +440,15 @@ EXPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_le
 	}
 
 	res = layout->layout_res[n];
-	if (res->headerinfo.id == NULL) {
+	if (res->parser_res->dateinfo.id == NULL) {
 		*id = NULL;
 		*id_len = 0;
 		return;
 	}
 
 	/* except "ID:" */
-	*id = res->headerinfo.id + 3;
-	*id_len = res->headerinfo.id_len - 3;
+	*id = res->parser_res->dateinfo.id + 3;
+	*id_len = res->parser_res->dateinfo.id_len - 3;
 }
 
 EXPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len)
@@ -735,37 +724,37 @@ LOCAL W datdraw_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh, 
 	TC *str;
 	W len, err;
 
-	if (entry->headerinfo.date != NULL) {
+	if (entry->parser_res->dateinfo.date != NULL) {
 		err = gset_chp(gid, 16, 0, 0);
 		if (err < 0) {
 			return err;
 		}
-		str = entry->headerinfo.date;
-		len = entry->headerinfo.date_len;
+		str = entry->parser_res->dateinfo.date;
+		len = entry->parser_res->dateinfo.date_len;
 		err = tadlib_drawtext(str, len, gid, dh, dv);
 		if (err < 0) {
 			return err;
 		}
 	}
-	if (entry->headerinfo.id != NULL) {
+	if (entry->parser_res->dateinfo.id != NULL) {
 		err = gset_chp(gid, 16, 0, 0);
 		if (err < 0) {
 			return err;
 		}
-		str = entry->headerinfo.id;
-		len = entry->headerinfo.id_len;
+		str = entry->parser_res->dateinfo.id;
+		len = entry->parser_res->dateinfo.id_len;
 		err = tadlib_drawtext(str, len, gid, dh, dv);
 		if (err < 0) {
 			return err;
 		}
 	}
-	if (entry->headerinfo.beid != NULL) {
+	if (entry->parser_res->dateinfo.beid != NULL) {
 		err = gset_chp(gid, 16, 0, 0);
 		if (err < 0) {
 			return err;
 		}
-		str = entry->headerinfo.beid;
-		len = entry->headerinfo.beid_len;
+		str = entry->parser_res->dateinfo.beid;
+		len = entry->parser_res->dateinfo.beid_len;
 		err = tadlib_drawtext(str, len, gid, dh, dv);
 		if (err < 0) {
 			return err;
