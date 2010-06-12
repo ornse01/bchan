@@ -2070,6 +2070,647 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	return result;
 }
 
+/* test_cache_resindexinfo_1 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_1()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index2, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index3, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr3) {
+		printf("resindexhash_searchdata 3 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color3) {
+		printf("resindexhash_searchdata 3 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_2 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_2()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index2, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_3 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_3()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101;
+	COLOR color, color1 = 0x10FF00FF;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_4 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_4()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr;
+	COLOR color;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_5 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_5()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index2, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index3, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresindexdata(cache, index3);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color2) {
+		printf("resindexhash_searchdata 2 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_6 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_6()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index2, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index3, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresindexdata(cache, index2);
+	datcache_removeresindexdata(cache, index3);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (attr != attr1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	if (color != color1) {
+		printf("resindexhash_searchdata 1 result fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_resindexinfo_7 */
+
+LOCAL TEST_RESULT test_cache_resindexinfo_7()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	W index1 = 3, index2 = 543, index3 = 349;
+	W ret;
+	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
+	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_addresindexdata(cache, index1, attr1, color1);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index2, attr2, color2);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_addresindexdata(cache, index3, attr3, color3);
+	if (err < 0) {
+		printf("datcache_addresindexdata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removeresindexdata(cache, index1);
+	datcache_removeresindexdata(cache, index2);
+	datcache_removeresindexdata(cache, index3);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
+	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
+		printf("resindexhash_searchdata 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
 LOCAL VOID test_cache_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -2109,4 +2750,11 @@ IMPORT VOID test_cache_main()
 	test_cache_printresult(test_cache_residinfo_5, "test_cache_residinfo_5");
 	test_cache_printresult(test_cache_residinfo_6, "test_cache_residinfo_6");
 	test_cache_printresult(test_cache_residinfo_7, "test_cache_residinfo_7");
+	test_cache_printresult(test_cache_resindexinfo_1, "test_cache_resindexinfo_1");
+	test_cache_printresult(test_cache_resindexinfo_2, "test_cache_resindexinfo_2");
+	test_cache_printresult(test_cache_resindexinfo_3, "test_cache_resindexinfo_3");
+	test_cache_printresult(test_cache_resindexinfo_4, "test_cache_resindexinfo_4");
+	test_cache_printresult(test_cache_resindexinfo_5, "test_cache_resindexinfo_5");
+	test_cache_printresult(test_cache_resindexinfo_6, "test_cache_resindexinfo_6");
+	test_cache_printresult(test_cache_resindexinfo_7, "test_cache_resindexinfo_7");
 }

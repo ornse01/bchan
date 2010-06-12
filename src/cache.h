@@ -35,9 +35,12 @@
 #define DATCACHE_RECORDSUBTYPE_RETRIEVE 0x0001
 #define DATCACHE_RECORDSUBTYPE_HEADER 0x0002
 #define DATCACHE_RECORDSUBTYPE_RESIDINFO 0x0003
+#define DATCACHE_RECORDSUBTYPE_RESINDEXINFO 0x0004
 
 #define DATCACHE_RESIDDATA_FLAG_NG    0x00000001
 #define DATCACHE_RESIDDATA_FLAG_COLOR 0x00000002
+#define DATCACHE_RESINDEXDATA_FLAG_NG    0x00000001
+#define DATCACHE_RESINDEXDATA_FLAG_COLOR 0x00000002
 
 typedef struct datcache_t_ datcache_t;
 typedef struct datcache_datareadcontext_t_ datcache_datareadcontext_t;
@@ -58,6 +61,12 @@ IMPORT W datcache_addresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW att
 #define DATCACHE_SEARCHRESIDDATA_FOUND    1 /* RESIDHASH_SEARCHDATA_FOUND */
 IMPORT W datcache_searchresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW *attr, COLOR *color);
 IMPORT VOID datcache_removeresiddata(datcache_t *cache, TC *idstr, W idstr_len);
+IMPORT W datcache_addresindexdata(datcache_t *cache, W index, UW attr, COLOR color);
+#define DATCACHE_SEARCHRESINDEXDATA_NOTFOUND 0 /* RESINDEXHASH_SEARCHDATA_NOTFOUND */
+#define DATCACHE_SEARCHRESINDEXDATA_FOUND    1 /* RESINDEXHASH_SEARCHDATA_FOUND */
+IMPORT W datcache_searchresindexdata(datcache_t *cache, W index, UW *attr, COLOR *color);
+IMPORT VOID datcache_removeresindexdata(datcache_t *cache, W index);
+
 IMPORT datcache_datareadcontext_t* datcache_startdataread(datcache_t *cache, W start);
 IMPORT VOID datcache_enddataread(datcache_t *cache, datcache_datareadcontext_t *context);
 

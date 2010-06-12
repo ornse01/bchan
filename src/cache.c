@@ -34,6 +34,7 @@
 
 #include    "cache.h"
 #include    "residhash.h"
+#include    "resindexhash.h"
 
 typedef struct datcache_data_t_ datcache_data_t;
 
@@ -60,6 +61,7 @@ struct datcache_t_ {
 	UB *latestheader;
 	W latestheader_len;
 	residhash_t residhash;
+	resindexhash_t resindexhash;
 };
 
 struct datcache_datareadcontext_t_ {
@@ -438,6 +440,59 @@ LOCAL W datcache_writefile_residhash(datcache_t *cache)
 	return 0;
 }
 
+LOCAL W datcache_writefile_resindexhash(datcache_t *cache)
+{
+	Bool cont;
+	W err, len, index;
+	resindexhash_iterator_t iter;
+	UW attr;
+	COLOR color;
+	UB bin[10];
+
+	len = resindexhash_datanum(&cache->resindexhash);
+	if (len > 0) {
+		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESINDEXINFO);
+		if (err < 0) {
+			return err;
+		}
+		resindexhash_iterator_initialize(&iter, &cache->resindexhash);
+		for (;;) {
+			cont = resindexhash_iterator_next(&iter, &index, &attr, &color);
+			if (cont == False) {
+				break;
+			}
+			if (index > 65535) {
+				continue;
+			}
+			*(UH*)bin = 2;
+			err = wri_rec(cache->fd, -1, bin, 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			*(UH*)bin = index & 0xFFFF;
+			err = wri_rec(cache->fd, -1, bin, 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			*(UH*)bin = 8;
+			*(UW*)(bin + 2) = attr;
+			*(COLOR*)(bin + 2 + 4) = color;
+			err = wri_rec(cache->fd, -1, bin, 10, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+		}
+		resindexhash_iterator_finalize(&iter);
+	} else {
+		err = datcache_deleterec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESINDEXINFO);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	return 0;
+}
+
 EXPORT W datcache_writefile(datcache_t *cache)
 {
 	W err;
@@ -477,6 +532,10 @@ EXPORT W datcache_writefile(datcache_t *cache)
 	if (err < 0) {
 		return err;
 	}
+	err = datcache_writefile_resindexhash(cache);
+	if (err < 0) {
+		return err;
+	}
 
 	return 0;
 }
@@ -494,6 +553,21 @@ EXPORT W datcache_searchresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW 
 EXPORT VOID datcache_removeresiddata(datcache_t *cache, TC *idstr, W idstr_len)
 {
 	residhash_removedata(&cache->residhash, idstr, idstr_len);
+}
+
+EXPORT W datcache_addresindexdata(datcache_t *cache, W index, UW attr, COLOR color)
+{
+	return resindexhash_adddata(&cache->resindexhash, index, attr, color);
+}
+
+EXPORT W datcache_searchresindexdata(datcache_t *cache, W index, UW *attr, COLOR *color)
+{
+	return resindexhash_searchdata(&cache->resindexhash, index, attr, color);
+}
+
+EXPORT VOID datcache_removeresindexdata(datcache_t *cache, W index)
+{
+	resindexhash_removedata(&cache->resindexhash, index);
 }
 
 LOCAL W datcache_getrec_fromfile(W fd, W rectype, W subtype, UB **data, W *size)
@@ -596,6 +670,50 @@ LOCAL W datcache_readresidinfo(datcache_t *cache)
 	return err;
 }
 
+LOCAL W datcache_readresindexinfo(datcache_t *cache)
+{
+	UB *recdata;
+	W recsize, err = 0, i, index;
+	UW attr;
+	COLOR color;
+	UH chunksize;
+
+	err = datcache_getrec_fromfile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESINDEXINFO, &recdata, &recsize);
+	if (err < 0) {
+		return err;
+	}
+
+	if (recsize == 0) {
+		return 0; /* TODO */
+	}
+
+	for (i = 0; i < recsize; ) {
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		index = *(UH*)(recdata + i);
+		i += chunksize;
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		if (chunksize >= 4) {
+			attr = *(UW*)(recdata + i);
+			if (chunksize >= 8) {
+				color = *(COLOR*)(recdata + i + 4);
+			} else {
+				color = -1;
+			}
+			err = resindexhash_adddata(&cache->resindexhash, index, attr, color);
+			if (err < 0) {
+				break;
+			}
+		}
+		i += chunksize;
+	}
+
+	free(recdata);
+
+	return err;
+}
+
 EXPORT datcache_t* datcache_new(VID vid)
 {
 	datcache_t *cache;
@@ -670,8 +788,31 @@ EXPORT datcache_t* datcache_new(VID vid)
 		free(cache);
 		return NULL;
 	}
+	err = resindexhash_initialize(&cache->resindexhash);
+	if (err < 0) {
+		residhash_finalize(&cache->residhash);
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
+
 	err = datcache_readresidinfo(cache);
 	if (err < 0) {
+		resindexhash_finalize(&cache->resindexhash);
+		residhash_finalize(&cache->residhash);
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
+	err = datcache_readresindexinfo(cache);
+	if (err < 0) {
+		resindexhash_finalize(&cache->resindexhash);
 		residhash_finalize(&cache->residhash);
 		free(retrinfo);
 		free(rawdat);
@@ -689,6 +830,7 @@ EXPORT VOID datcache_delete(datcache_t *cache)
 	datcache_data_t *cache_data;
 	Bool ok;
 
+	resindexhash_finalize(&cache->resindexhash);
 	residhash_finalize(&cache->residhash);
 
 	if (cache->latestheader != NULL) {
