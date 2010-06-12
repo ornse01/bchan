@@ -619,8 +619,22 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	W size, err;
 	PNT pos;
 	B *data;
+	COLOR color;
+	UW attr = 0;
 
 	DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
+	err = datcache_searchresindexdata(bchan->cache, resindex, &attr, &color);
+	if (err == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		if ((attr & DATCACHE_RESINDEXDATA_FLAG_NG) != 0) {
+			err = bchan_resnumbermenu_setngselected(&bchan->resnumbermenu, True);
+		} else {
+			err = bchan_resnumbermenu_setngselected(&bchan->resnumbermenu, False);
+		}
+	} else {
+		attr = 0;
+		err = bchan_resnumbermenu_setngselected(&bchan->resnumbermenu, False);
+	}
+
 	pos.x = wev->s.pos.x;
 	pos.y = wev->s.pos.y;
 	gcnv_abs(bchan->gid, &pos);
@@ -634,6 +648,12 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 		datlayout_resindextotraytextdata(bchan->layout, resindex, data, size);
 		bchan_pushstringtotray((TC*)data, size/2);
 		free(data);
+	} if (err == BCHAN_RESNUMBERMENU_SELECT_NG) {
+		if ((attr & DATCACHE_RESINDEXDATA_FLAG_NG) != 0) {
+			datcache_removeresindexdata(bchan->cache, resindex);
+		} else {
+			err = datcache_addresindexdata(bchan->cache, resindex, DATCACHE_RESINDEXDATA_FLAG_NG, 0x10000000);
+		}
 	}
 }
 
