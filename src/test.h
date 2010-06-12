@@ -55,4 +55,7 @@ IMPORT VOID test_sjistring_main();
 /* test_residhash.c */
 IMPORT VOID test_residhash_main();
 
+/* test_resindexhash.c */
+IMPORT VOID test_resindexhash_main();
+
 #endif

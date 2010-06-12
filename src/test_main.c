@@ -50,6 +50,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_submitutil_main();
 	test_sjistring_main();
 	test_residhash_main();
+	test_resindexhash_main();
 
 	return 0;
 }
