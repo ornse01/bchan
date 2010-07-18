@@ -26,6 +26,7 @@
 
 #include    <basic.h>
 #include	<btron/dp.h>
+#include	<tad.h>
 
 #ifndef __TADLIB_H__
 #define __TADLIB_H__
@@ -45,6 +46,24 @@ IMPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv);
 IMPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len);
 IMPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *dest, W dest_len);
 IMPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC **id, W *id_len, TC **beid, W *beid_len);
+
+struct taditerator_t_ {
+	TC *bin;
+	W len;
+	W index;
+};
+typedef struct taditerator_t_ taditerator_t;
+
+enum TADITERATOR_RESULT_T_ {
+	TADITERATOR_RESULT_CHARCTOR,
+	TADITERATOR_RESULT_SEGMENT,
+	TADITERATOR_RESULT_END,
+};
+typedef enum TADITERATOR_RESULT_T_ TADITERATOR_RESULT_T;
+
+IMPORT VOID taditerator_initialize(taditerator_t *iterator, TC *bin, W strlen);
+IMPORT VOID taditerator_finalize(taditerator_t *iterator);
+IMPORT W  taditerator_next(taditerator_t *iterator, TC **pos, TC *segment, LTADSEG **seg, W *segsize, UB **data);
 
 typedef struct {
 #if BIGENDIAN

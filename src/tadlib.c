@@ -563,20 +563,6 @@ EXPORT W tadlib_drawtext(TC *str, W len, GID gid, W dh, W dv)
 	return parse_tad(str, len, &callbacks, &ctx);
 }
 
-struct taditerator_t_ {
-	TC *bin;
-	W len;
-	W index;
-};
-typedef struct taditerator_t_ taditerator_t;
-
-enum TADITERATOR_RESULT_T_ {
-	TADITERATOR_RESULT_CHARCTOR,
-	TADITERATOR_RESULT_SEGMENT,
-	TADITERATOR_RESULT_END,
-};
-typedef enum TADITERATOR_RESULT_T_ TADITERATOR_RESULT_T;
-
 EXPORT W taditerator_next(taditerator_t *iterator, TC **pos, TC *segment, LTADSEG **seg, W *segsize, UB **data)
 {
 	TC *ch, *dummy_pos;
@@ -619,7 +605,7 @@ EXPORT W taditerator_next(taditerator_t *iterator, TC **pos, TC *segment, LTADSE
 	}
 }
 
-EXPORT VOID taditrerator_initialize(taditerator_t *iterator, TC *bin, W strlen)
+EXPORT VOID taditerator_initialize(taditerator_t *iterator, TC *bin, W strlen)
 {
 	iterator->bin = bin;
 	iterator->len = strlen;
@@ -640,7 +626,7 @@ EXPORT W tadlib_remove_TA_APPL_calcsize(TC *str, W len)
 	TADITERATOR_RESULT_T ret;
 	W allsize;
 
-	taditrerator_initialize(&iter, str, len);
+	taditerator_initialize(&iter, str, len);
 
 	allsize = 0;
 	for (;;) {
@@ -674,7 +660,7 @@ EXPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *data, W data_len)
 	UB *data0, *dest;
 	TADITERATOR_RESULT_T ret;
 
-	taditrerator_initialize(&iter, str, len);
+	taditerator_initialize(&iter, str, len);
 
 	i = 0;
 	dest = (UB*)data;
@@ -725,7 +711,7 @@ EXPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC 
 	*beid = NULL;
 	*beid_len = 0;
 
-	taditrerator_initialize(&iter, str, len);
+	taditerator_initialize(&iter, str, len);
 
 	for (;;) {
 		ret = taditerator_next(&iter, &pos, &ch, &seg, &size, &data0);
