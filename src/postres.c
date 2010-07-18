@@ -80,7 +80,7 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 	LTADSEG *seg;
 	TC header_from[] = {TK_F, TK_R, TK_O, TK_M, TK_COLN, TNULL};
 	TC header_mail[] = {TK_m, TK_a, TK_i, TK_l, TK_COLN, TNULL};
-	TC read_fieldname_index = 0;
+	W read_fieldname_index = 0;
 	UB chratio_seg[] = {0xA2, 0xFF, 0x06, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00};
 	W chratio_seg_len = sizeof(chratio_seg);
 	Bool is_hankaku = False, is_chratio;
@@ -271,7 +271,7 @@ EXPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk)
 		cls_fil(fd);
 		return err;
 	}
-	buf = malloc(size);
+	buf = malloc(size*sizeof(UB));
 	if (buf == NULL) {
 		cls_fil(fd);
 		return -1; /* TODO */
