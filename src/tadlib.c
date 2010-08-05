@@ -771,3 +771,94 @@ EXPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC 
 
 	taditerator_finalize(&iter);
 }
+
+#define TCTOKENCHECKER_FLAG_NOTEXIST 0x00000001
+#define TCTOKENCHECKER_FLAG_AFTERENDCHAR 0x00000002
+
+EXPORT VOID tctokenchecker_clear(tctokenchecker_t *checker)
+{
+	checker->stringindex = 0;
+	checker->listindex_start = 0;
+	checker->listindex_end = checker->namelistnum;
+	checker->flag = 0;
+}
+
+EXPORT W tctokenchecker_inputchar(tctokenchecker_t *checker, TC c, W *val)
+{
+	W i;
+	tctokenchecker_valuetuple_t *namelist = checker->namelist;
+
+	if ((checker->flag & TCTOKENCHECKER_FLAG_AFTERENDCHAR) != 0) {
+		return TCTOKENCHECKER_AFTER_END;
+	}
+
+	for (i = 0;; i++) {
+		if ((checker->endtokens)[i] == TNULL) {
+			break;
+		}
+		if (c == (checker->endtokens)[i]) {
+			checker->flag |= TCTOKENCHECKER_FLAG_AFTERENDCHAR;
+			if ((checker->flag & TCTOKENCHECKER_FLAG_NOTEXIST) != 0) {
+				return TCTOKENCHECKER_NOMATCH;
+			}
+			if ((namelist[checker->listindex_start]).name[checker->stringindex] == TNULL) {
+				/*List's Name End and receive EndToken = found match string*/
+				*val = (namelist[checker->listindex_start]).val;
+				return TCTOKENCHECKER_DETERMINE;
+			}
+			/*List's Name continue but receive endtoken.*/
+			return TCTOKENCHECKER_NOMATCH;
+		}
+	}
+
+	if ((checker->flag & TCTOKENCHECKER_FLAG_NOTEXIST) != 0) {
+		return TCTOKENCHECKER_CONTINUE_NOMATCH;
+	}
+
+	for (i = checker->listindex_start; i < checker->listindex_end; i++) {
+		if ((namelist[i]).name[checker->stringindex] == c) {
+			break;
+		}
+	}
+	if (i == checker->listindex_end) { /*receive char is not matched.*/
+		checker->flag &= TCTOKENCHECKER_FLAG_NOTEXIST;
+		return TCTOKENCHECKER_CONTINUE_NOMATCH;
+	}
+	checker->listindex_start = i;
+	for (i = i+1; i < checker->listindex_end; i++) {
+		if ((namelist[i]).name[checker->stringindex] != c) {
+			break;
+		}
+	}
+	checker->listindex_end = i;
+
+	if ((namelist[checker->listindex_start]).name[checker->stringindex] == '\0') {
+		/*Don't recive endtoken but List's Name is end.*/
+		checker->flag |= TCTOKENCHECKER_FLAG_NOTEXIST;
+		return TCTOKENCHECKER_CONTINUE_NOMATCH;
+	}
+	checker->stringindex++;
+
+	return TCTOKENCHECKER_CONTINUE;
+}
+
+EXPORT VOID tctokenchecker_getlastmatchedstring(tctokenchecker_t *checker, TC **str, W *len)
+{
+	*str = (checker->namelist[checker->listindex_start]).name;
+	*len = checker->stringindex;
+}
+
+EXPORT VOID tctokenchecker_initialize(tctokenchecker_t *checker, tctokenchecker_valuetuple_t *namelist, W namelistnum, TC *endchars)
+{
+	checker->namelist = namelist;
+	checker->namelistnum = namelistnum;
+	checker->endtokens = endchars;
+	checker->stringindex = 0;
+	checker->listindex_start = 0;
+	checker->listindex_end = checker->namelistnum;
+	checker->flag = 0;
+}
+
+EXPORT VOID tctokenchecker_finalize(tctokenchecker_t *checker)
+{
+}

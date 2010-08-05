@@ -65,6 +65,37 @@ IMPORT VOID taditerator_initialize(taditerator_t *iterator, TC *bin, W strlen);
 IMPORT VOID taditerator_finalize(taditerator_t *iterator);
 IMPORT W  taditerator_next(taditerator_t *iterator, TC **pos, TC *segment, LTADSEG **seg, W *segsize, UB **data);
 
+typedef struct tctokenchecker_valuetuple_t_ tctokenchecker_valuetuple_t;
+struct tctokenchecker_valuetuple_t_ {
+	TC *name;
+	W val;
+};
+
+typedef struct tctokenchecker_t_ tctokenchecker_t;
+struct tctokenchecker_t_ {
+	tctokenchecker_valuetuple_t *namelist;
+	W namelistnum;
+	TC *endtokens;
+	W stringindex;
+	W listindex_start;
+	W listindex_end;
+	W flag;
+};
+
+enum {
+	TCTOKENCHECKER_CONTINUE,
+	TCTOKENCHECKER_CONTINUE_NOMATCH,
+	TCTOKENCHECKER_DETERMINE,
+	TCTOKENCHECKER_NOMATCH,
+	TCTOKENCHECKER_AFTER_END
+};
+
+IMPORT VOID tctokenchecker_initialize(tctokenchecker_t *checker, tctokenchecker_valuetuple_t *namelist, W namelistnum, TC *endchars);
+IMPORT VOID tctokenchecker_finalize(tctokenchecker_t *checker);
+IMPORT VOID tctokenchecker_clear(tctokenchecker_t *checker);
+IMPORT W tctokenchecker_inputchar(tctokenchecker_t *checker, TC c, W *val);
+IMPORT VOID tctokenchecker_getlastmatchedstring(tctokenchecker_t *checker, TC **str, W *len);
+
 typedef struct {
 #if BIGENDIAN
 	UB subid;
