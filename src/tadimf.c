@@ -131,7 +131,7 @@ EXPORT W timfparser_next(timfparser_t *timf, W *headername, UB **bin, W *len)
 					memcpy(timf->buf, timf->chratio, 10);
 					timf->buf[5] = ch;
 					*bin = (UB*)timf->buf;
-					*len = 6;
+					*len = 12;
 				} else {
 					timf->buf[0] = ch;
 					*bin = (UB*)timf->buf;
@@ -185,11 +185,11 @@ EXPORT W timfparser_next(timfparser_t *timf, W *headername, UB **bin, W *len)
 				}
 				*headername = timf->headertype;
 				*bin = (UB*)timf->chratio;
-				*len = 5;
+				*len = 10;
 				return TIMFPARSER_RESULT_HEADERVALUE;
 			case TIMFPARSER_STATE_READ_VALUE_MESSAGE:
 				*bin = (UB*)timf->chratio;
-				*len = 5;
+				*len = 10;
 				return TIMFPARSER_RESULT_BODY;
 			}
 		}
