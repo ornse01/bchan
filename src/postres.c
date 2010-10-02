@@ -37,6 +37,7 @@
 
 #include    "postres.h"
 #include    "sjisstring.h"
+#include    "tadlib.h"
 
 LOCAL W postresdata_appendstring(TC **dest, W *dest_len, TC *str, W len)
 {
@@ -74,10 +75,12 @@ LOCAL Bool is_chratio_fusen(LTADSEG *seg, RATIO *w_ratio)
 
 LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 {
-	W i;
+	W segsize;
 	TC ch, lang = 0xFE21, nest = 0;
-	UB segid;
+	UB segid, *data;
 	LTADSEG *seg;
+	taditerator_t iterator;
+	TADITERATOR_RESULT_T result;
 	TC header_from[] = {TK_F, TK_R, TK_O, TK_M, TK_COLN, TNULL};
 	TC header_mail[] = {TK_m, TK_a, TK_i, TK_l, TK_COLN, TNULL};
 	W read_fieldname_index = 0;
@@ -96,18 +99,11 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 		READ_VALUE_MESSAGE
 	} state = SEARCH_HEADER;
 
-	for (i=0;i<len;i++) {
-		ch = str[i];
-
-		if ((ch & 0xFF80) == 0xFF80) {
-			seg = (LTADSEG*)(str + i);
-			if (seg->len == 0xffff) {
-				i += seg->llen / 2 + 3;
-			} else {
-				i += seg->len / 2 + 1;
-			}
-
-			segid = seg->id & 0xff;
+	taditerator_initialize(&iterator, str, len);
+	for (;;) {
+		result = taditerator_next(&iterator, NULL, &ch, &seg, &segsize, &data);
+		if (result == TADITERATOR_RESULT_SEGMENT) {
+			segid = ch;
 
 			if ((segid == TS_TEXT)||(segid == TS_FIG)) {
 				nest++;
@@ -143,111 +139,114 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 					break;
 				}
 			}
-
-			continue;
-		}
-
-		if (nest > 1) {
-			continue;
-		}
-
-		if ((ch & 0xFF00) == 0xFE00) {
-			lang = ch;
-		}
-		if (lang != 0xFE21) {
-			continue;
-		}
-
-		switch (state) {
-		case SEARCH_HEADER:
-			if (ch == TK_NL) {
-				state = READ_VALUE_MESSAGE;
-				if (is_hankaku == True) {
-					postresdata_appendstring(&(post->message), &(post->message_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
-				}
-				break;
+		} else if (result == TADITERATOR_RESULT_CHARCTOR) {
+			if (nest > 1) {
+				continue;
 			}
-			read_fieldname_index = 0;
-			if ((ch == header_mail[0])&&(lang == 0xFE21)) {
-				state = READ_HEADER_FIELDNAME_mail;
-				read_fieldname_index++;
-			} else if ((ch == header_from[0])&&(lang == 0xFE21)) {
-				state = READ_HEADER_FIELDNAME_FROM;
-				read_fieldname_index++;
-			} else {
-				state = SKIP_HEADER;
+
+			if ((ch & 0xFF00) == 0xFE00) {
+				lang = ch;
 			}
-			break;
-		case SKIP_HEADER:
-			if (ch == TK_NL) {
-				state = SEARCH_HEADER;
+			if (lang != 0xFE21) {
+				continue;
 			}
-			break;
-		case READ_HEADER_FIELDNAME_FROM:
-			if (ch == TK_NL) {
-				state = SEARCH_HEADER;
-				break;
-			}
-			if (read_fieldname_index >= 5) {
-				if ((ch == TK_KSP)&&(lang == 0xFE21)) {
+
+			switch (state) {
+			case SEARCH_HEADER:
+				if (ch == TK_NL) {
+					state = READ_VALUE_MESSAGE;
+					if (is_hankaku == True) {
+						postresdata_appendstring(&(post->message), &(post->message_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
+					}
 					break;
 				}
-				state = READ_HEADER_FIELDVALUE_FROM;
-				if (is_hankaku == True) {
-					postresdata_appendstring(&(post->from), &(post->from_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
+				read_fieldname_index = 0;
+				if ((ch == header_mail[0])&&(lang == 0xFE21)) {
+					state = READ_HEADER_FIELDNAME_mail;
+					read_fieldname_index++;
+				} else if ((ch == header_from[0])&&(lang == 0xFE21)) {
+					state = READ_HEADER_FIELDNAME_FROM;
+					read_fieldname_index++;
+				} else {
+					state = SKIP_HEADER;
+				}
+				break;
+			case SKIP_HEADER:
+				if (ch == TK_NL) {
+				state = SEARCH_HEADER;
+				}
+				break;
+			case READ_HEADER_FIELDNAME_FROM:
+				if (ch == TK_NL) {
+					state = SEARCH_HEADER;
+					break;
+				}
+				if (read_fieldname_index >= 5) {
+					if ((ch == TK_KSP)&&(lang == 0xFE21)) {
+						break;
+					}
+					state = READ_HEADER_FIELDVALUE_FROM;
+					if (is_hankaku == True) {
+						postresdata_appendstring(&(post->from), &(post->from_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
+					}
+					postresdata_appendstring(&(post->from), &(post->from_len), &ch, 1);
+					break;
+				}
+				if ((ch == header_from[read_fieldname_index])&&(lang == 0xFE21)) {
+					read_fieldname_index++;
+					break;
+				}
+				state = SKIP_HEADER;
+				break;
+			case READ_HEADER_FIELDVALUE_FROM:
+				if (ch == TK_NL) {
+					state = SEARCH_HEADER;
+					break;
 				}
 				postresdata_appendstring(&(post->from), &(post->from_len), &ch, 1);
 				break;
-			}
-			if ((ch == header_from[read_fieldname_index])&&(lang == 0xFE21)) {
-				read_fieldname_index++;
-				break;
-			}
-			state = SKIP_HEADER;
-			break;
-		case READ_HEADER_FIELDVALUE_FROM:
-			if (ch == TK_NL) {
-				state = SEARCH_HEADER;
-				break;
-			}
-			postresdata_appendstring(&(post->from), &(post->from_len), &ch, 1);
-			break;
-		case READ_HEADER_FIELDNAME_mail:
-			if (ch == TK_NL) {
-				state = SEARCH_HEADER;
-				break;
-			}
-			if (read_fieldname_index >= 5) {
-				if ((ch == TK_KSP)&&(lang == 0xFE21)) {
+			case READ_HEADER_FIELDNAME_mail:
+				if (ch == TK_NL) {
+					state = SEARCH_HEADER;
 					break;
 				}
-				state = READ_HEADER_FIELDVALUE_mail;
-				if (is_hankaku == True) {
-					postresdata_appendstring(&(post->mail), &(post->mail_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
+				if (read_fieldname_index >= 5) {
+					if ((ch == TK_KSP)&&(lang == 0xFE21)) {
+						break;
+					}
+					state = READ_HEADER_FIELDVALUE_mail;
+					if (is_hankaku == True) {
+						postresdata_appendstring(&(post->mail), &(post->mail_len), (TC*)chratio_seg, chratio_seg_len/sizeof(TC));
+					}
+					postresdata_appendstring(&(post->mail), &(post->mail_len), &ch, 1);
+					break;
+				}
+				if ((ch == header_mail[read_fieldname_index])&&(lang == 0xFE21)) {
+					read_fieldname_index++;
+					break;
+				}
+				state = SKIP_HEADER;
+				break;
+			case READ_HEADER_FIELDVALUE_mail:
+				if (ch == TK_NL) {
+					state = SEARCH_HEADER;
+					break;
 				}
 				postresdata_appendstring(&(post->mail), &(post->mail_len), &ch, 1);
 				break;
-			}
-			if ((ch == header_mail[read_fieldname_index])&&(lang == 0xFE21)) {
-				read_fieldname_index++;
+			case READ_VALUE_MESSAGE:
+				postresdata_appendstring(&(post->message), &(post->message_len), &ch, 1);
+				break;
+			default:
 				break;
 			}
-			state = SKIP_HEADER;
+		} else if (result == TADITERATOR_RESULT_END) {
 			break;
-		case READ_HEADER_FIELDVALUE_mail:
-			if (ch == TK_NL) {
-				state = SEARCH_HEADER;
-				break;
-			}
-			postresdata_appendstring(&(post->mail), &(post->mail_len), &ch, 1);
-			break;
-		case READ_VALUE_MESSAGE:
-			postresdata_appendstring(&(post->message), &(post->message_len), &ch, 1);
-			break;
-		default:
+		} else {
 			break;
 		}
 	}
+	taditerator_finalize(&iterator);
 
 	return 0;
 }
