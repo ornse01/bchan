@@ -96,7 +96,7 @@ EXPORT W timfparser_next(timfparser_t *timf, W *headername, UB **bin, W *len)
 				} else if (ret != TCTOKENCHECKER_CONTINUE) {
 					timf->state = TIMFPARSER_STATE_SKIP_HEADER;
 				} else {
-					timf->state = TIMFPARSER_STATE_SEARCH_HEADER_FIELDVALUE;
+					timf->state = TIMFPARSER_STATE_READ_HEADER_FIELDNAME;
 				}
 				break;
 			case TIMFPARSER_STATE_SKIP_HEADER:
@@ -105,21 +105,27 @@ EXPORT W timfparser_next(timfparser_t *timf, W *headername, UB **bin, W *len)
 				}
 				break;
 			case TIMFPARSER_STATE_READ_HEADER_FIELDNAME:
+				if (ch == TK_NL) {
+					timf->state = TIMFPARSER_STATE_SEARCH_HEADER;
+					break;
+				}
 				ret = tctokenchecker_inputchar(&timf->headerchecker, ch, &val);
 				if (ret == TCTOKENCHECKER_DETERMINE) {
-					timf->state = TIMFPARSER_STATE_READ_HEADER_FIELDVALUE;
+					timf->state = TIMFPARSER_STATE_SEARCH_HEADER_FIELDVALUE;
 					timf->headertype = val;
 				} else if (ret != TCTOKENCHECKER_CONTINUE) {
 					timf->state = TIMFPARSER_STATE_SKIP_HEADER;
-				} else {
-					timf->state = TIMFPARSER_STATE_SEARCH_HEADER_FIELDVALUE;
 				}
 				break;
 			case TIMFPARSER_STATE_SEARCH_HEADER_FIELDVALUE:
 				if (ch == TK_KSP) {
 					break;
 				}
-				timf->state = TIMFPARSER_STATE_READ_HEADER_FIELDNAME;
+				if (ch == TK_NL) {
+					timf->state = TIMFPARSER_STATE_SEARCH_HEADER;
+					break;
+				}
+				timf->state = TIMFPARSER_STATE_READ_HEADER_FIELDVALUE;
 				*headername = timf->headertype;
 				if (timf->ishankaku == True) {
 					memcpy(timf->buf, timf->chratio, 10);
