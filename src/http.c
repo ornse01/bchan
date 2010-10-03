@@ -401,8 +401,6 @@ struct http_identityiterator_t_ {
 	W buffer_len;
 	W buffer_rcv_len;
 	W buffer_push_len;
-	W current_chunked_len;
-	W current_chunked_push_len;
 	W total_push_len;
 };
 typedef struct http_identityiterator_t_ http_identityiterator_t;
@@ -422,8 +420,6 @@ LOCAL W http_identityiterator_start(http_identityiterator_t *iterator, http_t *h
 		memcpy(iterator->buffer, http->header_buffer + http->header_len + 4, iterator->buffer_rcv_len);
 	}
 	iterator->buffer_push_len = 0;
-	iterator->current_chunked_len = 0;
-	iterator->current_chunked_push_len = 0;
 	iterator->total_push_len = 0;
 
 	return 0;
