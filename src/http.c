@@ -622,24 +622,24 @@ LOCAL W http_startgzipiterator(http_t *http, http_gzipiterator_t *iterator)
 		return -1;
 	}
 
-    iterator->z.zalloc = Z_NULL;
-    iterator->z.zfree = Z_NULL;
-    iterator->z.opaque = Z_NULL;
+	iterator->z.zalloc = Z_NULL;
+	iterator->z.zfree = Z_NULL;
+	iterator->z.opaque = Z_NULL;
 
 	iterator->z.next_in = Z_NULL;
 	iterator->z.avail_in = 0;
 
 	err = inflateInit2(&(iterator->z), -MAX_WBITS);
-    if (err != Z_OK) {
+	if (err != Z_OK) {
 		DP_ER("inflateInit2 error:", err);
 		free(iterator->buffer);
-        return -1;
-    }
+		return -1;
+	}
 
 	iterator->z.next_in = bin + gzipheader_len;
 	iterator->z.avail_in = bin_len - gzipheader_len;
-    iterator->z.next_out = iterator->buffer;
-    iterator->z.avail_out = iterator->buffer_len;
+	iterator->z.next_out = iterator->buffer;
+	iterator->z.avail_out = iterator->buffer_len;
 
 	return 0;
 }
@@ -672,24 +672,24 @@ LOCAL W http_gzipiterator_getnext(http_gzipiterator_t *iterator, UB **ptr, W *le
 			iterator->z.next_in = c_bin;
 			iterator->z.avail_in = c_len;
 		}
-        err = inflate(&(iterator->z), Z_NO_FLUSH);
-        if (err == Z_STREAM_END) {
+		err = inflate(&(iterator->z), Z_NO_FLUSH);
+		if (err == Z_STREAM_END) {
 			*ptr = iterator->buffer;
 			*len = iterator->buffer_len - iterator->z.avail_out;
 			iterator->is_finished = True;
 			break;
 		}
-        if (err != Z_OK) {
+		if (err != Z_OK) {
 			DP_ER("inflate error:", err);
 			return -1;
-        }
-        if (iterator->z.avail_out == 0) {
+		}
+		if (iterator->z.avail_out == 0) {
 			*ptr = iterator->buffer;
 			*len = iterator->buffer_len;
 			iterator->z.next_out = iterator->buffer;
-            iterator->z.avail_out = iterator->buffer_len;
+			iterator->z.avail_out = iterator->buffer_len;
 			return 0;
-        }
+		}
 	}
 
 	return 0;
