@@ -188,7 +188,7 @@ EXPORT W timfparser_next(timfparser_t *timf, W *headername, UB **bin, W *len)
 				*len = 10;
 				return TIMFPARSER_RESULT_HEADERVALUE;
 			case TIMFPARSER_STATE_READ_VALUE_MESSAGE:
-				*bin = (UB*)timf->chratio;
+				*bin = (UB*)seg;
 				*len = 10;
 				return TIMFPARSER_RESULT_BODY;
 			}
