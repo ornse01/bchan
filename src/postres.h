@@ -1,7 +1,7 @@
 /*
  * postres.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -31,18 +31,16 @@
 #define __POSTRES_H__
 
 typedef struct postresdata_t_ postresdata_t;
-struct postresdata_t_ {
-	TC *from;
-	W from_len;
-	TC *mail;
-	W mail_len;
-	TC *message;
-	W message_len;
-};
 
 IMPORT postresdata_t* postresdata_new();
 IMPORT VOID postresdata_delete(postresdata_t *post);
 IMPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk);
 IMPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB **body, W *body_len);
+IMPORT TC* postresdata_getfromstring(postresdata_t *post);
+IMPORT W postresdata_getfromstringlen(postresdata_t *post);
+IMPORT TC* postresdata_getmailstring(postresdata_t *post);
+IMPORT W postresdata_getmailstringlen(postresdata_t *post);
+IMPORT TC* postresdata_getmessagestring(postresdata_t *post);
+IMPORT W postresdata_getmessagestringlen(postresdata_t *post);
 
 #endif

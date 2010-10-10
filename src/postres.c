@@ -39,6 +39,45 @@
 #include    "sjisstring.h"
 #include    "tadimf.h"
 
+struct postresdata_t_ {
+	TC *from;
+	W from_len;
+	TC *mail;
+	W mail_len;
+	TC *message;
+	W message_len;
+};
+
+EXPORT TC* postresdata_getfromstring(postresdata_t *post)
+{
+	return post->from;
+}
+
+EXPORT W postresdata_getfromstringlen(postresdata_t *post)
+{
+	return post->from_len;
+}
+
+EXPORT TC* postresdata_getmailstring(postresdata_t *post)
+{
+	return post->mail;
+}
+
+EXPORT W postresdata_getmailstringlen(postresdata_t *post)
+{
+	return post->mail_len;
+}
+
+EXPORT TC* postresdata_getmessagestring(postresdata_t *post)
+{
+	return post->message;
+}
+
+EXPORT W postresdata_getmessagestringlen(postresdata_t *post)
+{
+	return post->message_len;
+}
+
 LOCAL W postresdata_appendstring(TC **dest, W *dest_len, TC *str, W len)
 {
 	*dest = realloc(*dest, sizeof(TC)*(*dest_len + len + 1));
