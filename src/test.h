@@ -58,4 +58,10 @@ IMPORT VOID test_residhash_main();
 /* test_resindexhash.c */
 IMPORT VOID test_resindexhash_main();
 
+/* test_postres.c */
+IMPORT VOID test_postres_main();
+
+/* test_tadimf.c */
+IMPORT VOID test_tadimf_main();
+
 #endif

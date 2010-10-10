@@ -51,6 +51,8 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_sjistring_main();
 	test_residhash_main();
 	test_resindexhash_main();
+	test_postres_main();
+	test_tadimf_main();
 
 	return 0;
 }
