@@ -64,4 +64,7 @@ IMPORT VOID test_postres_main();
 /* test_tadimf.c */
 IMPORT VOID test_tadimf_main();
 
+/* test_array.c */
+EXPORT VOID test_array_main();
+
 #endif

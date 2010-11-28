@@ -53,6 +53,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_resindexhash_main();
 	test_postres_main();
 	test_tadimf_main();
+	test_array_main();
 
 	return 0;
 }
