@@ -180,6 +180,11 @@ EXPORT VOID arraybase_truncate(arraybase_t *arraybase, W newlength)
 	arraybase->datanum = newlength;
 }
 
+EXPORT W arraybase_length(arraybase_t *arraybase)
+{
+	return arraybase->datanum;
+}
+
 EXPORT W arraybase_initialize(arraybase_t *arraybase, W unitsize, W denom)
 {
 	W err;
