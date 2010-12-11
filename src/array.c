@@ -153,6 +153,33 @@ EXPORT W arraybase_appendunit(arraybase_t *arraybase, VP p)
 	return 0;
 }
 
+EXPORT VOID arraybase_truncate(arraybase_t *arraybase, W newlength)
+{
+	W i, i_num;
+	arraybase_datanode_t *node, *newlast;
+
+	if (newlength >= arraybase->datanum) {
+		return;
+	}
+
+	i_num = (newlength - 1) / arraybase->denom;
+	node = &arraybase->datalist;
+	for (i = 0; i < i_num; i++) {
+		node = arraybase_datanode_next(node);
+	}
+	newlast = node;
+
+	for (;;) {
+		node = arraybase_datanode_prev(&arraybase->datalist);
+		if (node == newlast) {
+			break;
+		}
+		arraybase_datanode_delete(node);
+	}
+
+	arraybase->datanum = newlength;
+}
+
 EXPORT W arraybase_initialize(arraybase_t *arraybase, W unitsize, W denom)
 {
 	W err;

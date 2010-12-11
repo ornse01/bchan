@@ -536,6 +536,261 @@ LOCAL TEST_RESULT test_array_12()
 	return result;
 }
 
+LOCAL TEST_RESULT test_array_truncate_base(W denom, W testnum, W truncate, W checklen)
+{
+	arraybase_t array;
+	W i, err, arraylen;
+	test_array_dummydata val, *val2;
+	TEST_RESULT result = TEST_RESULT_PASS;
+	Bool found;
+
+	err = arraybase_initialize(&array, sizeof(test_array_dummydata), denom);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	for (i = 0; i < testnum; i++) {
+		val.a = 100;
+		val.b = i + 1234;
+		val.c = i % 23 ;
+		err = arraybase_appendunit(&array, (VP)&val);
+		if (err < 0) {
+			printf("arraybase_appendunit failure\n");
+			result = TEST_RESULT_FAIL;
+		}
+	}
+
+	arraybase_truncate(&array, truncate);
+
+	if (truncate > testnum) {
+		arraylen = testnum;
+	} else {
+		arraylen = truncate;
+	}
+
+	for (i = 0; i < checklen; i++) {
+		found = arraybase_getunitbyindex(&array, i, (VP)&val2);
+		if (i < arraylen) {
+			if (found != True) {
+				printf("arraybase_getunitbyindex not found failure\n");
+				result = TEST_RESULT_FAIL;
+			}
+			if ((val2->a != 100)||(val2->b != i + 1234)||(val2->c != i % 23)) {
+				printf("arraybase_getunitbyindex unexpected value failure: %d\n", i);
+				result = TEST_RESULT_FAIL;
+			}
+		} else {
+			if (found != False) {
+				printf("arraybase_getunitbyindex found failure\n");
+				result = TEST_RESULT_FAIL;
+			}
+		}
+	}
+
+	arraybase_finalize(&array);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_array_13()
+{
+	return test_array_truncate_base(100, 100, 0, 200);
+}
+
+LOCAL TEST_RESULT test_array_14()
+{
+	return test_array_truncate_base(100, 100, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_15()
+{
+	return test_array_truncate_base(100, 100, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_16()
+{
+	return test_array_truncate_base(100, 100, 200, 200);
+}
+
+LOCAL TEST_RESULT test_array_17()
+{
+	return test_array_truncate_base(50, 100, 00, 200);
+}
+
+LOCAL TEST_RESULT test_array_18()
+{
+	return test_array_truncate_base(50, 100, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_19()
+{
+	return test_array_truncate_base(50, 100, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_20()
+{
+	return test_array_truncate_base(50, 100, 200, 200);
+}
+
+LOCAL TEST_RESULT test_array_21()
+{
+	return test_array_truncate_base(100, 500, 0, 1000);
+}
+
+LOCAL TEST_RESULT test_array_22()
+{
+	return test_array_truncate_base(100, 500, 50, 1000);
+}
+
+LOCAL TEST_RESULT test_array_23()
+{
+	return test_array_truncate_base(100, 500, 250, 1000);
+}
+
+LOCAL TEST_RESULT test_array_24()
+{
+	return test_array_truncate_base(100, 500, 500, 1000);
+}
+
+LOCAL TEST_RESULT test_array_25()
+{
+	return test_array_truncate_base(100, 500, 1000, 1000);
+}
+
+LOCAL TEST_RESULT test_array_truncate_2_base(W denom, W testnum1, W truncate, W testnum2, W checklen)
+{
+	arraybase_t array;
+	W i, err, arraylen;
+	test_array_dummydata val, *val2;
+	TEST_RESULT result = TEST_RESULT_PASS;
+	Bool found;
+
+	err = arraybase_initialize(&array, sizeof(test_array_dummydata), denom);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	for (i = 0; i < testnum1; i++) {
+		val.a = 100;
+		val.b = i + 1234;
+		val.c = i % 23 ;
+		err = arraybase_appendunit(&array, (VP)&val);
+		if (err < 0) {
+			printf("arraybase_appendunit failure\n");
+			result = TEST_RESULT_FAIL;
+		}
+	}
+
+	arraybase_truncate(&array, truncate);
+
+	if (truncate > testnum1) {
+		arraylen = testnum1;
+	} else {
+		arraylen = truncate;
+	}
+
+	for (i = arraylen; i < arraylen + testnum2; i++) {
+		val.a = 100;
+		val.b = i + 1234;
+		val.c = i % 23 ;
+		err = arraybase_appendunit(&array, (VP)&val);
+		if (err < 0) {
+			printf("arraybase_appendunit failure\n");
+			result = TEST_RESULT_FAIL;
+		}
+	}
+
+	arraylen += testnum2;
+
+	for (i = 0; i < checklen; i++) {
+		found = arraybase_getunitbyindex(&array, i, (VP)&val2);
+		if (i < arraylen) {
+			if (found != True) {
+				printf("arraybase_getunitbyindex not found failure\n");
+				result = TEST_RESULT_FAIL;
+			}
+			if ((val2->a != 100)||(val2->b != i + 1234)||(val2->c != i % 23)) {
+				printf("arraybase_getunitbyindex unexpected value failure: %d\n", i);
+				result = TEST_RESULT_FAIL;
+			}
+		} else {
+			if (found != False) {
+				printf("arraybase_getunitbyindex found failure\n");
+				result = TEST_RESULT_FAIL;
+			}
+		}
+	}
+
+	arraybase_finalize(&array);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_array_26()
+{
+	return test_array_truncate_2_base(100, 100, 0, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_27()
+{
+	return test_array_truncate_2_base(100, 100, 50, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_28()
+{
+	return test_array_truncate_2_base(100, 100, 100, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_29()
+{
+	return test_array_truncate_2_base(100, 100, 200, 50, 200);
+}
+
+LOCAL TEST_RESULT test_array_30()
+{
+	return test_array_truncate_2_base(50, 100, 00, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_31()
+{
+	return test_array_truncate_2_base(50, 100, 50, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_32()
+{
+	return test_array_truncate_2_base(50, 100, 100, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_33()
+{
+	return test_array_truncate_2_base(50, 100, 200, 100, 200);
+}
+
+LOCAL TEST_RESULT test_array_34()
+{
+	return test_array_truncate_2_base(100, 500, 0, 100, 1000);
+}
+
+LOCAL TEST_RESULT test_array_35()
+{
+	return test_array_truncate_2_base(100, 500, 50, 100, 1000);
+}
+
+LOCAL TEST_RESULT test_array_36()
+{
+	return test_array_truncate_2_base(100, 500, 250, 100, 1000);
+}
+
+LOCAL TEST_RESULT test_array_37()
+{
+	return test_array_truncate_2_base(100, 500, 500, 100, 1000);
+}
+
+LOCAL TEST_RESULT test_array_38()
+{
+	return test_array_truncate_2_base(100, 500, 1000, 100, 1000);
+}
+
 LOCAL VOID test_array_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -565,4 +820,30 @@ EXPORT VOID test_array_main()
 	test_array_printresult(test_array_10, "test_array_10");
 	test_array_printresult(test_array_11, "test_array_11");
 	test_array_printresult(test_array_12, "test_array_12");
+	test_array_printresult(test_array_13, "test_array_13");
+	test_array_printresult(test_array_14, "test_array_14");
+	test_array_printresult(test_array_15, "test_array_15");
+	test_array_printresult(test_array_16, "test_array_16");
+	test_array_printresult(test_array_17, "test_array_17");
+	test_array_printresult(test_array_18, "test_array_18");
+	test_array_printresult(test_array_19, "test_array_19");
+	test_array_printresult(test_array_20, "test_array_20");
+	test_array_printresult(test_array_21, "test_array_21");
+	test_array_printresult(test_array_22, "test_array_22");
+	test_array_printresult(test_array_23, "test_array_23");
+	test_array_printresult(test_array_24, "test_array_24");
+	test_array_printresult(test_array_25, "test_array_25");
+	test_array_printresult(test_array_26, "test_array_26");
+	test_array_printresult(test_array_27, "test_array_27");
+	test_array_printresult(test_array_28, "test_array_28");
+	test_array_printresult(test_array_29, "test_array_29");
+	test_array_printresult(test_array_30, "test_array_30");
+	test_array_printresult(test_array_31, "test_array_31");
+	test_array_printresult(test_array_32, "test_array_32");
+	test_array_printresult(test_array_33, "test_array_33");
+	test_array_printresult(test_array_34, "test_array_34");
+	test_array_printresult(test_array_35, "test_array_35");
+	test_array_printresult(test_array_36, "test_array_36");
+	test_array_printresult(test_array_37, "test_array_37");
+	test_array_printresult(test_array_38, "test_array_38");
 }
