@@ -26,6 +26,7 @@
 
 #include    "layout.h"
 #include    "parser.h"
+#include    "layoutarray.h"
 #include    "tadlib.h"
 
 #include	<bstdio.h>
@@ -45,31 +46,6 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-typedef struct datlayout_box_t_ datlayout_box_t;
-struct datlayout_box_t_ {
-	W l,t,r,b;
-};
-
-typedef struct datlayout_res_t_ datlayout_res_t;
-struct datlayout_res_t_ {
-	datparser_res_t *parser_res;
-	W index;
-	struct {
-		datlayout_box_t res;
-		datlayout_box_t resheader;
-		datlayout_box_t resmessage;
-	} box;
-	struct {
-		RECT rel_number_pos;
-		RECT rel_id_pos;
-	} headerinfo;
-	struct {
-		actionlist_t *name;
-		actionlist_t *mail;
-		actionlist_t *body;
-	} action;
-};
-
 struct datlayout_t_ {
 	GID target;
 	struct {
@@ -79,8 +55,7 @@ struct datlayout_t_ {
 		datlayout_style_t resmessage;
 	} style;
 	datlayout_box_t body;
-	datlayout_res_t **layout_res; /* should be QUEUE? */
-	W len;
+	datlayoutarray_t *boxarray;
 };
 
 //#define datlayout_fontconfig_class FTC_MINCHO
@@ -248,41 +223,6 @@ LOCAL Bool datlayout_res_issameid(datlayout_res_t *res, TC *id, W id_len)
 	return True;
 }
 
-LOCAL datlayout_res_t* datlayout_res_new(datparser_res_t *res)
-{
-	datlayout_res_t *layout_res;
-
-	layout_res = (datlayout_res_t*)malloc(sizeof(datlayout_res_t));
-	if (layout_res == NULL) {
-		return NULL;
-	}
-	layout_res->parser_res = res;
-	layout_res->box.res.l = 0;
-	layout_res->box.res.t = 0;
-	layout_res->box.res.r = 0;
-	layout_res->box.res.b = 0;
-	layout_res->action.name = NULL;
-	layout_res->action.mail = NULL;
-	layout_res->action.body = NULL;
-
-	return layout_res;
-}
-
-LOCAL VOID datlayout_res_delete(datlayout_res_t *layout_res)
-{
-	if (layout_res->action.body != NULL) {
-		actionlist_delete(layout_res->action.body);
-	}
-	if (layout_res->action.mail != NULL) {
-		actionlist_delete(layout_res->action.mail);
-	}
-	if (layout_res->action.name != NULL) {
-		actionlist_delete(layout_res->action.name);
-	}
-	datparser_res_delete(layout_res->parser_res);
-	free(layout_res);
-}
-
 LOCAL W datlayout_res_setupgid(GID gid)
 {
 	FSSPEC spec;
@@ -432,14 +372,15 @@ EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_
 EXPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_len)
 {
 	datlayout_res_t *res;
+	Bool exist;
 
-	if ((n < 0)||(layout->len <= n)) {
+	exist = datlayoutarray_getresbyindex(layout->boxarray, n, &res);
+	if (exist == False) {
 		*id = NULL;
 		*id_len = 0;
 		return;
 	}
 
-	res = layout->layout_res[n];
 	if (res->parser_res->dateinfo.id == NULL) {
 		*id = NULL;
 		*id_len = 0;
@@ -453,20 +394,25 @@ EXPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_le
 
 EXPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len)
 {
-	if ((n < 0)||(layout->len <= n)) {
+	datlayout_res_t *res;
+	Bool exist;
+	exist = datlayoutarray_getresbyindex(layout->boxarray, n, &res);
+	if (exist == False) {
 		return -1; /* TODO */
 	}
-	return datlayout_res_totraytextdata(layout->layout_res[n], data, data_len);
+	return datlayout_res_totraytextdata(res, data, data_len);
 }
 
 EXPORT W datlayout_idtotraytextdata(datlayout_t *layout, TC *id, W id_len, B *data, W data_len)
 {
-	W i, result, sum = 0;
+	W i, len, result, sum = 0;
 	Bool haveid;
 	datlayout_res_t *res;
 
-	for (i = 0; i < layout->len; i++) {
-		res = layout->layout_res[i];
+	len = datlayoutarray_length(layout->boxarray);
+	for (i = 0; i < len; i++) {
+		datlayoutarray_getresbyindex(layout->boxarray, i, &res);
+
 		haveid = datlayout_res_issameid(res, id, id_len);
 		if (haveid == True) {
 			if (data == NULL) {
@@ -505,17 +451,18 @@ LOCAL W datlayout_setupgid(datlayout_t *layout, GID gid)
 EXPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res)
 {
 	datlayout_res_t *layout_res;
-	W l,t,r,b,len;
+	W l,t,r,b,len,err;
+	Bool exist;
 
-	layout_res = datlayout_res_new(parser_res);
-	if (layout_res == NULL) {
-		return -1; /* TODO */
+	err = datlayoutarray_appendres(layout->boxarray, parser_res);
+	if (err < 0) {
+		return err;
 	}
-
-	len = layout->len + 1;
-	layout->layout_res = (datlayout_res_t**)realloc(layout->layout_res, sizeof(datlayout_res_t*)*len);
-	layout->layout_res[layout->len] = layout_res;
-	layout->len = len;
+	exist = datlayoutarray_getreslast(layout->boxarray, &layout_res);
+	if (exist == False) {
+		return -1; /* TODO or assertion */
+	}
+	len = datlayoutarray_length(layout->boxarray);
 
 	datlayout_setupgid(layout, layout->target);
 
@@ -547,32 +494,29 @@ EXPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b)
 
 EXPORT TC* datlayout_gettitle(datlayout_t *layout)
 {
-	if (layout->len <= 0) {
+	datlayout_res_t *layout_res;
+	Bool exist;
+	exist = datlayoutarray_getresfirst(layout->boxarray, &layout_res);
+	if (exist == False) {
 		return NULL;
 	}
-	return layout->layout_res[0]->parser_res->title;
+	return layout_res->parser_res->title;
 }
 
 EXPORT W datlayout_gettitlelen(datlayout_t *layout)
 {
-	if (layout->len <= 0) {
+	datlayout_res_t *layout_res;
+	Bool exist;
+	exist = datlayoutarray_getresfirst(layout->boxarray, &layout_res);
+	if (exist == False) {
 		return NULL;
 	}
-	return layout->layout_res[0]->parser_res->title_len;
+	return layout_res->parser_res->title_len;
 }
 
 EXPORT VOID datlayout_clear(datlayout_t *layout)
 {
-	W i;
-
-	if (layout->layout_res != NULL) {
-		for (i=0;i<layout->len;i++) {
-			datlayout_res_delete(layout->layout_res[i]);
-		}
-		free(layout->layout_res);
-	}
-	layout->layout_res = NULL;
-	layout->len = 0;
+	datlayoutarray_clear(layout->boxarray);
 	layout->body.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
 	layout->body.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
 	layout->body.r = layout->body.l;
@@ -581,11 +525,15 @@ EXPORT VOID datlayout_clear(datlayout_t *layout)
 
 EXPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b)
 {
-	if ((n < 0)||(layout->len <= n)) {
+	datlayout_res_t *layout_res;
+	Bool exist;
+
+	exist = datlayoutarray_getresbyindex(layout->boxarray, n, &layout_res);
+	if (exist == False) {
 		return 0;
 	}
 
-	datlayout_res_getviewrect(layout->layout_res[n], &(layout->style.res), l, t, r, b);
+	datlayout_res_getviewrect(layout_res, &(layout->style.res), l, t, r, b);
 
 	return 1;
 }
@@ -666,9 +614,12 @@ EXPORT datlayout_t* datlayout_new(GID gid)
 	if (layout == NULL) {
 		return NULL;
 	}
+	layout->boxarray = datlayoutarray_new();
+	if (layout->boxarray == NULL) {
+		free(layout);
+		return NULL;
+	}
 	layout->target = gid;
-	layout->layout_res = NULL;
-	layout->len = 0;
 
 	datlayout_new_setdefaultstyle(layout);
 
@@ -682,14 +633,7 @@ EXPORT datlayout_t* datlayout_new(GID gid)
 
 EXPORT VOID datlayout_delete(datlayout_t *layout)
 {
-	W i;
-
-	if (layout->layout_res != NULL) {
-		for (i=0;i<layout->len;i++) {
-			datlayout_res_delete(layout->layout_res[i]);
-		}
-		free(layout->layout_res);
-	}
+	datlayoutarray_delete(layout->boxarray);
 	free(layout);
 }
 
@@ -1071,16 +1015,23 @@ LOCAL W datdraw_bodyborderdraw(datdraw_t *draw, RECT *r)
 
 EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 {
-	W i,err;
+	W i,len,err;
 	GID target;
 	datlayout_t *layout;
+	datlayout_res_t *layout_res;
+	Bool exist;
 
 	layout = draw->layout;
 	target = layout->target;
+	len = datlayoutarray_length(layout->boxarray);
 
-	for (i=0;i < layout->len;i++) {
+	for (i = 0; i < len; i++) {
+		exist = datlayoutarray_getresbyindex(layout->boxarray, i, &layout_res);
+		if (exist == False) {
+			break;
+		}
 		datlayout_setupgid(layout, layout->target);
-		err = datdraw_entrydraw(layout->layout_res[i], &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), i, draw, target, r, draw->view_l, draw->view_t);
+		err = datdraw_entrydraw(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), i, draw, target, r, draw->view_l, draw->view_t);
 		if (err < 0) {
 			return err;
 		}
@@ -1148,17 +1099,23 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 
 EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, UB **start, W *len, W *resindex)
 {
-	W i,abs_x,abs_y,fnd;
+	W i,abs_x,abs_y,fnd,layout_len;
 	W l,t,r,b;
+	Bool exist;
 	datlayout_t *layout;
 	datlayout_res_t *res;
 
 	layout = draw->layout;
 	abs_x = rel_pos.x + draw->view_l;
 	abs_y = rel_pos.y + draw->view_t;
+	layout_len = datlayoutarray_length(layout->boxarray);
 
-	for (i=0;i < layout->len;i++) {
-		res = layout->layout_res[i];
+	for (i = 0; i < layout_len; i++) {
+		exist = datlayoutarray_getresbyindex(layout->boxarray, i, &res);
+		if (exist == False) {
+			break;
+		}
+
 		fnd = datdraw_findentryaction(res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
 		if (fnd == 1) {
 			rect->c.left = l - draw->view_l;
