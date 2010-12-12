@@ -47,6 +47,8 @@ struct arraybase_t_ {
 IMPORT W arraybase_initialize(arraybase_t *arraybase, W unitsize, W denom);
 IMPORT VOID arraybase_finalize(arraybase_t *arraybase);
 IMPORT Bool arraybase_getunitbyindex(arraybase_t *arraybase, W index, VP *p);
+IMPORT Bool arraybase_getunitfirst(arraybase_t *arraybase, VP *p);
+IMPORT Bool arraybase_getunitlast(arraybase_t *arraybase, VP *p);
 IMPORT W arraybase_appendunit(arraybase_t *arraybase, VP p);
 IMPORT VOID arraybase_truncate(arraybase_t *arraybase, W newlength);
 IMPORT W arraybase_length(arraybase_t *arraybase);

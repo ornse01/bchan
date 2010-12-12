@@ -113,6 +113,9 @@ EXPORT Bool arraybase_getunitbyindex(arraybase_t *arraybase, W index, VP *p)
 	W i, i_num, i_data;
 	arraybase_datanode_t *node;
 
+	if (index < 0) {
+		return False;
+	}
 	if (index >= arraybase->datanum) {
 		return False;
 	}
@@ -128,6 +131,18 @@ EXPORT Bool arraybase_getunitbyindex(arraybase_t *arraybase, W index, VP *p)
 	arraybase_datanode_getunitbyindex(node, arraybase->unitsize, i_data, p);
 
 	return True;
+}
+
+EXPORT Bool arraybase_getunitfirst(arraybase_t *arraybase, VP *p)
+{
+	/* TODO: more efficient. */
+	return arraybase_getunitbyindex(arraybase, 0, p);
+}
+
+EXPORT Bool arraybase_getunitlast(arraybase_t *arraybase, VP *p)
+{
+	/* TODO: more efficient. */
+	return arraybase_getunitbyindex(arraybase, arraybase->datanum - 1, p);
 }
 
 EXPORT W arraybase_appendunit(arraybase_t *arraybase, VP p)
