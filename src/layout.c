@@ -46,14 +46,17 @@
 # define DP_ER(msg, err) /**/
 #endif
 
+typedef struct datlayoutstyle_t_ datlayoutstyle_t;
+struct datlayoutstyle_t_ {
+	datlayout_style_t body;
+	datlayout_style_t res;
+	datlayout_style_t resheader;
+	datlayout_style_t resmessage;
+};
+
 struct datlayout_t_ {
 	GID target;
-	struct {
-		datlayout_style_t body;
-		datlayout_style_t res;
-		datlayout_style_t resheader;
-		datlayout_style_t resmessage;
-	} style;
+	datlayoutstyle_t style;
 	datlayout_box_t body;
 	datlayoutarray_t *boxarray;
 };
@@ -638,7 +641,10 @@ EXPORT VOID datlayout_delete(datlayout_t *layout)
 }
 
 struct datdraw_t_ {
-	datlayout_t *layout;
+	GID target;
+	datlayoutstyle_t *style;
+	datlayoutarray_t *array;
+	datlayout_box_t *bodybox;
 	W view_l, view_t, view_r, view_b;
 };
 
@@ -800,7 +806,6 @@ LOCAL W datdraw_entrydraw_resetchsize(GID gid)
 
 LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 {
-	datlayout_t *layout;
 	static	PAT	pat0 = {{
 		0,
 		16, 16,
@@ -810,8 +815,6 @@ LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 	}};
 	W err, sect, dh, dv;
 	RECT border;
-
-	layout = draw->layout;
 
 	sect = andrect_tmp(&l, &t, &r, &b, draw->view_l, draw->view_t, draw->view_r, draw->view_b);
 	if (sect == 0) {
@@ -831,7 +834,7 @@ LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 	border.c.right = r - dh;
 	border.c.bottom = b - dv;
 
-	err = gfil_rec(layout->target, border, &pat0, 0, G_STORE);
+	err = gfil_rec(draw->target, border, &pat0, 0, G_STORE);
 	if (err < 0) {
 		return err;
 	}
@@ -1008,30 +1011,26 @@ LOCAL W datdraw_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle, d
 
 LOCAL W datdraw_bodyborderdraw(datdraw_t *draw, RECT *r)
 {
-	datlayout_t *layout;
-	layout = draw->layout;
-	return datlayout_box_drawborder(&(layout->body), &(layout->style.body), draw, r);
+	return datlayout_box_drawborder(draw->bodybox, &(draw->style->body), draw, r);
 }
 
 EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 {
 	W i,len,err;
 	GID target;
-	datlayout_t *layout;
 	datlayout_res_t *layout_res;
 	Bool exist;
 
-	layout = draw->layout;
-	target = layout->target;
-	len = datlayoutarray_length(layout->boxarray);
+	target = draw->target;
+	len = datlayoutarray_length(draw->array);
 
 	for (i = 0; i < len; i++) {
-		exist = datlayoutarray_getresbyindex(layout->boxarray, i, &layout_res);
+		exist = datlayoutarray_getresbyindex(draw->array, i, &layout_res);
 		if (exist == False) {
 			break;
 		}
-		datlayout_setupgid(layout, layout->target);
-		err = datdraw_entrydraw(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), i, draw, target, r, draw->view_l, draw->view_t);
+		datlayout_res_setupgid(draw->target); /* Ugh! */
+		err = datdraw_entrydraw(layout_res, &(draw->style->res), &(draw->style->resheader), &(draw->style->resmessage), i, draw, target, r, draw->view_l, draw->view_t);
 		if (err < 0) {
 			return err;
 		}
@@ -1102,21 +1101,21 @@ EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, U
 	W i,abs_x,abs_y,fnd,layout_len;
 	W l,t,r,b;
 	Bool exist;
-	datlayout_t *layout;
+	/*datlayout_t *layout;*/
 	datlayout_res_t *res;
 
-	layout = draw->layout;
+	/*layout = draw->layout;*/
 	abs_x = rel_pos.x + draw->view_l;
 	abs_y = rel_pos.y + draw->view_t;
-	layout_len = datlayoutarray_length(layout->boxarray);
+	layout_len = datlayoutarray_length(draw->array);
 
 	for (i = 0; i < layout_len; i++) {
-		exist = datlayoutarray_getresbyindex(layout->boxarray, i, &res);
+		exist = datlayoutarray_getresbyindex(draw->array, i, &res);
 		if (exist == False) {
 			break;
 		}
 
-		fnd = datdraw_findentryaction(res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
+		fnd = datdraw_findentryaction(res, &(draw->style->res), &(draw->style->resheader), &(draw->style->resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
 		if (fnd == 1) {
 			rect->c.left = l - draw->view_l;
 			rect->c.top = t - draw->view_t;
@@ -1162,7 +1161,10 @@ EXPORT datdraw_t* datdraw_new(datlayout_t *layout)
 	if (draw == NULL) {
 		return NULL;
 	}
-	draw->layout = layout;
+	draw->target = layout->target;
+	draw->style = &layout->style;
+	draw->array = layout->boxarray;
+	draw->bodybox = &layout->body;
 	draw->view_l = 0;
 	draw->view_t = 0;
 	draw->view_r = 0;
