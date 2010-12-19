@@ -596,7 +596,7 @@ LOCAL VOID datlayout_new_setdefaultstyle(datlayout_t *layout)
 	layout->style->resmessage.border_color_bottom = 0x10ffffff;
 }
 
-EXPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style)
+EXPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style, datlayoutarray_t *layoutarray)
 {
 	datlayout_t *layout;
 	datlayout_box_t bodybox;
@@ -605,11 +605,7 @@ EXPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style)
 	if (layout == NULL) {
 		return NULL;
 	}
-	layout->boxarray = datlayoutarray_new();
-	if (layout->boxarray == NULL) {
-		free(layout);
-		return NULL;
-	}
+	layout->boxarray = layoutarray;
 	layout->target = gid;
 	layout->style = style;
 
@@ -626,7 +622,6 @@ EXPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style)
 
 EXPORT VOID datlayout_delete(datlayout_t *layout)
 {
-	datlayoutarray_delete(layout->boxarray);
 	free(layout);
 }
 
@@ -1144,7 +1139,7 @@ EXPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv)
 	draw->view_b += dv;
 }
 
-EXPORT datdraw_t* datdraw_new(datlayout_t *layout, datlayoutstyle_t *style)
+EXPORT datdraw_t* datdraw_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray)
 {
 	datdraw_t *draw;
 
@@ -1152,9 +1147,9 @@ EXPORT datdraw_t* datdraw_new(datlayout_t *layout, datlayoutstyle_t *style)
 	if (draw == NULL) {
 		return NULL;
 	}
-	draw->target = layout->target;
+	draw->target = target;
 	draw->style = style;
-	draw->array = layout->boxarray;
+	draw->array = layoutarray;
 	draw->view_l = 0;
 	draw->view_t = 0;
 	draw->view_r = 0;

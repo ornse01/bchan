@@ -46,6 +46,7 @@
 #include	"window.h"
 #include	"cache.h"
 #include	"parser.h"
+#include	"layoutarray.h"
 #include	"layout.h"
 #include	"retriever.h"
 #include	"submit.h"
@@ -155,9 +156,10 @@ struct bchan_t_ {
 	datretriever_t *retriever;
 	datcache_t *cache;
 	datparser_t *parser;
+	datlayoutarray_t *layoutarray;
+	datlayoutstyle_t style;
 	datlayout_t *layout;
 	datdraw_t *draw;
-	datlayoutstyle_t style;
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
@@ -979,6 +981,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	GID gid;
 	datcache_t *cache;
 	datparser_t *parser;
+	datlayoutarray_t *layoutarray;
 	datlayout_t *layout;
 	datdraw_t *draw;
 	datwindow_t *window;
@@ -1003,12 +1006,18 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("datparser_new error", 0);
 		goto error_parser;
 	}
-	layout = datlayout_new(gid, &bchan->style);
+	layoutarray = datlayoutarray_new();
+	if (layoutarray == NULL) {
+		DP_ER("datlayoutarray_new error", 0);
+		goto error_layoutarray;
+	}
+	/* TODO: style initialize. */
+	layout = datlayout_new(gid, &bchan->style, layoutarray);
 	if (layout == NULL) {
 		DP_ER("datlayout_new error", 0);
 		goto error_layout;
 	}
-	draw = datdraw_new(layout, &bchan->style);
+	draw = datdraw_new(gid, &bchan->style, layoutarray);
 	if (draw == NULL) {
 		DP_ER("datdraw_new error", 0);
 		goto error_draw;
@@ -1080,6 +1089,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan->request_confirm_open = False;
 	bchan->cache = cache;
 	bchan->parser = parser;
+	bchan->layoutarray = layoutarray;
 	bchan->layout = layout;
 	bchan->draw = draw;
 	bchan->window = window;
@@ -1112,6 +1122,8 @@ error_window:
 error_draw:
 	datlayout_delete(layout);
 error_layout:
+	datlayoutarray_delete(layoutarray);
+error_layoutarray:
 	datparser_delete(parser);
 error_parser:
 	datcache_delete(cache);
