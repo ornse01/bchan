@@ -46,17 +46,9 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-typedef struct datlayoutstyle_t_ datlayoutstyle_t;
-struct datlayoutstyle_t_ {
-	datlayout_style_t body;
-	datlayout_style_t res;
-	datlayout_style_t resheader;
-	datlayout_style_t resmessage;
-};
-
 struct datlayout_t_ {
 	GID target;
-	datlayoutstyle_t style;
+	datlayoutstyle_t *style;
 	datlayoutarray_t *boxarray;
 };
 
@@ -471,8 +463,8 @@ EXPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res)
 
 	layout_res->index = len - 1;
 	datlayoutarray_getbodybox(layout->boxarray, &box);
-	datlayout_res_calcsize(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), layout->target, box.l, box.b);
-	datlayout_res_getviewrect(layout_res, &(layout->style.res), &l, &t, &r, &b);
+	datlayout_res_calcsize(layout_res, &(layout->style->res), &(layout->style->resheader), &(layout->style->resmessage), layout->target, box.l, box.b);
+	datlayout_res_getviewrect(layout_res, &(layout->style->res), &l, &t, &r, &b);
 
 	datlayoutarray_orrectbodybox(layout->boxarray, l, t, r, b);
 
@@ -483,7 +475,7 @@ EXPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b)
 {
 	datlayout_box_t box;
 	datlayoutarray_getbodybox(layout->boxarray, &box);
-	datlayout_box_getoffsetrect(&box, &(layout->style.body), l, t, r, b);
+	datlayout_box_getoffsetrect(&box, &(layout->style->body), l, t, r, b);
 }
 
 EXPORT TC* datlayout_gettitle(datlayout_t *layout)
@@ -514,8 +506,8 @@ EXPORT VOID datlayout_clear(datlayout_t *layout)
 
 	datlayoutarray_clear(layout->boxarray);
 
-	newbody.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
-	newbody.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
+	newbody.l = layout->style->body.margin_width_left + layout->style->body.border_width_left + layout->style->body.padding_width_left;
+	newbody.t = layout->style->body.margin_width_top + layout->style->body.border_width_top + layout->style->body.padding_width_top;
 	newbody.r = newbody.l;
 	newbody.b = newbody.t;
 	datlayoutarray_setbodybox(layout->boxarray, &newbody);
@@ -531,80 +523,80 @@ EXPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t
 		return 0;
 	}
 
-	datlayout_res_getviewrect(layout_res, &(layout->style.res), l, t, r, b);
+	datlayout_res_getviewrect(layout_res, &(layout->style->res), l, t, r, b);
 
 	return 1;
 }
 
 LOCAL VOID datlayout_new_setdefaultstyle(datlayout_t *layout)
 {
-	layout->style.body.margin_width_left = 0;
-	layout->style.body.margin_width_top = 0;
-	layout->style.body.margin_width_right = 0;
-	layout->style.body.margin_width_bottom = 0;
-	layout->style.body.border_width_left = 0;
-	layout->style.body.border_width_top = 0;
-	layout->style.body.border_width_right = 0;
-	layout->style.body.border_width_bottom = 0;
-	layout->style.body.padding_width_left = 0;
-	layout->style.body.padding_width_top = 0;
-	layout->style.body.padding_width_right = 0;
-	layout->style.body.padding_width_bottom = 0;
-	layout->style.body.border_color_left = 0x10ffffff;
-	layout->style.body.border_color_top = 0x10ffffff;
-	layout->style.body.border_color_right = 0x10ffffff;
-	layout->style.body.border_color_bottom = 0x10ffffff;
-	layout->style.res.margin_width_left = 0;
-	layout->style.res.margin_width_top = 3;
-	layout->style.res.margin_width_right = 0;
-	layout->style.res.margin_width_bottom = 3;
-	layout->style.res.border_width_left = 0;
-	layout->style.res.border_width_top = 0;
-	layout->style.res.border_width_right = 0;
-	layout->style.res.border_width_bottom = 0;
-	layout->style.res.padding_width_left = 2;
-	layout->style.res.padding_width_top = 2;
-	layout->style.res.padding_width_right = 2;
-	layout->style.res.padding_width_bottom = 5;
-	layout->style.res.border_color_left = 0x10ffffff;
-	layout->style.res.border_color_top = 0x10fffff;
-	layout->style.res.border_color_right = 0x10ffffff;
-	layout->style.res.border_color_bottom = 0x10ffffff;
-	layout->style.resheader.margin_width_left = 3;
-	layout->style.resheader.margin_width_top = 3;
-	layout->style.resheader.margin_width_right = 3;
-	layout->style.resheader.margin_width_bottom = 0;
-	layout->style.resheader.border_width_left = 0;
-	layout->style.resheader.border_width_top = 0;
-	layout->style.resheader.border_width_right = 0;
-	layout->style.resheader.border_width_bottom = 0;
-	layout->style.resheader.padding_width_left = 2;
-	layout->style.resheader.padding_width_top = 2;
-	layout->style.resheader.padding_width_right = 2;
-	layout->style.resheader.padding_width_bottom = 0;
-	layout->style.resheader.border_color_left = 0x10ffffff;
-	layout->style.resheader.border_color_top = 0x10ffffff;
-	layout->style.resheader.border_color_right = 0x10ffffff;
-	layout->style.resheader.border_color_bottom = 0x10ffffff;
-	layout->style.resmessage.margin_width_left = 25;
-	layout->style.resmessage.margin_width_top = 3;
-	layout->style.resmessage.margin_width_right = 3;
-	layout->style.resmessage.margin_width_bottom = 3;
-	layout->style.resmessage.border_width_left = 0;
-	layout->style.resmessage.border_width_top = 0;
-	layout->style.resmessage.border_width_right = 0;
-	layout->style.resmessage.border_width_bottom = 0;
-	layout->style.resmessage.padding_width_left = 0;
-	layout->style.resmessage.padding_width_top = 0;
-	layout->style.resmessage.padding_width_right = 0;
-	layout->style.resmessage.padding_width_bottom = 0;
-	layout->style.resmessage.border_color_left = 0x10ffffff;
-	layout->style.resmessage.border_color_top = 0x10ffffff;
-	layout->style.resmessage.border_color_right = 0x10ffffff;
-	layout->style.resmessage.border_color_bottom = 0x10ffffff;
+	layout->style->body.margin_width_left = 0;
+	layout->style->body.margin_width_top = 0;
+	layout->style->body.margin_width_right = 0;
+	layout->style->body.margin_width_bottom = 0;
+	layout->style->body.border_width_left = 0;
+	layout->style->body.border_width_top = 0;
+	layout->style->body.border_width_right = 0;
+	layout->style->body.border_width_bottom = 0;
+	layout->style->body.padding_width_left = 0;
+	layout->style->body.padding_width_top = 0;
+	layout->style->body.padding_width_right = 0;
+	layout->style->body.padding_width_bottom = 0;
+	layout->style->body.border_color_left = 0x10ffffff;
+	layout->style->body.border_color_top = 0x10ffffff;
+	layout->style->body.border_color_right = 0x10ffffff;
+	layout->style->body.border_color_bottom = 0x10ffffff;
+	layout->style->res.margin_width_left = 0;
+	layout->style->res.margin_width_top = 3;
+	layout->style->res.margin_width_right = 0;
+	layout->style->res.margin_width_bottom = 3;
+	layout->style->res.border_width_left = 0;
+	layout->style->res.border_width_top = 0;
+	layout->style->res.border_width_right = 0;
+	layout->style->res.border_width_bottom = 0;
+	layout->style->res.padding_width_left = 2;
+	layout->style->res.padding_width_top = 2;
+	layout->style->res.padding_width_right = 2;
+	layout->style->res.padding_width_bottom = 5;
+	layout->style->res.border_color_left = 0x10ffffff;
+	layout->style->res.border_color_top = 0x10fffff;
+	layout->style->res.border_color_right = 0x10ffffff;
+	layout->style->res.border_color_bottom = 0x10ffffff;
+	layout->style->resheader.margin_width_left = 3;
+	layout->style->resheader.margin_width_top = 3;
+	layout->style->resheader.margin_width_right = 3;
+	layout->style->resheader.margin_width_bottom = 0;
+	layout->style->resheader.border_width_left = 0;
+	layout->style->resheader.border_width_top = 0;
+	layout->style->resheader.border_width_right = 0;
+	layout->style->resheader.border_width_bottom = 0;
+	layout->style->resheader.padding_width_left = 2;
+	layout->style->resheader.padding_width_top = 2;
+	layout->style->resheader.padding_width_right = 2;
+	layout->style->resheader.padding_width_bottom = 0;
+	layout->style->resheader.border_color_left = 0x10ffffff;
+	layout->style->resheader.border_color_top = 0x10ffffff;
+	layout->style->resheader.border_color_right = 0x10ffffff;
+	layout->style->resheader.border_color_bottom = 0x10ffffff;
+	layout->style->resmessage.margin_width_left = 25;
+	layout->style->resmessage.margin_width_top = 3;
+	layout->style->resmessage.margin_width_right = 3;
+	layout->style->resmessage.margin_width_bottom = 3;
+	layout->style->resmessage.border_width_left = 0;
+	layout->style->resmessage.border_width_top = 0;
+	layout->style->resmessage.border_width_right = 0;
+	layout->style->resmessage.border_width_bottom = 0;
+	layout->style->resmessage.padding_width_left = 0;
+	layout->style->resmessage.padding_width_top = 0;
+	layout->style->resmessage.padding_width_right = 0;
+	layout->style->resmessage.padding_width_bottom = 0;
+	layout->style->resmessage.border_color_left = 0x10ffffff;
+	layout->style->resmessage.border_color_top = 0x10ffffff;
+	layout->style->resmessage.border_color_right = 0x10ffffff;
+	layout->style->resmessage.border_color_bottom = 0x10ffffff;
 }
 
-EXPORT datlayout_t* datlayout_new(GID gid)
+EXPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style)
 {
 	datlayout_t *layout;
 	datlayout_box_t bodybox;
@@ -619,11 +611,12 @@ EXPORT datlayout_t* datlayout_new(GID gid)
 		return NULL;
 	}
 	layout->target = gid;
+	layout->style = style;
 
 	datlayout_new_setdefaultstyle(layout);
 
-	bodybox.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
-	bodybox.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
+	bodybox.l = layout->style->body.margin_width_left + layout->style->body.border_width_left + layout->style->body.padding_width_left;
+	bodybox.t = layout->style->body.margin_width_top + layout->style->body.border_width_top + layout->style->body.padding_width_top;
 	bodybox.r = bodybox.l;
 	bodybox.b = bodybox.t;
 	datlayoutarray_setbodybox(layout->boxarray, &bodybox);
@@ -1151,7 +1144,7 @@ EXPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv)
 	draw->view_b += dv;
 }
 
-EXPORT datdraw_t* datdraw_new(datlayout_t *layout)
+EXPORT datdraw_t* datdraw_new(datlayout_t *layout, datlayoutstyle_t *style)
 {
 	datdraw_t *draw;
 
@@ -1160,7 +1153,7 @@ EXPORT datdraw_t* datdraw_new(datlayout_t *layout)
 		return NULL;
 	}
 	draw->target = layout->target;
-	draw->style = &layout->style;
+	draw->style = style;
 	draw->array = layout->boxarray;
 	draw->view_l = 0;
 	draw->view_t = 0;

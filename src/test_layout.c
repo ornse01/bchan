@@ -164,6 +164,7 @@ LOCAL TEST_RESULT test_layout_1()
 	datcache_t *cache;
 	datparser_t *parser;
 	datparser_res_t *res = NULL;
+	datlayoutstyle_t style;
 	TEST_RESULT result = TEST_RESULT_PASS;
 
 	fd = test_parser_util_gen_file(&test_lnk, &vid);
@@ -184,7 +185,7 @@ LOCAL TEST_RESULT test_layout_1()
 	datcache_appenddata(cache, test_layout_testdata_01, strlen(test_layout_testdata_01));
 
 	parser = datparser_new(cache);
-	layout = datlayout_new(gid);
+	layout = datlayout_new(gid, &style);
 
 	for (;;) {
 		err = datparser_getnextres(parser, &res);

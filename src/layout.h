@@ -52,9 +52,17 @@ struct datlayout_style_t_ {
 	COLOR border_color_bottom;
 };
 
+typedef struct datlayoutstyle_t_ datlayoutstyle_t;
+struct datlayoutstyle_t_ {
+	datlayout_style_t body;
+	datlayout_style_t res;
+	datlayout_style_t resheader;
+	datlayout_style_t resmessage;
+};
+
 typedef struct datlayout_t_ datlayout_t;
 
-IMPORT datlayout_t* datlayout_new(GID gid);
+IMPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style);
 IMPORT VOID datlayout_delete(datlayout_t *layout);
 IMPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res);
 IMPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b);
@@ -68,7 +76,7 @@ IMPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_le
 
 typedef struct datdraw_t_ datdraw_t;
 
-IMPORT datdraw_t* datdraw_new(datlayout_t *layout);
+IMPORT datdraw_t* datdraw_new(datlayout_t *layout, datlayoutstyle_t *style);
 IMPORT VOID datdraw_delete(datdraw_t *draw);
 IMPORT W datdraw_draw(datdraw_t *draw, RECT *r);
 IMPORT VOID datdraw_setviewrect(datdraw_t *draw, W l, W t, W r, W b);

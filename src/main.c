@@ -157,6 +157,7 @@ struct bchan_t_ {
 	datparser_t *parser;
 	datlayout_t *layout;
 	datdraw_t *draw;
+	datlayoutstyle_t style;
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
@@ -1002,12 +1003,12 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("datparser_new error", 0);
 		goto error_parser;
 	}
-	layout = datlayout_new(gid);
+	layout = datlayout_new(gid, &bchan->style);
 	if (layout == NULL) {
 		DP_ER("datlayout_new error", 0);
 		goto error_layout;
 	}
-	draw = datdraw_new(layout);
+	draw = datdraw_new(layout, &bchan->style);
 	if (draw == NULL) {
 		DP_ER("datdraw_new error", 0);
 		goto error_draw;
