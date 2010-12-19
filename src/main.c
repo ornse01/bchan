@@ -617,6 +617,45 @@ LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
 	datwindow_scrollbyvalue(bchan->window, 0 - cl, tt - ct);
 }
 
+LOCAL VOID bchan_butdn_updatedisplayinfobyindex(bchan_t *bchan, W resindex, UW attr, COLOR color)
+{
+	datlayout_res_t *layout_res;
+	Bool found;
+
+	found = datlayoutarray_getresbyindex(bchan->layoutarray, resindex, &layout_res);
+	if (found == False) {
+		return;
+	}
+
+	/* TODO: layout */
+}
+
+LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, UW attr, COLOR color)
+{
+	datlayout_res_t *layout_res;
+	datparser_res_t *parser_res;
+	W i, len;
+	Bool found;
+
+	len = datlayoutarray_length(bchan->layoutarray);
+	for (i = 0; i < len; i++) {
+		found = datlayoutarray_getresbyindex(bchan->layoutarray, i, &layout_res);
+		if (found == False) {
+			break;
+		}
+
+		parser_res = layout_res->parser_res;
+		if (parser_res->dateinfo.id_len != id_len) {
+			continue;
+		}
+		if (tc_strncmp(parser_res->dateinfo.id, id, id_len) != 0) {
+			continue;
+		}
+
+		/* TODO: layout */
+	}
+}
+
 LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 {
 	W size, err;
@@ -654,9 +693,12 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	} if (err == BCHAN_RESNUMBERMENU_SELECT_NG) {
 		if ((attr & DATCACHE_RESINDEXDATA_FLAG_NG) != 0) {
 			datcache_removeresindexdata(bchan->cache, resindex);
+			attr = 0;
 		} else {
 			err = datcache_addresindexdata(bchan->cache, resindex, DATCACHE_RESINDEXDATA_FLAG_NG, 0x10000000);
+			attr = DATCACHE_RESINDEXDATA_FLAG_NG;
 		}
+		bchan_butdn_updatedisplayinfobyindex(bchan, resindex, attr, color);
 	}
 }
 
@@ -705,9 +747,12 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	} if (err == BCHAN_RESIDMENU_SELECT_NG) {
 		if ((attr & DATCACHE_RESIDDATA_FLAG_NG) != 0) {
 			datcache_removeresiddata(bchan->cache, id, id_len);
+			attr = 0;
 		} else {
 			err = datcache_addresiddata(bchan->cache, id, id_len, DATCACHE_RESIDDATA_FLAG_NG, 0x10000000);
+			attr = DATCACHE_RESIDDATA_FLAG_NG;
 		}
+		bchan_butdn_updatedisplayinfobyid(bchan, id, id_len, attr, color);
 	}
 }
 
@@ -1133,6 +1178,37 @@ error_cache:
 
 #define BCHAN_LAYOUT_MAXBLOCKING 20
 
+LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
+{
+	W err, ret, index;
+	UW attr;
+	COLOR color;
+	Bool found;
+	datlayout_res_t *layout_res;
+
+	err = datlayout_appendres(bchan->layout, res);
+	if (err < 0) {
+		return err;
+	}
+
+	found = datlayoutarray_getreslast(bchan->layoutarray, &layout_res);
+	if (found == False) {
+		return 0;
+	}
+	index = datlayoutarray_length(bchan->layoutarray) - 1;
+
+	ret = datcache_searchresiddata(bchan->cache, res->dateinfo.id, res->dateinfo.id_len, &attr, &color);
+	if (ret == DATCACHE_SEARCHRESIDDATA_FOUND) {
+		/* TODO: layout */
+	}
+	ret = datcache_searchresindexdata(bchan->cache, index, &attr, &color);
+	if (ret == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
+		/* TODO: layout */
+	}
+
+	return 0;
+}
+
 LOCAL VOID bchan_relayout(bchan_t *bchan)
 {
 	datparser_res_t *res = NULL;
@@ -1156,7 +1232,7 @@ LOCAL VOID bchan_relayout(bchan_t *bchan)
 		if (res == NULL) {
 			break;
 		}
-		datlayout_appendres(bchan->layout, res);
+		bchan_layout_appendres(bchan, res);
 	}
 
 	wget_wrk(bchan->wid, &w_work);
@@ -1189,7 +1265,7 @@ LOCAL VOID bchan_update(bchan_t *bchan)
 		if (res == NULL) {
 			break;
 		}
-		datlayout_appendres(bchan->layout, res);
+		bchan_layout_appendres(bchan, res);
 	}
 
 	wget_wrk(bchan->wid, &w_work);
