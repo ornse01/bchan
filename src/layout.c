@@ -57,7 +57,6 @@ struct datlayoutstyle_t_ {
 struct datlayout_t_ {
 	GID target;
 	datlayoutstyle_t style;
-	datlayout_box_t body;
 	datlayoutarray_t *boxarray;
 };
 
@@ -454,6 +453,7 @@ LOCAL W datlayout_setupgid(datlayout_t *layout, GID gid)
 EXPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res)
 {
 	datlayout_res_t *layout_res;
+	datlayout_box_t box;
 	W l,t,r,b,len,err;
 	Bool exist;
 
@@ -470,29 +470,20 @@ EXPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res)
 	datlayout_setupgid(layout, layout->target);
 
 	layout_res->index = len - 1;
-	datlayout_res_calcsize(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), layout->target, layout->body.l, layout->body.b);
+	datlayoutarray_getbodybox(layout->boxarray, &box);
+	datlayout_res_calcsize(layout_res, &(layout->style.res), &(layout->style.resheader), &(layout->style.resmessage), layout->target, box.l, box.b);
 	datlayout_res_getviewrect(layout_res, &(layout->style.res), &l, &t, &r, &b);
 
-	/* orrect */
-	if (layout->body.l > l) {
-		layout->body.l = l;
-	}
-	if (layout->body.t > t) {
-		layout->body.t = t;
-	}
-	if (layout->body.r < r) {
-		layout->body.r = r;
-	}
-	if (layout->body.b < b) {
-		layout->body.b = b;
-	}
+	datlayoutarray_orrectbodybox(layout->boxarray, l, t, r, b);
 
 	return 0;
 }
 
 EXPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b)
 {
-	datlayout_box_getoffsetrect(&(layout->body), &(layout->style.body), l, t, r, b);
+	datlayout_box_t box;
+	datlayoutarray_getbodybox(layout->boxarray, &box);
+	datlayout_box_getoffsetrect(&box, &(layout->style.body), l, t, r, b);
 }
 
 EXPORT TC* datlayout_gettitle(datlayout_t *layout)
@@ -519,11 +510,15 @@ EXPORT W datlayout_gettitlelen(datlayout_t *layout)
 
 EXPORT VOID datlayout_clear(datlayout_t *layout)
 {
+	datlayout_box_t newbody;
+
 	datlayoutarray_clear(layout->boxarray);
-	layout->body.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
-	layout->body.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
-	layout->body.r = layout->body.l;
-	layout->body.b = layout->body.t;
+
+	newbody.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
+	newbody.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
+	newbody.r = newbody.l;
+	newbody.b = newbody.t;
+	datlayoutarray_setbodybox(layout->boxarray, &newbody);
 }
 
 EXPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b)
@@ -612,6 +607,7 @@ LOCAL VOID datlayout_new_setdefaultstyle(datlayout_t *layout)
 EXPORT datlayout_t* datlayout_new(GID gid)
 {
 	datlayout_t *layout;
+	datlayout_box_t bodybox;
 
 	layout = (datlayout_t*)malloc(sizeof(datlayout_t));
 	if (layout == NULL) {
@@ -626,10 +622,11 @@ EXPORT datlayout_t* datlayout_new(GID gid)
 
 	datlayout_new_setdefaultstyle(layout);
 
-	layout->body.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
-	layout->body.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
-	layout->body.r = layout->body.l;
-	layout->body.b = layout->body.t;
+	bodybox.l = layout->style.body.margin_width_left + layout->style.body.border_width_left + layout->style.body.padding_width_left;
+	bodybox.t = layout->style.body.margin_width_top + layout->style.body.border_width_top + layout->style.body.padding_width_top;
+	bodybox.r = bodybox.l;
+	bodybox.b = bodybox.t;
+	datlayoutarray_setbodybox(layout->boxarray, &bodybox);
 
 	return layout;
 }
@@ -644,7 +641,6 @@ struct datdraw_t_ {
 	GID target;
 	datlayoutstyle_t *style;
 	datlayoutarray_t *array;
-	datlayout_box_t *bodybox;
 	W view_l, view_t, view_r, view_b;
 };
 
@@ -1011,7 +1007,9 @@ LOCAL W datdraw_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle, d
 
 LOCAL W datdraw_bodyborderdraw(datdraw_t *draw, RECT *r)
 {
-	return datlayout_box_drawborder(draw->bodybox, &(draw->style->body), draw, r);
+	datlayout_box_t bodybox;
+	datlayoutarray_getbodybox(draw->array, &bodybox);
+	return datlayout_box_drawborder(&bodybox, &(draw->style->body), draw, r);
 }
 
 EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
@@ -1164,7 +1162,6 @@ EXPORT datdraw_t* datdraw_new(datlayout_t *layout)
 	draw->target = layout->target;
 	draw->style = &layout->style;
 	draw->array = layout->boxarray;
-	draw->bodybox = &layout->body;
 	draw->view_l = 0;
 	draw->view_t = 0;
 	draw->view_r = 0;

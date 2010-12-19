@@ -67,6 +67,7 @@ LOCAL VOID datlayout_res_finalize(datlayout_res_t *layout_res)
 
 struct datlayoutarray_t_ {
 	arraybase_t array;
+	datlayout_box_t bodybox;
 };
 
 EXPORT W datlayoutarray_appendres(datlayoutarray_t *layoutarray, datparser_res_t *parser_res)
@@ -133,6 +134,38 @@ EXPORT W datlayoutarray_length(datlayoutarray_t *layoutarray)
 	return arraybase_length(&layoutarray->array);
 }
 
+EXPORT VOID datlayoutarray_getbodybox(datlayoutarray_t *layoutarray, datlayout_box_t *box)
+{
+	box->l = layoutarray->bodybox.l;
+	box->t = layoutarray->bodybox.t;
+	box->r = layoutarray->bodybox.r;
+	box->b = layoutarray->bodybox.b;
+}
+
+EXPORT VOID datlayoutarray_setbodybox(datlayoutarray_t *layoutarray, datlayout_box_t *box)
+{
+	layoutarray->bodybox.l = box->l;
+	layoutarray->bodybox.t = box->t;
+	layoutarray->bodybox.r = box->r;
+	layoutarray->bodybox.b = box->b;
+}
+
+EXPORT VOID datlayoutarray_orrectbodybox(datlayoutarray_t *layoutarray, W l, W t, W r, W b)
+{
+	if (layoutarray->bodybox.l > l) {
+		layoutarray->bodybox.l = l;
+	}
+	if (layoutarray->bodybox.t > t) {
+		layoutarray->bodybox.t = t;
+	}
+	if (layoutarray->bodybox.r < r) {
+		layoutarray->bodybox.r = r;
+	}
+	if (layoutarray->bodybox.b < b) {
+		layoutarray->bodybox.b = b;
+	}
+}
+
 EXPORT datlayoutarray_t* datlayoutarray_new()
 {
 	datlayoutarray_t *layoutarray;
@@ -147,6 +180,10 @@ EXPORT datlayoutarray_t* datlayoutarray_new()
 		free(layoutarray);
 		return NULL;
 	}
+	layoutarray->bodybox.l = 0;
+	layoutarray->bodybox.t = 0;
+	layoutarray->bodybox.r = 0;
+	layoutarray->bodybox.b = 0;
 	return layoutarray;
 }
 

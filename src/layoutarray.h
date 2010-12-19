@@ -67,5 +67,8 @@ IMPORT Bool datlayoutarray_getresfirst(datlayoutarray_t *layoutarray, datlayout_
 IMPORT Bool datlayoutarray_getreslast(datlayoutarray_t *layoutarray, datlayout_res_t **res);
 IMPORT VOID datlayoutarray_clear(datlayoutarray_t *layoutarray);
 IMPORT W datlayoutarray_length(datlayoutarray_t *layoutarray);
+IMPORT VOID datlayoutarray_getbodybox(datlayoutarray_t *layoutarray, datlayout_box_t *box);
+IMPORT VOID datlayoutarray_setbodybox(datlayoutarray_t *layoutarray, datlayout_box_t *box);
+IMPORT VOID datlayoutarray_orrectbodybox(datlayoutarray_t *layoutarray, W l, W t, W r, W b);
 
 #endif
