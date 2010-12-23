@@ -69,12 +69,16 @@ IMPORT VOID datlayout_res_setindexcolor(datlayout_res_t *layout_res, COLOR col);
 IMPORT VOID datlayout_res_setidcolor(datlayout_res_t *layout_res, COLOR col);
 IMPORT VOID datlayout_res_enableindexcolor(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableindexcolor(datlayout_res_t *layout_res);
+IMPORT Bool datlayout_res_isenableindexcolor(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_enableidcolor(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableidcolor(datlayout_res_t *layout_res);
+IMPORT Bool datlayout_res_isenableidcolor(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_enableindexNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableindexNG(datlayout_res_t *layout_res);
+IMPORT Bool datlayout_res_isenableindexNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res);
+IMPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res);
 
 typedef struct datlayoutarray_t_ datlayoutarray_t;
 

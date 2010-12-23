@@ -59,6 +59,14 @@ EXPORT VOID datlayout_res_disableindexcolor(datlayout_res_t *layout_res)
 	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_INDEXCOLOR;
 }
 
+EXPORT Bool datlayout_res_isenableindexcolor(datlayout_res_t *layout_res)
+{
+	if ((layout_res->flag & DATLAYOUT_RES_FLAG_INDEXCOLOR) != 0) {
+		return True;
+	}
+	return False;
+}
+
 EXPORT VOID datlayout_res_enableidcolor(datlayout_res_t *layout_res)
 {
 	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_IDCOLOR;
@@ -67,6 +75,14 @@ EXPORT VOID datlayout_res_enableidcolor(datlayout_res_t *layout_res)
 EXPORT VOID datlayout_res_disableidcolor(datlayout_res_t *layout_res)
 {
 	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_IDCOLOR;
+}
+
+EXPORT Bool datlayout_res_isenableidcolor(datlayout_res_t *layout_res)
+{
+	if ((layout_res->flag & DATLAYOUT_RES_FLAG_IDCOLOR) != 0) {
+		return True;
+	}
+	return False;
 }
 
 EXPORT VOID datlayout_res_enableindexNG(datlayout_res_t *layout_res)
@@ -79,6 +95,14 @@ EXPORT VOID datlayout_res_disableindexNG(datlayout_res_t *layout_res)
 	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_INDEXNG;
 }
 
+EXPORT Bool datlayout_res_isenableindexNG(datlayout_res_t *layout_res)
+{
+	if ((layout_res->flag & DATLAYOUT_RES_FLAG_INDEXNG) != 0) {
+		return True;
+	}
+	return False;
+}
+
 EXPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res)
 {
 	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_IDNG;
@@ -87,6 +111,14 @@ EXPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res)
 EXPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res)
 {
 	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_IDNG;
+}
+
+EXPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res)
+{
+	if ((layout_res->flag & DATLAYOUT_RES_FLAG_IDNG) != 0) {
+		return True;
+	}
+	return False;
 }
 
 LOCAL VOID datlayout_res_initialize(datlayout_res_t *layout_res, datparser_res_t *res)
