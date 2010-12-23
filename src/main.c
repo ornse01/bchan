@@ -617,6 +617,36 @@ LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
 	datwindow_scrollbyvalue(bchan->window, 0 - cl, tt - ct);
 }
 
+LOCAL VOID bchan_layout_res_updateattrbyindex(datlayout_res_t *layout_res, UW attr, COLOR color)
+{
+	if ((attr & DATCACHE_RESINDEXDATA_FLAG_NG) != 0) {
+		datlayout_res_enableindexNG(layout_res);
+	} else {
+		datlayout_res_disableindexNG(layout_res);
+	}
+	if ((attr & DATCACHE_RESINDEXDATA_FLAG_COLOR) != 0) {
+		datlayout_res_enableindexcolor(layout_res);
+	} else {
+		datlayout_res_disableindexcolor(layout_res);
+	}
+	datlayout_res_setindexcolor(layout_res, color);
+}
+
+LOCAL VOID bchan_layout_res_updateattrbyid(datlayout_res_t *layout_res, UW attr, COLOR color)
+{
+	if ((attr & DATCACHE_RESIDDATA_FLAG_NG) != 0) {
+		datlayout_res_enableidNG(layout_res);
+	} else {
+		datlayout_res_disableidNG(layout_res);
+	}
+	if ((attr & DATCACHE_RESIDDATA_FLAG_COLOR) != 0) {
+		datlayout_res_enableidcolor(layout_res);
+	} else {
+		datlayout_res_disableidcolor(layout_res);
+	}
+	datlayout_res_setidcolor(layout_res, color);
+}
+
 LOCAL VOID bchan_butdn_updatedisplayinfobyindex(bchan_t *bchan, W resindex, UW attr, COLOR color)
 {
 	datlayout_res_t *layout_res;
@@ -627,7 +657,7 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyindex(bchan_t *bchan, W resindex, UW a
 		return;
 	}
 
-	/* TODO: layout */
+	bchan_layout_res_updateattrbyindex(layout_res, attr, color);
 }
 
 LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, UW attr, COLOR color)
@@ -652,7 +682,7 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, U
 			continue;
 		}
 
-		/* TODO: layout */
+		bchan_layout_res_updateattrbyid(layout_res, attr, color);
 	}
 }
 
@@ -1199,11 +1229,11 @@ LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
 
 	ret = datcache_searchresiddata(bchan->cache, res->dateinfo.id, res->dateinfo.id_len, &attr, &color);
 	if (ret == DATCACHE_SEARCHRESIDDATA_FOUND) {
-		/* TODO: layout */
+		bchan_layout_res_updateattrbyid(layout_res, attr, color);
 	}
 	ret = datcache_searchresindexdata(bchan->cache, index, &attr, &color);
 	if (ret == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
-		/* TODO: layout */
+		bchan_layout_res_updateattrbyindex(layout_res, attr, color);
 	}
 
 	return 0;

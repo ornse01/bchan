@@ -39,9 +39,62 @@
 # define DP_ER(msg, err) /**/
 #endif
 
+EXPORT VOID datlayout_res_setindexcolor(datlayout_res_t *layout_res, COLOR col)
+{
+	layout_res->indexcolor = col;
+}
+
+EXPORT VOID datlayout_res_setidcolor(datlayout_res_t *layout_res, COLOR col)
+{
+	layout_res->idcolor = col;
+}
+
+EXPORT VOID datlayout_res_enableindexcolor(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_INDEXCOLOR;
+}
+
+EXPORT VOID datlayout_res_disableindexcolor(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_INDEXCOLOR;
+}
+
+EXPORT VOID datlayout_res_enableidcolor(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_IDCOLOR;
+}
+
+EXPORT VOID datlayout_res_disableidcolor(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_IDCOLOR;
+}
+
+EXPORT VOID datlayout_res_enableindexNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_INDEXNG;
+}
+
+EXPORT VOID datlayout_res_disableindexNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_INDEXNG;
+}
+
+EXPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_IDNG;
+}
+
+EXPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_IDNG;
+}
+
 LOCAL VOID datlayout_res_initialize(datlayout_res_t *layout_res, datparser_res_t *res)
 {
 	layout_res->parser_res = res;
+	layout_res->flag = 0;
+	layout_res->indexcolor = 0x10000000;
+	layout_res->idcolor = 0x10000000;
 	layout_res->box.res.l = 0;
 	layout_res->box.res.t = 0;
 	layout_res->box.res.r = 0;

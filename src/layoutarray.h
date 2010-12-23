@@ -37,10 +37,18 @@ struct datlayout_box_t_ {
 	W l,t,r,b;
 };
 
+#define DATLAYOUT_RES_FLAG_IDNG       0x00000001
+#define DATLAYOUT_RES_FLAG_IDCOLOR    0x00000002
+#define DATLAYOUT_RES_FLAG_INDEXNG    0x00000004
+#define DATLAYOUT_RES_FLAG_INDEXCOLOR 0x00000008
+
 typedef struct datlayout_res_t_ datlayout_res_t;
 struct datlayout_res_t_ {
 	datparser_res_t *parser_res;
 	W index;
+	W flag;
+	COLOR indexcolor;
+	COLOR idcolor;
 	struct {
 		datlayout_box_t res;
 		datlayout_box_t resheader;
@@ -56,6 +64,17 @@ struct datlayout_res_t_ {
 		actionlist_t *body;
 	} action;
 };
+
+IMPORT VOID datlayout_res_setindexcolor(datlayout_res_t *layout_res, COLOR col);
+IMPORT VOID datlayout_res_setidcolor(datlayout_res_t *layout_res, COLOR col);
+IMPORT VOID datlayout_res_enableindexcolor(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_disableindexcolor(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_enableidcolor(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_disableidcolor(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_enableindexNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_disableindexNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res);
 
 typedef struct datlayoutarray_t_ datlayoutarray_t;
 
