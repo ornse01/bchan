@@ -1210,7 +1210,8 @@ error_cache:
 
 LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
 {
-	W err, ret, index;
+	W err, ret, index, id_len;
+	TC *id;
 	UW attr;
 	COLOR color;
 	Bool found;
@@ -1227,7 +1228,8 @@ LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
 	}
 	index = datlayoutarray_length(bchan->layoutarray) - 1;
 
-	ret = datcache_searchresiddata(bchan->cache, res->dateinfo.id, res->dateinfo.id_len, &attr, &color);
+	datlayout_res_getid(layout_res, &id, &id_len);
+	ret = datcache_searchresiddata(bchan->cache, id, id_len, &attr, &color);
 	if (ret == DATCACHE_SEARCHRESIDDATA_FOUND) {
 		bchan_layout_res_updateattrbyid(layout_res, attr, color);
 	}
