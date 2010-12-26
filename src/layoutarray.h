@@ -79,6 +79,7 @@ IMPORT Bool datlayout_res_isenableindexNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res);
 IMPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len);
 
 typedef struct datlayoutarray_t_ datlayoutarray_t;
 

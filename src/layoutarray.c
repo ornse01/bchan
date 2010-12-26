@@ -121,6 +121,19 @@ EXPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res)
 	return False;
 }
 
+EXPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len)
+{
+	if (layout_res->parser_res->dateinfo.id == NULL) {
+		*id = NULL;
+		*id_len = 0;
+		return;
+	}
+
+	/* except "ID:" */
+	*id = layout_res->parser_res->dateinfo.id + 3;
+	*id_len = layout_res->parser_res->dateinfo.id_len - 3;
+}
+
 LOCAL VOID datlayout_res_initialize(datlayout_res_t *layout_res, datparser_res_t *res)
 {
 	layout_res->parser_res = res;
