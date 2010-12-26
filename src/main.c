@@ -658,14 +658,15 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyindex(bchan_t *bchan, W resindex, UW a
 	}
 
 	bchan_layout_res_updateattrbyindex(layout_res, attr, color);
+
+	wreq_dsp(bchan->wid);
 }
 
 LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, UW attr, COLOR color)
 {
 	datlayout_res_t *layout_res;
-	datparser_res_t *parser_res;
 	W i, len;
-	Bool found;
+	Bool found, issame;
 
 	len = datlayoutarray_length(bchan->layoutarray);
 	for (i = 0; i < len; i++) {
@@ -674,16 +675,15 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, U
 			break;
 		}
 
-		parser_res = layout_res->parser_res;
-		if (parser_res->dateinfo.id_len != id_len) {
-			continue;
-		}
-		if (tc_strncmp(parser_res->dateinfo.id, id, id_len) != 0) {
+		issame = datlayout_res_issameid(layout_res, id, id_len);
+		if (issame != True) {
 			continue;
 		}
 
 		bchan_layout_res_updateattrbyid(layout_res, attr, color);
 	}
+
+	wreq_dsp(bchan->wid);
 }
 
 LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)

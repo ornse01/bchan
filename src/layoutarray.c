@@ -30,6 +30,7 @@
 #include	<basic.h>
 #include	<bstdlib.h>
 #include	<bstdio.h>
+#include	<tstring.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -132,6 +133,26 @@ EXPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len)
 	/* except "ID:" */
 	*id = layout_res->parser_res->dateinfo.id + 3;
 	*id_len = layout_res->parser_res->dateinfo.id_len - 3;
+}
+
+/* except "ID:" */
+EXPORT Bool datlayout_res_issameid(datlayout_res_t *layout_res, TC *id, W id_len)
+{
+	TC *res_id;
+	W res_id_len;
+
+	datlayout_res_getid(layout_res, &res_id, &res_id_len);
+	if (res_id == NULL) { /* if id == NULL, is this True? */
+		return False;
+	}
+	if (res_id_len != id_len) {
+		return False;
+	}
+	if (tc_strncmp(res_id, id, id_len) != 0) {
+		return False;
+	}
+
+	return True;
 }
 
 LOCAL VOID datlayout_res_initialize(datlayout_res_t *layout_res, datparser_res_t *res)
