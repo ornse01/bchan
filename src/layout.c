@@ -348,21 +348,6 @@ EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_
 	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
 }
 
-EXPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_len)
-{
-	datlayout_res_t *res;
-	Bool exist;
-
-	exist = datlayoutarray_getresbyindex(layout->boxarray, n, &res);
-	if (exist == False) {
-		*id = NULL;
-		*id_len = 0;
-		return;
-	}
-
-	datlayout_res_getid(res, id, id_len);
-}
-
 EXPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len)
 {
 	datlayout_res_t *res;

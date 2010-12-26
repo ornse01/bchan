@@ -73,7 +73,6 @@ IMPORT VOID datlayout_clear(datlayout_t *layout);
 IMPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b);
 IMPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len);
 IMPORT W datlayout_idtotraytextdata(datlayout_t *layout, TC *id, W id_len, B *data, W data_len);
-IMPORT VOID datlayout_getidfromindex(datlayout_t *layout, W n, TC **id, W *id_len);
 
 typedef struct datdraw_t_ datdraw_t;
 
