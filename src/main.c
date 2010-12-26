@@ -693,8 +693,21 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	B *data;
 	COLOR color;
 	UW attr = 0;
+	Bool ok;
+	datlayout_res_t *layout_res;
 
 	DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
+
+	ok = datlayoutarray_getresbyindex(bchan->layoutarray, resindex, &layout_res);
+	if (ok == False) {
+		return;
+	}
+
+	ok = datlayout_res_isenableidNG(layout_res);
+	if (ok == True) {
+		return;
+	}
+
 	err = datcache_searchresindexdata(bchan->cache, resindex, &attr, &color);
 	if (err == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		if ((attr & DATCACHE_RESINDEXDATA_FLAG_NG) != 0) {
@@ -740,12 +753,25 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	B *data;
 	COLOR color;
 	UW attr = 0;
+	Bool ok;
+	datlayout_res_t *layout_res;
 
 	DP(("press DATDRAW_FINDACTION_TYPE_ID\n"));
 
-	datlayout_getidfromindex(bchan->layout, resindex, &id, &id_len);
+	ok = datlayoutarray_getresbyindex(bchan->layoutarray, resindex, &layout_res);
+	if (ok == False) {
+		DP(("      id is not exist\n"));
+		return;
+	}
+
+	datlayout_res_getid(layout_res, &id, &id_len);
 	if (id == NULL) {
 		DP(("      id is not exist\n"));
+		return;
+	}
+
+	ok = datlayout_res_isenableindexNG(layout_res);
+	if (ok == True) {
 		return;
 	}
 
