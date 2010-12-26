@@ -355,6 +355,10 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 			DP(("non-authoritative\n"));
 			http_close(retriever->http);
 			ret = DATRETRIEVER_REQUEST_NON_AUTHORITATIVE;
+		} else if (status == 404) { /* for vip2ch.com */
+			DP(("not found\n"));
+			http_close(retriever->http);
+			ret = DATRETRIEVER_REQUEST_NON_AUTHORITATIVE;
 		} else if (status == 416) {
 			/* todo all reloading. */
 			http_close(retriever->http);
