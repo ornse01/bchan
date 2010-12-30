@@ -37,35 +37,35 @@
 #include	<btron/libapp.h>
 #include	<btron/dp.h>
 
-struct datdraw_t_ {
+struct datrender_t_ {
 	GID target;
 	datlayoutstyle_t *style;
 	datlayoutarray_t *array;
 	W view_l, view_t, view_r, view_b;
 };
 
-LOCAL W datdraw_entrydraw_drawbody(datlayout_res_t *entry, GID gid, W dh, W dv)
+LOCAL W datrender_entrydraw_drawbody(datlayout_res_t *entry, GID gid, W dh, W dv)
 {
 	TC *str = entry->parser_res->body;
 	W len = entry->parser_res->body_len;
 	return tadlib_drawtext(str, len, gid, dh, dv);
 }
 
-LOCAL W datdraw_entrydraw_drawname(datlayout_res_t *entry, GID gid, W dh, W dv)
+LOCAL W datrender_entrydraw_drawname(datlayout_res_t *entry, GID gid, W dh, W dv)
 {
 	TC *str = entry->parser_res->name;
 	W len = entry->parser_res->name_len;
 	return tadlib_drawtext(str, len, gid, dh, dv);
 }
 
-LOCAL W datdraw_entrydraw_drawmail(datlayout_res_t *entry, GID gid, W dh, W dv)
+LOCAL W datrender_entrydraw_drawmail(datlayout_res_t *entry, GID gid, W dh, W dv)
 {
 	TC *str = entry->parser_res->mail;
 	W len = entry->parser_res->mail_len;
 	return tadlib_drawtext(str, len, gid, dh, dv);
 }
 
-LOCAL W datdraw_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh, W dv)
+LOCAL W datrender_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh, W dv)
 {
 	TC *str;
 	W len, err;
@@ -116,7 +116,7 @@ LOCAL W datdraw_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh, 
 
 LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9}; /* TODO: layout.c */
 
-LOCAL W datdraw_entrydraw_resnumber(datlayout_res_t *entry, W resnum, GID target)
+LOCAL W datrender_entrydraw_resnumber(datlayout_res_t *entry, W resnum, GID target)
 {
 	W err,digit,draw = 0;
 
@@ -187,7 +187,7 @@ LOCAL W andrect_tmp(W *l_dest, W *t_dest, W *r_dest, W *b_dest, W l2, W t2, W r2
 	return 1;
 }
 
-LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
+LOCAL W datrender_fillrect(datrender_t *render, RECT *rect, W l, W t, W r, W b)
 {
 	static	PAT	pat0 = {{
 		0,
@@ -199,13 +199,13 @@ LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 	W err, sect, dh, dv;
 	RECT border;
 
-	sect = andrect_tmp(&l, &t, &r, &b, draw->view_l, draw->view_t, draw->view_r, draw->view_b);
+	sect = andrect_tmp(&l, &t, &r, &b, render->view_l, render->view_t, render->view_r, render->view_b);
 	if (sect == 0) {
 		return 0;
 	}
 
-	dh = draw->view_l;
-	dv = draw->view_t;
+	dh = render->view_l;
+	dv = render->view_t;
 
 	sect = sectrect_tmp(*rect, l - dh, t - dv, r - dh, b - dv);
 	if (sect == 0) {
@@ -217,7 +217,7 @@ LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 	border.c.right = r - dh;
 	border.c.bottom = b - dv;
 
-	err = gfil_rec(draw->target, border, &pat0, 0, G_STORE);
+	err = gfil_rec(render->target, border, &pat0, 0, G_STORE);
 	if (err < 0) {
 		return err;
 	}
@@ -225,7 +225,7 @@ LOCAL W datdraw_fillrect(datdraw_t *draw, RECT *rect, W l, W t, W r, W b)
 	return 0;
 }
 
-LOCAL W datlayout_box_drawleftborder(datlayout_box_t *box, datlayout_style_t *style, datdraw_t *draw, RECT *rect)
+LOCAL W datlayout_box_drawleftborder(datlayout_box_t *box, datlayout_style_t *style, datrender_t *render, RECT *rect)
 {
 	W l,t,r,b;
 
@@ -238,10 +238,10 @@ LOCAL W datlayout_box_drawleftborder(datlayout_box_t *box, datlayout_style_t *st
 	r = box->l - style->padding_width_left;
 	b = box->b + style->padding_width_bottom + style->border_width_bottom;
 
-	return datdraw_fillrect(draw, rect, l, t, r, b);
+	return datrender_fillrect(render, rect, l, t, r, b);
 }
 
-LOCAL W datlayout_box_drawtopborder(datlayout_box_t *box, datlayout_style_t *style, datdraw_t *draw, RECT *rect)
+LOCAL W datlayout_box_drawtopborder(datlayout_box_t *box, datlayout_style_t *style, datrender_t *render, RECT *rect)
 {
 	W l,t,r,b;
 
@@ -254,10 +254,10 @@ LOCAL W datlayout_box_drawtopborder(datlayout_box_t *box, datlayout_style_t *sty
 	r = box->r + style->padding_width_right + style->border_width_right;
 	b = box->t - style->padding_width_bottom;
 
-	return datdraw_fillrect(draw, rect, l, t, r, b);
+	return datrender_fillrect(render, rect, l, t, r, b);
 }
 
-LOCAL W datlayout_box_drawrightborder(datlayout_box_t *box, datlayout_style_t *style, datdraw_t *draw, RECT *rect)
+LOCAL W datlayout_box_drawrightborder(datlayout_box_t *box, datlayout_style_t *style, datrender_t *render, RECT *rect)
 {
 	W l,t,r,b;
 
@@ -270,10 +270,10 @@ LOCAL W datlayout_box_drawrightborder(datlayout_box_t *box, datlayout_style_t *s
 	r = box->r + style->padding_width_right + style->border_width_right;
 	b = box->b + style->padding_width_bottom + style->border_width_bottom;
 
-	return datdraw_fillrect(draw, rect, l, t, r, b);
+	return datrender_fillrect(render, rect, l, t, r, b);
 }
 
-LOCAL W datlayout_box_drawbottomborder(datlayout_box_t *box, datlayout_style_t *style, datdraw_t *draw, RECT *rect)
+LOCAL W datlayout_box_drawbottomborder(datlayout_box_t *box, datlayout_style_t *style, datrender_t *render, RECT *rect)
 {
 	W l,t,r,b;
 
@@ -286,45 +286,45 @@ LOCAL W datlayout_box_drawbottomborder(datlayout_box_t *box, datlayout_style_t *
 	r = box->r + style->padding_width_right + style->border_width_right;
 	b = box->b + style->padding_width_bottom + style->border_width_bottom;
 
-	return datdraw_fillrect(draw, rect, l, t, r, b);
+	return datrender_fillrect(render, rect, l, t, r, b);
 }
 
-LOCAL W datlayout_box_drawborder(datlayout_box_t *box, datlayout_style_t *style, datdraw_t *draw, RECT *r)
+LOCAL W datlayout_box_drawborder(datlayout_box_t *box, datlayout_style_t *style, datrender_t *render, RECT *r)
 {
 	W err;
 
-	err = datlayout_box_drawleftborder(box, style, draw, r);
+	err = datlayout_box_drawleftborder(box, style, render, r);
 	if (err < 0) {
 		return err;
 	}
-	err = datlayout_box_drawtopborder(box, style, draw, r);
+	err = datlayout_box_drawtopborder(box, style, render, r);
 	if (err < 0) {
 		return err;
 	}
-	err = datlayout_box_drawrightborder(box, style, draw, r);
+	err = datlayout_box_drawrightborder(box, style, render, r);
 	if (err < 0) {
 		return err;
 	}
-	err = datlayout_box_drawbottomborder(box, style, draw, r);
+	err = datlayout_box_drawbottomborder(box, style, render, r);
 	if (err < 0) {
 		return err;
 	}
 	return 0;
 }
 
-LOCAL W datdraw_drawresborder(datdraw_t *draw, datlayout_res_t *layout_res, RECT *r)
+LOCAL W datrender_drawresborder(datrender_t *render, datlayout_res_t *layout_res, RECT *r)
 {
 	W err;
 
-	err = datlayout_box_drawborder(&(layout_res->box.res), &draw->style->res, draw, r);
+	err = datlayout_box_drawborder(&(layout_res->box.res), &render->style->res, render, r);
 	if (err < 0) {
 		return err;
 	}
-	err = datlayout_box_drawborder(&(layout_res->box.resheader), &draw->style->resheader, draw, r);
+	err = datlayout_box_drawborder(&(layout_res->box.resheader), &render->style->resheader, render, r);
 	if (err < 0) {
 		return err;
 	}
-	err = datlayout_box_drawborder(&(layout_res->box.resmessage), &draw->style->resmessage, draw, r);
+	err = datlayout_box_drawborder(&(layout_res->box.resmessage), &render->style->resmessage, render, r);
 	if (err < 0) {
 		return err;
 	}
@@ -332,7 +332,7 @@ LOCAL W datdraw_drawresborder(datdraw_t *draw, datlayout_res_t *layout_res, RECT
 	return 0;
 }
 
-LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W index, datdraw_t *draw, GID target, RECT *r, W dh, W dv)
+LOCAL W datrender_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W index, datrender_t *render, GID target, RECT *r, W dh, W dv)
 {
 	W sect, err;
 	W rv_l, rv_t, rv_r, rv_b;
@@ -345,7 +345,7 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 		return 0;
 	}
 
-	err = datdraw_drawresborder(draw, entry, r);
+	err = datrender_drawresborder(render, entry, r);
 	if (err < 0) {
 		return err;
 	}
@@ -355,7 +355,7 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 	if (err < 0) {
 		return err;
 	}
-	err = datdraw_entrydraw_resnumber(entry, index+1, target);
+	err = datrender_entrydraw_resnumber(entry, index+1, target);
 	if (err < 0) {
 		return err;
 	}
@@ -368,7 +368,7 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 	} else {
 		gset_chc(target, 0x10008000, 0x10efefef);
 	}
-	err = datdraw_entrydraw_drawname(entry, target, dh, dv);
+	err = datrender_entrydraw_drawname(entry, target, dh, dv);
 	if (err < 0) {
 		return err;
 	}
@@ -379,14 +379,14 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 	gset_chc(target, 0x10000000, 0x10efefef);
 	layoutstyle_resetgenvfont(target);
 	gdra_chr(target, TK_LABR, G_STORE);
-	err = datdraw_entrydraw_drawmail(entry, target, dh, dv);
+	err = datrender_entrydraw_drawmail(entry, target, dh, dv);
 	if (err < 0) {
 		return err;
 	}
 	layoutstyle_resetgenvfont(target);
 	gdra_chr(target, TK_RABR, G_STORE);
 
-	err = datdraw_entrydraw_drawdateidbeid(entry, target, dh, dv);
+	err = datrender_entrydraw_drawdateidbeid(entry, target, dh, dv);
 	if (err < 0) {
 		return err;
 	}
@@ -396,7 +396,7 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 		return err;
 	}
 	layoutstyle_resetgenvfont(target);
-	err = datdraw_entrydraw_drawbody(entry, target, dh - entry->box.resmessage.l/* Ugh! */, dv);
+	err = datrender_entrydraw_drawbody(entry, target, dh - entry->box.resmessage.l/* Ugh! */, dv);
 	if (err < 0) {
 		return err;
 	}
@@ -404,7 +404,7 @@ LOCAL W datdraw_entrydrawnormal(datlayout_res_t *entry, datlayout_style_t *resst
 	return 0;
 }
 
-LOCAL W datdraw_entrydraw_drawNGrect(datdraw_t *draw, datlayout_res_t *entry, RECT *r)
+LOCAL W datrender_entrydraw_drawNGrect(datrender_t *render, datlayout_res_t *entry, RECT *r)
 {
 	W rv_l, rv_t, rv_r, rv_b;
 	W err;
@@ -418,31 +418,31 @@ LOCAL W datdraw_entrydraw_drawNGrect(datdraw_t *draw, datlayout_res_t *entry, RE
 	RECT fr;
 	PNT p0, p1;
 
-	datlayout_res_getcontentrect(entry, &draw->style->res, &rv_l, &rv_t, &rv_r, &rv_b);
+	datlayout_res_getcontentrect(entry, &render->style->res, &rv_l, &rv_t, &rv_r, &rv_b);
 
-	fr.c.left = rv_l - draw->view_l;
-	fr.c.top = rv_t - draw->view_t;
-	fr.c.right = rv_r - draw->view_l + 1;
-	fr.c.bottom = rv_b - draw->view_t + 1;
-	err = gfra_rec(draw->target, fr, 1, &pat0, 0, G_STORE);
+	fr.c.left = rv_l - render->view_l;
+	fr.c.top = rv_t - render->view_t;
+	fr.c.right = rv_r - render->view_l + 1;
+	fr.c.bottom = rv_b - render->view_t + 1;
+	err = gfra_rec(render->target, fr, 1, &pat0, 0, G_STORE);
 	if (err < 0) {
 		return err;
 	}
 
-	p0.x = rv_l - draw->view_l;
-	p0.y = rv_t - draw->view_t;
-	p1.x = rv_r - draw->view_l;
-	p1.y = rv_b - draw->view_t;
-	err = gdra_lin(draw->target, p0, p1, 1, &pat0, G_STORE);
+	p0.x = rv_l - render->view_l;
+	p0.y = rv_t - render->view_t;
+	p1.x = rv_r - render->view_l;
+	p1.y = rv_b - render->view_t;
+	err = gdra_lin(render->target, p0, p1, 1, &pat0, G_STORE);
 	if (err < 0) {
 		return err;
 	}
 
-	p0.x = rv_l - draw->view_l;
-	p0.y = rv_b - draw->view_t;
-	p1.x = rv_r - draw->view_l;
-	p1.y = rv_t - draw->view_t;
-	err = gdra_lin(draw->target, p0, p1, 1, &pat0, G_STORE);
+	p0.x = rv_l - render->view_l;
+	p0.y = rv_b - render->view_t;
+	p1.x = rv_r - render->view_l;
+	p1.y = rv_t - render->view_t;
+	err = gdra_lin(render->target, p0, p1, 1, &pat0, G_STORE);
 	if (err < 0) {
 		return err;
 	}
@@ -450,7 +450,7 @@ LOCAL W datdraw_entrydraw_drawNGrect(datdraw_t *draw, datlayout_res_t *entry, RE
 	return 0;
 }
 
-LOCAL W datdraw_entrydrawNG(datdraw_t *draw, datlayout_res_t *entry, W index, RECT *r, W dh, W dv, Bool is_display_id)
+LOCAL W datrender_entrydrawNG(datrender_t *render, datlayout_res_t *entry, W index, RECT *r, W dh, W dv, Bool is_display_id)
 {
 	W sect, err, len;
 	W rv_l, rv_t, rv_r, rv_b;
@@ -458,8 +458,8 @@ LOCAL W datdraw_entrydrawNG(datdraw_t *draw, datlayout_res_t *entry, W index, RE
 	GID target;
 	TC *str;
 
-	target = draw->target;
-	resstyle = &draw->style->res;
+	target = render->target;
+	resstyle = &render->style->res;
 
 	datlayout_res_getviewrect(entry, resstyle, &rv_l, &rv_t, &rv_r, &rv_b);
 
@@ -469,12 +469,12 @@ LOCAL W datdraw_entrydrawNG(datdraw_t *draw, datlayout_res_t *entry, W index, RE
 		return 0;
 	}
 
-	err = datdraw_entrydraw_drawNGrect(draw, entry, r);
+	err = datrender_entrydraw_drawNGrect(render, entry, r);
 	if (err < 0) {
 		return err;
 	}
 
-	err = datdraw_drawresborder(draw, entry, r);
+	err = datrender_drawresborder(render, entry, r);
 	if (err < 0) {
 		return err;
 	}
@@ -484,7 +484,7 @@ LOCAL W datdraw_entrydrawNG(datdraw_t *draw, datlayout_res_t *entry, W index, RE
 	if (err < 0) {
 		return err;
 	}
-	err = datdraw_entrydraw_resnumber(entry, index+1, target);
+	err = datrender_entrydraw_resnumber(entry, index+1, target);
 	if (err < 0) {
 		return err;
 	}
@@ -509,51 +509,51 @@ LOCAL W datdraw_entrydrawNG(datdraw_t *draw, datlayout_res_t *entry, W index, RE
 	return 0;
 }
 
-LOCAL W datdraw_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W index, datdraw_t *draw, GID target, RECT *r, W dh, W dv)
+LOCAL W datrender_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W index, datrender_t *render, GID target, RECT *r, W dh, W dv)
 {
 	Bool isNG;
 
 	isNG = datlayout_res_isenableindexNG(entry);
 	if (isNG == True) {
-		return datdraw_entrydrawNG(draw, entry, index, r, dh, dv, False);
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False);
 	}
 	isNG = datlayout_res_isenableidNG(entry);
 	if (isNG == True) {
-		return datdraw_entrydrawNG(draw, entry, index, r, dh, dv, True);
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, True);
 	}
-	return datdraw_entrydrawnormal(entry, resstyle, resheaderstyle, resmessagestyle, index, draw, target, r, dh, dv);
+	return datrender_entrydrawnormal(entry, resstyle, resheaderstyle, resmessagestyle, index, render, target, r, dh, dv);
 }
 
-LOCAL W datdraw_bodyborderdraw(datdraw_t *draw, RECT *r)
+LOCAL W datrender_bodyborderdraw(datrender_t *render, RECT *r)
 {
 	datlayout_box_t bodybox;
-	datlayoutarray_getbodybox(draw->array, &bodybox);
-	return datlayout_box_drawborder(&bodybox, &(draw->style->body), draw, r);
+	datlayoutarray_getbodybox(render->array, &bodybox);
+	return datlayout_box_drawborder(&bodybox, &(render->style->body), render, r);
 }
 
-EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
+EXPORT W datrender_draw(datrender_t *render, RECT *r)
 {
 	W i,len,err;
 	GID target;
 	datlayout_res_t *layout_res;
 	Bool exist;
 
-	target = draw->target;
-	len = datlayoutarray_length(draw->array);
+	target = render->target;
+	len = datlayoutarray_length(render->array);
 
 	for (i = 0; i < len; i++) {
-		exist = datlayoutarray_getresbyindex(draw->array, i, &layout_res);
+		exist = datlayoutarray_getresbyindex(render->array, i, &layout_res);
 		if (exist == False) {
 			break;
 		}
-		layoutstyle_resetgenvfont(draw->target);
-		err = datdraw_entrydraw(layout_res, &(draw->style->res), &(draw->style->resheader), &(draw->style->resmessage), i, draw, target, r, draw->view_l, draw->view_t);
+		layoutstyle_resetgenvfont(render->target);
+		err = datrender_entrydraw(layout_res, &(render->style->res), &(render->style->resheader), &(render->style->resmessage), i, render, target, r, render->view_l, render->view_t);
 		if (err < 0) {
 			return err;
 		}
 	}
 
-	err = datdraw_bodyborderdraw(draw, r);
+	err = datrender_bodyborderdraw(render, r);
 	if (err < 0) {
 		return err;
 	}
@@ -561,7 +561,7 @@ EXPORT W datdraw_draw(datdraw_t *draw, RECT *r)
 	return 0;
 }
 
-LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, W *al, W *at, W *ar, W *ab, W *type, UB **start, W *len)
+LOCAL W datrender_findentryaction(datlayout_res_t *entry, datlayout_style_t *resstyle, datlayout_style_t *resheaderstyle, datlayout_style_t *resmessagestyle, W abs_x, W abs_y, W *al, W *at, W *ar, W *ab, W *type, UB **start, W *len)
 {
 	W l,t,r,b,in;
 	PNT pos;
@@ -587,12 +587,12 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 		}
 		in = inrect(entry->headerinfo.rel_number_pos, pos);
 		if (in == 1) {
-			*type = DATDRAW_FINDACTION_TYPE_NUMBER;
+			*type = DATRENDER_FINDACTION_TYPE_NUMBER;
 			return 1;
 		}
 		in = inrect(entry->headerinfo.rel_id_pos, pos);
 		if (in == 1) {
-			*type = DATDRAW_FINDACTION_TYPE_RESID;
+			*type = DATRENDER_FINDACTION_TYPE_RESID;
 			return 1;
 		}
 		return 0;
@@ -613,31 +613,29 @@ LOCAL W datdraw_findentryaction(datlayout_res_t *entry, datlayout_style_t *resst
 	return 0;
 }
 
-EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, UB **start, W *len, W *resindex)
+EXPORT W datrender_findaction(datrender_t *render, PNT rel_pos, RECT *rect, W *type, UB **start, W *len, W *resindex)
 {
 	W i,abs_x,abs_y,fnd,layout_len;
 	W l,t,r,b;
 	Bool exist;
-	/*datlayout_t *layout;*/
 	datlayout_res_t *res;
 
-	/*layout = draw->layout;*/
-	abs_x = rel_pos.x + draw->view_l;
-	abs_y = rel_pos.y + draw->view_t;
-	layout_len = datlayoutarray_length(draw->array);
+	abs_x = rel_pos.x + render->view_l;
+	abs_y = rel_pos.y + render->view_t;
+	layout_len = datlayoutarray_length(render->array);
 
 	for (i = 0; i < layout_len; i++) {
-		exist = datlayoutarray_getresbyindex(draw->array, i, &res);
+		exist = datlayoutarray_getresbyindex(render->array, i, &res);
 		if (exist == False) {
 			break;
 		}
 
-		fnd = datdraw_findentryaction(res, &(draw->style->res), &(draw->style->resheader), &(draw->style->resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
+		fnd = datrender_findentryaction(res, &(render->style->res), &(render->style->resheader), &(render->style->resmessage), abs_x, abs_y, &l, &t, &r, &b, type, start, len);
 		if (fnd == 1) {
-			rect->c.left = l - draw->view_l;
-			rect->c.top = t - draw->view_t;
-			rect->c.right = r - draw->view_l;
-			rect->c.bottom = b - draw->view_t;
+			rect->c.left = l - render->view_l;
+			rect->c.top = t - render->view_t;
+			rect->c.right = r - render->view_l;
+			rect->c.bottom = b - render->view_t;
 			*resindex = i;
 			return 1;
 		}
@@ -646,50 +644,50 @@ EXPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *rect, W *type, U
 	return 0;
 }
 
-EXPORT VOID datdraw_setviewrect(datdraw_t *draw, W l, W t, W r, W b)
+EXPORT VOID datrender_setviewrect(datrender_t *render, W l, W t, W r, W b)
 {
-	draw->view_l = l;
-	draw->view_t = t;
-	draw->view_r = r;
-	draw->view_b = b;
+	render->view_l = l;
+	render->view_t = t;
+	render->view_r = r;
+	render->view_b = b;
 }
 
-EXPORT VOID datdraw_getviewrect(datdraw_t *draw, W *l, W *t, W *r, W *b)
+EXPORT VOID datrender_getviewrect(datrender_t *render, W *l, W *t, W *r, W *b)
 {
-	*l = draw->view_l;
-	*t = draw->view_t;
-	*r = draw->view_r;
-	*b = draw->view_b;
+	*l = render->view_l;
+	*t = render->view_t;
+	*r = render->view_r;
+	*b = render->view_b;
 }
 
-EXPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv)
+EXPORT VOID datrender_scrollviewrect(datrender_t *render, W dh, W dv)
 {
-	draw->view_l += dh;
-	draw->view_t += dv;
-	draw->view_r += dh;
-	draw->view_b += dv;
+	render->view_l += dh;
+	render->view_t += dv;
+	render->view_r += dh;
+	render->view_b += dv;
 }
 
-EXPORT datdraw_t* datdraw_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray)
+EXPORT datrender_t* datrender_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray)
 {
-	datdraw_t *draw;
+	datrender_t *render;
 
-	draw = (datdraw_t*)malloc(sizeof(datdraw_t));
-	if (draw == NULL) {
+	render = (datrender_t*)malloc(sizeof(datrender_t));
+	if (render == NULL) {
 		return NULL;
 	}
-	draw->target = target;
-	draw->style = style;
-	draw->array = layoutarray;
-	draw->view_l = 0;
-	draw->view_t = 0;
-	draw->view_r = 0;
-	draw->view_b = 0;
+	render->target = target;
+	render->style = style;
+	render->array = layoutarray;
+	render->view_l = 0;
+	render->view_t = 0;
+	render->view_r = 0;
+	render->view_b = 0;
 
-	return draw;
+	return render;
 }
 
-EXPORT VOID datdraw_delete(datdraw_t *draw)
+EXPORT VOID datrender_delete(datrender_t *render)
 {
-	free(draw);
+	free(render);
 }

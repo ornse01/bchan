@@ -161,7 +161,7 @@ struct bchan_t_ {
 	datlayoutarray_t *layoutarray;
 	datlayoutstyle_t style;
 	datlayout_t *layout;
-	datdraw_t *draw;
+	datrender_t *render;
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
@@ -196,14 +196,14 @@ void	killme(bchan_t *bchan)
 LOCAL VOID bchan_scroll(VP arg, W dh, W dv)
 {
 	bchan_t *bchan = (bchan_t*)arg;
-	datdraw_scrollviewrect(bchan->draw, dh, dv);
+	datrender_scrollviewrect(bchan->render, dh, dv);
 	wscr_wnd(bchan->wid, NULL, -dh, -dv, W_MOVE|W_RDSET);
 }
 
 LOCAL VOID bchan_draw(VP arg, RECT *r)
 {
 	bchan_t *bchan = (bchan_t*)arg;
-	datdraw_draw(bchan->draw, r);
+	datrender_draw(bchan->render, r);
 }
 
 LOCAL VOID bchan_resize(VP arg)
@@ -225,12 +225,12 @@ LOCAL VOID bchan_resize(VP arg)
 	wset_wrk(bchan->wid, &work);
 	gset_vis(bchan->gid, work);
 
-	datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+	datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 
 	r = l + work.c.right - work.c.left;
 	b = t + work.c.bottom - work.c.top;
 
-	datdraw_setviewrect(bchan->draw, l, t, r, b);
+	datrender_setviewrect(bchan->render, l, t, r, b);
 	datwindow_setworkrect(bchan->window, l, t, r, b);
 
 	if (workchange == True) {
@@ -615,7 +615,7 @@ LOCAL VOID bchan_scrollbyahcnor(bchan_t *bchan, UB *data, W data_len)
 	if (fnd == 0) {
 		return;
 	}
-	datdraw_getviewrect(bchan->draw, &cl, &ct, &cr, &cb);
+	datrender_getviewrect(bchan->render, &cl, &ct, &cr, &cb);
 	datwindow_scrollbyvalue(bchan->window, 0 - cl, tt - ct);
 }
 
@@ -698,7 +698,7 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	Bool ok;
 	datlayout_res_t *layout_res;
 
-	DP(("press DATDRAW_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
+	DP(("press DATRENDER_FINDACTION_TYPE_NUMBER: %d\n", resindex + 1));
 
 	ok = datlayoutarray_getresbyindex(bchan->layoutarray, resindex, &layout_res);
 	if (ok == False) {
@@ -758,7 +758,7 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	Bool ok;
 	datlayout_res_t *layout_res;
 
-	DP(("press DATDRAW_FINDACTION_TYPE_ID\n"));
+	DP(("press DATRENDER_FINDACTION_TYPE_ID\n"));
 
 	ok = datlayoutarray_getresbyindex(bchan->layoutarray, resindex, &layout_res);
 	if (ok == False) {
@@ -831,11 +831,11 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	/* TODO: change to same as bchanl's commonwindow */
 	switch (wchk_dck(wev->s.time)) {
 	case	W_CLICK:
-		fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len, &resindex);
+		fnd = datrender_findaction(bchan->render, wev->s.pos, &r, &type, &start, &len, &resindex);
 		if (fnd == 0) {
 			return;
 		}
-		if (type != DATDRAW_FINDACTION_TYPE_ANCHOR) {
+		if (type != DATRENDER_FINDACTION_TYPE_ANCHOR) {
 			return;
 		}
 		bchan_scrollbyahcnor(bchan, start, len);
@@ -847,19 +847,19 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	case	W_PRESS:
 	}
 
-	fnd = datdraw_findaction(bchan->draw, wev->s.pos, &r, &type, &start, &len, &resindex);
+	fnd = datrender_findaction(bchan->render, wev->s.pos, &r, &type, &start, &len, &resindex);
 	if (fnd == 0) {
 		return;
 	}
-	if (type == DATDRAW_FINDACTION_TYPE_NUMBER) {
+	if (type == DATRENDER_FINDACTION_TYPE_NUMBER) {
 		bchan_butdn_pressnumber(bchan, wev, resindex);
 		return;
 	}
-	if (type == DATDRAW_FINDACTION_TYPE_RESID) {
+	if (type == DATRENDER_FINDACTION_TYPE_RESID) {
 		bchan_butdn_pressresheaderid(bchan, wev, resindex);
 		return;
 	}
-	if (type != DATDRAW_FINDACTION_TYPE_URL) {
+	if (type != DATRENDER_FINDACTION_TYPE_URL) {
 		return;
 	}
 
@@ -1086,7 +1086,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	datparser_t *parser;
 	datlayoutarray_t *layoutarray;
 	datlayout_t *layout;
-	datdraw_t *draw;
+	datrender_t *render;
 	datwindow_t *window;
 	datretriever_t *retriever;
 	ressubmit_t *submit;
@@ -1120,10 +1120,10 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("datlayout_new error", 0);
 		goto error_layout;
 	}
-	draw = datdraw_new(gid, &bchan->style, layoutarray);
-	if (draw == NULL) {
-		DP_ER("datdraw_new error", 0);
-		goto error_draw;
+	render = datrender_new(gid, &bchan->style, layoutarray);
+	if (render == NULL) {
+		DP_ER("datrender_new error", 0);
+		goto error_render;
 	}
 	window = datwindow_new(wid, bchan_scroll, bchan_draw, bchan_resize, bchan_close, bchan_butdn, bchan_paste, bchan);
 	if (window == NULL) {
@@ -1176,7 +1176,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan_hmistate_initialize(&bchan->hmistate);
 
 	wget_wrk(wid, &w_work);
-	datdraw_setviewrect(draw, 0, 0, w_work.c.right, w_work.c.bottom);
+	datrender_setviewrect(render, 0, 0, w_work.c.right, w_work.c.bottom);
 	datwindow_setworkrect(window, 0, 0, w_work.c.right, w_work.c.bottom);
 
 	if (exectype == EXECREQ) {
@@ -1194,7 +1194,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan->parser = parser;
 	bchan->layoutarray = layoutarray;
 	bchan->layout = layout;
-	bchan->draw = draw;
+	bchan->render = render;
 	bchan->window = window;
 	bchan->retriever = retriever;
 	bchan->submit = submit;
@@ -1221,8 +1221,8 @@ error_submit:
 error_retriever:
 	datwindow_delete(window);
 error_window:
-	datdraw_delete(draw);
-error_draw:
+	datrender_delete(render);
+error_render:
 	datlayout_delete(layout);
 error_layout:
 	datlayoutarray_delete(layoutarray);
@@ -1450,7 +1450,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 
 	switch (ch) {
 	case KC_CC_U:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		if (t < 16) {
 			scr = -t;
 		} else {
@@ -1459,7 +1459,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		datwindow_scrollbyvalue(bchan->window, 0, scr);
 		break;
 	case KC_CC_D:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
 		if (b + 16 > b1) {
 			scr = b1 - b;
@@ -1471,7 +1471,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		}
 		break;
 	case KC_CC_R:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
 		if (r + 16 > r1) {
 			scr = r1 - r;
@@ -1483,7 +1483,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		}
 		break;
 	case KC_CC_L:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		if (l < 16) {
 			scr = -l;
 		} else {
@@ -1492,7 +1492,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		datwindow_scrollbyvalue(bchan->window, scr, 0);
 		break;
 	case KC_PG_U:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		if (t < b - t) {
 			scr = -t;
 		} else {
@@ -1501,7 +1501,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		datwindow_scrollbyvalue(bchan->window, 0, scr);
 		break;
 	case KC_PG_D:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
 		if (b + (b - t) > b1) {
 			scr = b1 - b;
@@ -1513,7 +1513,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		}
 		break;
 	case KC_PG_R:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		datlayout_getdrawrect(bchan->layout, &l1, &t1, &r1, &b1);
 		if (r + (r - l) > r1) {
 			scr = r1 - r;
@@ -1525,7 +1525,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		}
 		break;
 	case KC_PG_L:
-		datdraw_getviewrect(bchan->draw, &l, &t, &r, &b);
+		datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 		if (l < r - l) {
 			scr = -l;
 		} else {

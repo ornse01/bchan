@@ -33,19 +33,19 @@
 #ifndef __RENDER_H__
 #define __RENDER_H__
 
-typedef struct datdraw_t_ datdraw_t;
+typedef struct datrender_t_ datrender_t;
 
-IMPORT datdraw_t* datdraw_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray);
-IMPORT VOID datdraw_delete(datdraw_t *draw);
-IMPORT W datdraw_draw(datdraw_t *draw, RECT *r);
-IMPORT VOID datdraw_setviewrect(datdraw_t *draw, W l, W t, W r, W b);
-IMPORT VOID datdraw_getviewrect(datdraw_t *draw, W *l, W *t, W *r, W *b);
-IMPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv);
+IMPORT datrender_t* datrender_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray);
+IMPORT VOID datrender_delete(datrender_t *render);
+IMPORT W datrender_draw(datrender_t *render, RECT *r);
+IMPORT VOID datrender_setviewrect(datrender_t *render, W l, W t, W r, W b);
+IMPORT VOID datrender_getviewrect(datrender_t *render, W *l, W *t, W *r, W *b);
+IMPORT VOID datrender_scrollviewrect(datrender_t *render, W dh, W dv);
 /* these value should be same in tadlib.h */
-#define DATDRAW_FINDACTION_TYPE_ANCHOR 0
-#define DATDRAW_FINDACTION_TYPE_URL    1
-#define DATDRAW_FINDACTION_TYPE_NUMBER 2
-#define DATDRAW_FINDACTION_TYPE_RESID  3
-IMPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len, W *resindex);
+#define DATRENDER_FINDACTION_TYPE_ANCHOR 0
+#define DATRENDER_FINDACTION_TYPE_URL    1
+#define DATRENDER_FINDACTION_TYPE_NUMBER 2
+#define DATRENDER_FINDACTION_TYPE_RESID  3
+IMPORT W datrender_findaction(datrender_t *render, PNT rel_pos, RECT *r, W *type, UB **start, W *len, W *resindex);
 
 #endif
