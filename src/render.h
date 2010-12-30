@@ -28,6 +28,7 @@
 #include	<btron/dp.h>
 
 #include    "layoutarray.h"
+#include    "layoutstyle.h"
 
 #ifndef __RENDER_H__
 #define __RENDER_H__

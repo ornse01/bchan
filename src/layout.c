@@ -31,12 +31,9 @@
 
 #include	<bstdio.h>
 #include	<bstdlib.h>
-#include	<tstring.h>
 #include	<tcode.h>
 #include	<btron/btron.h>
 #include	<btron/dp.h>
-#include	<btron/libapp.h>
-#include	<tad.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg

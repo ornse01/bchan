@@ -32,12 +32,10 @@
 
 #include	<bstdio.h>
 #include	<bstdlib.h>
-#include	<tstring.h>
 #include	<tcode.h>
 #include	<btron/btron.h>
-#include	<btron/dp.h>
 #include	<btron/libapp.h>
-#include	<tad.h>
+#include	<btron/dp.h>
 
 struct datdraw_t_ {
 	GID target;
