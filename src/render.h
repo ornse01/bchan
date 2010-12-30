@@ -1,7 +1,7 @@
 /*
- * layout.h
+ * render.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2010 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -27,24 +27,24 @@
 #include    <basic.h>
 #include	<btron/dp.h>
 
-#include    "parser.h"
 #include    "layoutarray.h"
-#include    "layoutstyle.h"
 
-#ifndef __LAYOUT_H__
-#define __LAYOUT_H__
+#ifndef __RENDER_H__
+#define __RENDER_H__
 
-typedef struct datlayout_t_ datlayout_t;
+typedef struct datdraw_t_ datdraw_t;
 
-IMPORT datlayout_t* datlayout_new(GID gid, datlayoutstyle_t *style, datlayoutarray_t *layoutarray);
-IMPORT VOID datlayout_delete(datlayout_t *layout);
-IMPORT W datlayout_appendres(datlayout_t *layout, datparser_res_t *parser_res);
-IMPORT VOID datlayout_getdrawrect(datlayout_t *layout, W *l, W *t, W *r, W *b);
-IMPORT TC* datlayout_gettitle(datlayout_t *layout);
-IMPORT W datlayout_gettitlelen(datlayout_t *layout);
-IMPORT VOID datlayout_clear(datlayout_t *layout);
-IMPORT W datlayout_getthreadviewrectbyindex(datlayout_t *layout, W n, W *l, W *t, W *r, W *b);
-IMPORT W datlayout_resindextotraytextdata(datlayout_t *layout, W n, B *data, W data_len);
-IMPORT W datlayout_idtotraytextdata(datlayout_t *layout, TC *id, W id_len, B *data, W data_len);
+IMPORT datdraw_t* datdraw_new(GID target, datlayoutstyle_t *style, datlayoutarray_t *layoutarray);
+IMPORT VOID datdraw_delete(datdraw_t *draw);
+IMPORT W datdraw_draw(datdraw_t *draw, RECT *r);
+IMPORT VOID datdraw_setviewrect(datdraw_t *draw, W l, W t, W r, W b);
+IMPORT VOID datdraw_getviewrect(datdraw_t *draw, W *l, W *t, W *r, W *b);
+IMPORT VOID datdraw_scrollviewrect(datdraw_t *draw, W dh, W dv);
+/* these value should be same in tadlib.h */
+#define DATDRAW_FINDACTION_TYPE_ANCHOR 0
+#define DATDRAW_FINDACTION_TYPE_URL    1
+#define DATDRAW_FINDACTION_TYPE_NUMBER 2
+#define DATDRAW_FINDACTION_TYPE_RESID  3
+IMPORT W datdraw_findaction(datdraw_t *draw, PNT rel_pos, RECT *r, W *type, UB **start, W *len, W *resindex);
 
 #endif

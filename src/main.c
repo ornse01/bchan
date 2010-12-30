@@ -47,7 +47,9 @@
 #include	"cache.h"
 #include	"parser.h"
 #include	"layoutarray.h"
+#include	"layoutstyle.h"
 #include	"layout.h"
+#include	"render.h"
 #include	"retriever.h"
 #include	"submit.h"
 #include	"tadurl.h"
@@ -1112,7 +1114,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("datlayoutarray_new error", 0);
 		goto error_layoutarray;
 	}
-	/* TODO: style initialize. */
+	datlayoutstyle_setdefault(&bchan->style);
 	layout = datlayout_new(gid, &bchan->style, layoutarray);
 	if (layout == NULL) {
 		DP_ER("datlayout_new error", 0);

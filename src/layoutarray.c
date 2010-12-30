@@ -122,6 +122,48 @@ EXPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res)
 	return False;
 }
 
+/* tmp */
+EXPORT VOID datlayout_box_getoffsetrect(datlayout_box_t *box, datlayout_style_t *style, W *l, W *t, W *r, W *b)
+{
+	*l = box->l - (style->margin_width_left + style->border_width_left + style->padding_width_left);
+	*t = box->t - (style->margin_width_top + style->border_width_top + style->padding_width_top);
+	*r = box->r + (style->margin_width_right + style->border_width_right + style->padding_width_right);
+	*b = box->b + (style->margin_width_bottom + style->border_width_bottom + style->padding_width_bottom);
+}
+
+EXPORT VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t *style, W *l, W *t, W *r, W *b)
+{
+	*l = box->l;
+	*t = box->t;
+	*r = box->r;
+	*b = box->b;
+}
+
+EXPORT VOID datlayout_res_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getoffsetrect(&(res->box.res), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_res_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getcontentrect(&(res->box.res), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_resheader_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getoffsetrect(&(res->box.resheader), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_resheader_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getcontentrect(&(res->box.resheader), resstyle, l, t, r, b);
+}
+
+EXPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b)
+{
+	datlayout_box_getcontentrect(&(res->box.resmessage), resstyle, l, t, r, b);
+}
+
 EXPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len)
 {
 	if (layout_res->parser_res->dateinfo.id == NULL) {

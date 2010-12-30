@@ -187,6 +187,7 @@ LOCAL TEST_RESULT test_layout_1()
 	layoutarray = datlayoutarray_new();
 
 	parser = datparser_new(cache);
+	datlayoutstyle_setdefault(&style);
 	layout = datlayout_new(gid, &style, layoutarray);
 
 	for (;;) {

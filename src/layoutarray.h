@@ -27,15 +27,20 @@
 #include	<basic.h>
 
 #include    "parser.h"
+#include    "layoutstyle.h"
 #include    "tadlib.h"
 
 #ifndef __LAYOUTARRAY_H__
 #define __LAYOUTARRAY_H__
 
+/* tmp */
 typedef struct datlayout_box_t_ datlayout_box_t;
 struct datlayout_box_t_ {
 	W l,t,r,b;
 };
+
+IMPORT VOID datlayout_box_getoffsetrect(datlayout_box_t *box, datlayout_style_t *style, W *l, W *t, W *r, W *b);
+IMPORT VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t *style, W *l, W *t, W *r, W *b);
 
 #define DATLAYOUT_RES_FLAG_IDNG       0x00000001
 #define DATLAYOUT_RES_FLAG_IDCOLOR    0x00000002
@@ -81,6 +86,11 @@ IMPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res);
 IMPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len);
 IMPORT Bool datlayout_res_issameid(datlayout_res_t *layout_res, TC *id, W id_len);
+IMPORT VOID datlayout_res_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);
+IMPORT VOID datlayout_res_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);
+IMPORT VOID datlayout_resheader_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);
+IMPORT VOID datlayout_resheader_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);
+IMPORT VOID datlayout_resmessage_getcontentrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);
 
 typedef struct datlayoutarray_t_ datlayoutarray_t;
 
