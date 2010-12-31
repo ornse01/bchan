@@ -689,6 +689,41 @@ EXPORT W tadlib_remove_TA_APPL(TC *str, W len, TC *data, W data_len)
 	return i;
 }
 
+LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9};
+
+EXPORT W tadlib_UW_to_str(UW val, TC *dest, W dest_len)
+{
+	W i = 0, digit, draw = 0;
+	TC dummy_str[10];
+
+	if (dest == NULL) {
+		dest = dummy_str;
+	}
+
+	digit = val / 1000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = val / 100 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = val / 10 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = val % 10;
+	if ((digit != 0)||(draw != 0)) {
+		dest[i++] = dec[digit];
+		draw = 1;
+	}
+
+	return i;
+}
+
 EXPORT VOID tadlib_separete_datepart(TC *str, W len, TC **date, W *date_len, TC **id, W *id_len, TC **beid, W *beid_len)
 {
 	taditerator_t iter;

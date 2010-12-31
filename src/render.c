@@ -114,43 +114,15 @@ LOCAL W datrender_entrydraw_drawdateidbeid(datlayout_res_t *entry, GID gid, W dh
 #endif
 }
 
-LOCAL TC dec[] = {TK_0,TK_1,TK_2,TK_3,TK_4,TK_5,TK_6,TK_7,TK_8,TK_9}; /* TODO: layout.c */
-
 LOCAL W datrender_entrydraw_resnumber(datlayout_res_t *entry, W resnum, GID target)
 {
-	W err,digit,draw = 0;
+	W err,numstr_len;
+	TC numstr[10];
 
-	digit = resnum / 1000 % 10;
-	if ((digit != 0)||(draw != 0)) {
-		err = gdra_chr(target, dec[digit], G_STORE);
-		if (err < 0) {
-			return err;
-		}
-		draw = 1;
-	}
-	digit = resnum / 100 % 10;
-	if ((digit != 0)||(draw != 0)) {
-		err = gdra_chr(target, dec[digit], G_STORE);
-		if (err < 0) {
-			return err;
-		}
-		draw = 1;
-	}
-	digit = resnum / 10 % 10;
-	if ((digit != 0)||(draw != 0)) {
-		err = gdra_chr(target, dec[digit], G_STORE);
-		if (err < 0) {
-			return err;
-		}
-		draw = 1;
-	}
-	digit = resnum % 10;
-	if ((digit != 0)||(draw != 0)) {
-		err = gdra_chr(target, dec[digit], G_STORE);
-		if (err < 0) {
-			return err;
-		}
-		draw = 1;
+	numstr_len = tadlib_UW_to_str(resnum, numstr, 10);
+	err = gdra_str(target, numstr, numstr_len, G_STORE);
+	if (err < 0) {
+		return err;
 	}
 
 	return 0;

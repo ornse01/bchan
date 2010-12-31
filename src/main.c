@@ -50,6 +50,7 @@
 #include	"layoutstyle.h"
 #include	"layout.h"
 #include	"render.h"
+#include	"traydata.h"
 #include	"retriever.h"
 #include	"submit.h"
 #include	"tadurl.h"
@@ -162,6 +163,7 @@ struct bchan_t_ {
 	datlayoutstyle_t style;
 	datlayout_t *layout;
 	datrender_t *render;
+	dattraydata_t *traydata;
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
@@ -727,12 +729,12 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	gcnv_abs(bchan->gid, &pos);
 	err = bchan_resnumbermenu_select(&bchan->resnumbermenu, pos);
 	if (err == BCHAN_RESNUMBERMENU_SELECT_PUSHTRAY) {
-		size = datlayout_resindextotraytextdata(bchan->layout, resindex, NULL, 0);
+		size = dattraydata_resindextotraytextdata(bchan->traydata, resindex, NULL, 0);
 		data = malloc(size);
 		if (data == NULL) {
 			return;
 		}
-		datlayout_resindextotraytextdata(bchan->layout, resindex, data, size);
+		dattraydata_resindextotraytextdata(bchan->traydata, resindex, data, size);
 		bchan_pushstringtotray((TC*)data, size/2);
 		free(data);
 	} if (err == BCHAN_RESNUMBERMENU_SELECT_NG) {
@@ -794,12 +796,12 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	gcnv_abs(bchan->gid, &pos);
 	err = bchan_residmenu_select(&bchan->residmenu, pos);
 	if (err == BCHAN_RESIDMENU_SELECT_PUSHTRAY) {
-		size = datlayout_idtotraytextdata(bchan->layout, id, id_len, NULL, 0);
+		size = dattraydata_idtotraytextdata(bchan->traydata, id, id_len, NULL, 0);
 		data = malloc(size);
 		if (data == NULL) {
 			return;
 		}
-		datlayout_idtotraytextdata(bchan->layout, id, id_len, data, size);
+		dattraydata_idtotraytextdata(bchan->traydata, id, id_len, data, size);
 		bchan_pushstringtotray((TC*)data, size/2);
 		free(data);
 	} if (err == BCHAN_RESIDMENU_SELECT_NG) {
@@ -1087,6 +1089,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	datlayoutarray_t *layoutarray;
 	datlayout_t *layout;
 	datrender_t *render;
+	dattraydata_t *traydata;
 	datwindow_t *window;
 	datretriever_t *retriever;
 	ressubmit_t *submit;
@@ -1124,6 +1127,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	if (render == NULL) {
 		DP_ER("datrender_new error", 0);
 		goto error_render;
+	}
+	traydata = dattraydata_new(layoutarray);
+	if (traydata == NULL) {
+		DP_ER("dattraydata_new error", 0);
+		goto error_traydata;
 	}
 	window = datwindow_new(wid, bchan_scroll, bchan_draw, bchan_resize, bchan_close, bchan_butdn, bchan_paste, bchan);
 	if (window == NULL) {
@@ -1195,6 +1203,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan->layoutarray = layoutarray;
 	bchan->layout = layout;
 	bchan->render = render;
+	bchan->traydata = traydata;
 	bchan->window = window;
 	bchan->retriever = retriever;
 	bchan->submit = submit;
@@ -1221,6 +1230,8 @@ error_submit:
 error_retriever:
 	datwindow_delete(window);
 error_window:
+	dattraydata_delete(traydata);
+error_traydata:
 	datrender_delete(render);
 error_render:
 	datlayout_delete(layout);
