@@ -119,10 +119,26 @@ EXPORT W dattraydata_resindextotraytextdata(dattraydata_t *traydata, W n, B *dat
 	return datlayout_res_totraytextdata(res, data, data_len);
 }
 
+LOCAL Bool dattraydata_isrescopytotray(datlayout_res_t *layout_res)
+{
+	Bool ok;
+
+	ok = datlayout_res_isenableindexNG(layout_res);
+	if (ok == True) {
+		return False;
+	}
+	ok = datlayout_res_isenableidNG(layout_res);
+	if (ok == True) {
+		return False;
+	}
+
+	return True;
+}
+
 EXPORT W dattraydata_idtotraytextdata(dattraydata_t *traydata, TC *id, W id_len, B *data, W data_len)
 {
 	W i, len, result, sum = 0;
-	Bool haveid;
+	Bool haveid, ok;
 	datlayout_res_t *res;
 
 	len = datlayoutarray_length(traydata->layoutarray);
@@ -130,20 +146,25 @@ EXPORT W dattraydata_idtotraytextdata(dattraydata_t *traydata, TC *id, W id_len,
 		datlayoutarray_getresbyindex(traydata->layoutarray, i, &res);
 
 		haveid = datlayout_res_issameid(res, id, id_len);
-		if (haveid == True) {
-			if (data == NULL) {
-				result = datlayout_res_totraytextdata(res, NULL, 0);
-				if (result < 0) {
-					return result;
-				}
-			} else {
-				result = datlayout_res_totraytextdata(res, data + sum, data_len - sum);
-				if (result < 0) {
-					return result;
-				}
-			}
-			sum += result;
+		if (haveid == False) {
+			continue;
 		}
+		ok = dattraydata_isrescopytotray(res);
+		if (ok == False) {
+			continue;
+		}
+		if (data == NULL) {
+			result = datlayout_res_totraytextdata(res, NULL, 0);
+			if (result < 0) {
+				return result;
+			}
+		} else {
+			result = datlayout_res_totraytextdata(res, data + sum, data_len - sum);
+			if (result < 0) {
+				return result;
+			}
+		}
+		sum += result;
 	}
 
 	return sum;
