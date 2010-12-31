@@ -45,8 +45,16 @@ EXPORT W bchan_resnumbermenu_setngselected(bchan_resnumbermenu_t *resnumbermenu,
 
 	if (selected == True) {
 		err = mchg_gat(resnumbermenu->mnid, 1, M_SEL);
+		if (err < 0) {
+			return err;
+		}
+		err = mchg_gat(resnumbermenu->mnid, 2, M_INACT);
 	} else {
 		err = mchg_gat(resnumbermenu->mnid, 1, M_NOSEL);
+		if (err < 0) {
+			return err;
+		}
+		err = mchg_gat(resnumbermenu->mnid, 2, M_ACT);
 	}
 
 	return err;
@@ -103,8 +111,16 @@ EXPORT W bchan_residmenu_setngselected(bchan_residmenu_t *residmenu, Bool select
 
 	if (selected == True) {
 		err = mchg_gat(residmenu->mnid, 1, M_SEL);
+		if (err < 0) {
+			return err;
+		}
+		err = mchg_gat(residmenu->mnid, 2, M_INACT);
 	} else {
 		err = mchg_gat(residmenu->mnid, 1, M_NOSEL);
+		if (err < 0) {
+			return err;
+		}
+		err = mchg_gat(residmenu->mnid, 2, M_ACT);
 	}
 
 	return err;
