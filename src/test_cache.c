@@ -1,7 +1,7 @@
 /*
  * test_cache.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -882,7 +882,7 @@ LOCAL TEST_RESULT test_cache_9()
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_02, strlen(test_cache_testdata_02));
 	if (ok == False) {
-		printf("main data error\n");
+		printf("info data error\n");
 		result = TEST_RESULT_FAIL;
 	}
 
@@ -972,7 +972,7 @@ LOCAL TEST_RESULT test_cache_10()
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_02, strlen(test_cache_testdata_02));
 	if (ok == False) {
-		printf("main data error\n");
+		printf("info data error\n");
 		result = TEST_RESULT_FAIL;
 	}
 
@@ -1050,7 +1050,7 @@ LOCAL TEST_RESULT test_cache_11()
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_07, strlen(test_cache_testdata_07));
 	if (ok == False) {
-		printf("main data error\n");
+		printf("info data error\n");
 		result = TEST_RESULT_FAIL;
 	}
 
