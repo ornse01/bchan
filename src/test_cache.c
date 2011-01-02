@@ -1394,6 +1394,297 @@ LOCAL TEST_RESULT test_cache_15()
 	return result;
 }
 
+/* append and write file test */
+
+LOCAL W test_cache_writecheck_testseq_appenddata(datcache_t *cache, Bool clear)
+{
+	W err;
+
+	err = datcache_appenddata(cache, test_cache_testdata_01_2, strlen(test_cache_testdata_01_2));
+	if (err < 0) {
+		printf("datcache_appenddata error 1\n");
+		return err;
+	}
+	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
+	if (err < 0) {
+		printf("datcache_appenddata error 2\n");
+		return err;
+	}
+	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
+	if (err < 0) {
+		printf("datcache_appenddata error 3\n");
+		return err;
+	}
+
+	if (clear == False) {
+		return 0;
+	}
+
+	datcache_cleardata(cache);
+
+	err = datcache_appenddata(cache, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1));
+	if (err < 0) {
+		printf("datcache_appenddata error 4\n");
+		return err;
+	}
+	err = datcache_appenddata(cache, test_cache_testdata_01_2, strlen(test_cache_testdata_01_2));
+	if (err < 0) {
+		printf("datcache_appenddata error 5\n");
+		return err;
+	}
+	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
+	if (err < 0) {
+		printf("datcache_appenddata error 6\n");
+		return err;
+	}
+	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
+	if (err < 0) {
+		printf("datcache_appenddata error 7\n");
+		return err;
+	}
+
+	return 0;
+}
+
+LOCAL W test_cache_writecheck_testseq_modsize(W size_diff, LINK *lnk)
+{
+	W fd, prev_size, err;
+	UB *bin;
+
+	fd = opn_fil(lnk, F_READ|F_WRITE, NULL);
+	if (fd < 0) {
+		printf("opn_fil error\n");
+		return fd;
+	}
+	err = fnd_rec(fd, F_TOPEND, 1 << DATCACHE_RECORDTYPE_MAIN, 0, NULL);
+	if (err < 0) {
+		printf("fnd_rec error\n");
+		cls_fil(fd);
+		return err;
+	}
+	if (size_diff < 0) {
+		err = rea_rec(fd, 0, NULL, 0, &prev_size, NULL);
+		if (err < 0) {
+			printf("rea_rec error\n");
+			cls_fil(fd);
+			return err;
+		}
+		err = trc_rec(fd, prev_size + size_diff);
+		if (err < 0) {
+			printf("trc_rec error %d\n", err >> 16);
+			cls_fil(fd);
+			return err;
+		}
+	} else {
+		bin = malloc(size_diff);
+		if (bin == NULL) {
+			printf("malloc error\n");
+			cls_fil(fd);
+			return -1;
+		}
+		memset(bin, 0, size_diff);
+		err = wri_rec(fd, -1, bin, size_diff, NULL, NULL, 0);
+		if (err < 0) {
+			printf("wri_rec error %d\n", err >> 16);
+			free(bin);
+			cls_fil(fd);
+			return err;
+		}
+		free(bin);
+	}
+	cls_fil(fd);
+
+	return 0;
+}
+
+LOCAL TEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool clear, Bool expected, VID vid, LINK *lnk)
+{
+	W err;
+	datcache_t *cache;
+	TEST_RESULT result = TEST_RESULT_PASS;
+	Bool ok;
+	F_TIME ftime;
+	F_STATE fstate;
+
+	cache = datcache_new(vid);
+	if (cache == NULL) {
+		printf("datcache_new error\n");
+		return TEST_RESULT_FAIL;
+	}
+
+	err = test_cache_writecheck_testseq_appenddata(cache, clear);
+	if (err < 0) {
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = fil_sts(lnk, NULL, &fstate, NULL);
+	if (err < 0) {
+		printf("fil_sts error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	if (size_diff != 0) {
+		err = test_cache_writecheck_testseq_modsize(size_diff, lnk);
+		if (err < 0) {
+			printf("recsize modify error\n");
+			datcache_delete(cache);
+			return TEST_RESULT_FAIL;
+		}
+	}
+	ftime.f_ltime = -1;
+	ftime.f_atime = -1;
+	ftime.f_mtime = fstate.f_mtime + time_diff;
+	err = chg_ftm(lnk, &ftime);
+	if (err < 0) {
+		printf("chg_ftm error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	ok = test_cache_util_cmp_rec_bin(lnk, DATCACHE_RECORDTYPE_MAIN, 0, test_cache_testdata_01, strlen(test_cache_testdata_01));
+	if (ok != expected) {
+		printf("main data error\n");
+		result = TEST_RESULT_FAIL;
+	}	
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_cache_writecheck(W time_diff, W size_diff, Bool clear, Bool expected)
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	TEST_RESULT result;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1), DATCACHE_RECORDTYPE_MAIN, 0, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	result = test_cache_writecheck_testseq(time_diff, size_diff, clear, expected, vid, &test_lnk);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_cache_append_1()
+{
+	return test_cache_writecheck(0, 0, False, True);
+}
+
+LOCAL TEST_RESULT test_cache_append_2()
+{
+	return test_cache_writecheck(0, 3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_3()
+{
+	return test_cache_writecheck(0, -3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_4()
+{
+	return test_cache_writecheck(300, 0, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_5()
+{
+	return test_cache_writecheck(300, 3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_6()
+{
+	return test_cache_writecheck(300, -3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_7()
+{
+	return test_cache_writecheck(-300, 0, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_8()
+{
+	return test_cache_writecheck(-300, 3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_append_9()
+{
+	return test_cache_writecheck(-300, -3, False, False);
+}
+
+LOCAL TEST_RESULT test_cache_reload_1()
+{
+	return test_cache_writecheck(0, 0, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_2()
+{
+	return test_cache_writecheck(0, 3, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_3()
+{
+	return test_cache_writecheck(0, -3, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_4()
+{
+	return test_cache_writecheck(300, 0, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_5()
+{
+	return test_cache_writecheck(300, 3, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_6()
+{
+	return test_cache_writecheck(300, -3, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_7()
+{
+	return test_cache_writecheck(-300, 0, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_8()
+{
+	return test_cache_writecheck(-300, 3, True, True);
+}
+
+LOCAL TEST_RESULT test_cache_reload_9()
+{
+	return test_cache_writecheck(-300, -3, True, True);
+}
+
 /* test_cache_residinfo_1 */
 
 LOCAL TEST_RESULT test_cache_residinfo_1()
@@ -2757,4 +3048,22 @@ IMPORT VOID test_cache_main()
 	test_cache_printresult(test_cache_resindexinfo_5, "test_cache_resindexinfo_5");
 	test_cache_printresult(test_cache_resindexinfo_6, "test_cache_resindexinfo_6");
 	test_cache_printresult(test_cache_resindexinfo_7, "test_cache_resindexinfo_7");
+	test_cache_printresult(test_cache_append_1, "test_cache_append_1");
+	test_cache_printresult(test_cache_append_2, "test_cache_append_2");
+	test_cache_printresult(test_cache_append_3, "test_cache_append_3");
+	test_cache_printresult(test_cache_append_4, "test_cache_append_4");
+	test_cache_printresult(test_cache_append_5, "test_cache_append_5");
+	test_cache_printresult(test_cache_append_6, "test_cache_append_6");
+	test_cache_printresult(test_cache_append_7, "test_cache_append_7");
+	test_cache_printresult(test_cache_append_8, "test_cache_append_8");
+	test_cache_printresult(test_cache_append_9, "test_cache_append_9");
+	test_cache_printresult(test_cache_reload_1, "test_cache_reload_1");
+	test_cache_printresult(test_cache_reload_2, "test_cache_reload_2");
+	test_cache_printresult(test_cache_reload_3, "test_cache_reload_3");
+	test_cache_printresult(test_cache_reload_4, "test_cache_reload_4");
+	test_cache_printresult(test_cache_reload_5, "test_cache_reload_5");
+	test_cache_printresult(test_cache_reload_6, "test_cache_reload_6");
+	test_cache_printresult(test_cache_reload_7, "test_cache_reload_7");
+	test_cache_printresult(test_cache_reload_8, "test_cache_reload_8");
+	test_cache_printresult(test_cache_reload_9, "test_cache_reload_9");
 }
