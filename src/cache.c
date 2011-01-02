@@ -1,7 +1,7 @@
 /*
  * cache.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -44,11 +44,20 @@ struct datcache_data_t_ {
 	W len;
 };
 
+#define DATCACHE_FLAG_DATAPPENDED 0x00000001
+#define DATCACHE_FLAG_DATRESETED 0x00000002
+#define DATCACHE_FLAG_IDINFOUPDATED 0x00000004
+#define DATCACHE_FLAG_INDEXINFOUPDATED 0x00000008
+#define DATCACHE_FLAG_LATESTHEADERUPDATED 0x00000010
+
 struct datcache_t_ {
+	UW flag;
 	W fd;
+	STIME mtime_open;
 	ID semid;
 	datcache_data_t datalist;
 	W s_datsize;
+	W recsize_open;
 	datcache_datareadcontext_t *context;
 	UB *retrinfo;
 	W retrinfo_len;
@@ -103,6 +112,76 @@ LOCAL VOID datcache_data_delete(datcache_data_t *cache_data)
 	free(cache_data);
 }
 
+LOCAL VOID datcache_setappendedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_DATAPPENDED;
+}
+
+LOCAL VOID datcache_clearappendedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag & ~DATCACHE_FLAG_DATAPPENDED;
+}
+
+LOCAL Bool datcache_issetappendedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_DATAPPENDED) == 0) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL VOID datcache_setresetedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_DATRESETED;
+}
+
+LOCAL Bool datcache_issetresetedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_DATRESETED) == 0) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL VOID datcache_setidinfoupdatedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_IDINFOUPDATED;
+}
+
+LOCAL Bool datcache_issetidinfoupdatedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_IDINFOUPDATED) == 0) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL VOID datcache_setindexinfoupdatedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_INDEXINFOUPDATED;
+}
+
+LOCAL Bool datcache_issetindexinfoupdatedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_INDEXINFOUPDATED) == 0) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL VOID datcache_setlatestheaderupdatedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_LATESTHEADERUPDATED;
+}
+
+LOCAL Bool datcache_issetlatestheaderupdatedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_LATESTHEADERUPDATED) == 0) {
+		return False;
+	}
+	return True;
+}
+
 EXPORT W datcache_appenddata(datcache_t *cache, UB *data, W len)
 {
 	datcache_data_t *cache_data;
@@ -126,7 +205,10 @@ EXPORT W datcache_appenddata(datcache_t *cache, UB *data, W len)
 	QueInsert(&(cache_data->queue), &(cache->datalist.queue));
 	cache->s_datsize += len;
 
+	datcache_setappendedflag(cache);
+
 	sig_sem(cache->semid);
+
 	return 0; /* TODO */
 }
 
@@ -159,6 +241,9 @@ EXPORT VOID datcache_cleardata(datcache_t *cache)
 	cache->datalist.data = NULL;
 	cache->datalist.len = 0;
 	cache->s_datsize = 0;
+
+	datcache_clearappendedflag(cache);
+	datcache_setresetedflag(cache);
 
 	sig_sem(cache->semid);
 }
@@ -274,6 +359,8 @@ EXPORT W datcache_updatelatestheader(datcache_t *cache, UB *header, W len)
 	cache->latestheader_len = len;
 	cache->latestheader[cache->latestheader_len] = '\0';
 
+	datcache_setlatestheaderupdatedflag(cache);
+
 	return 0;
 }
 
@@ -339,7 +426,7 @@ LOCAL VOID datcache_setupretrinfo(datcache_t *cache, UB *retrinfo, W len)
 	}
 }
 
-LOCAL W datcache_preparerec_forwritefile(W fd, W rectype, W subtype)
+LOCAL W datcache_preparerec_forwritefile(W fd, W rectype, W subtype, Bool need_truncute)
 {
 	W err;
 
@@ -356,9 +443,11 @@ LOCAL W datcache_preparerec_forwritefile(W fd, W rectype, W subtype)
 	} else if (err < 0) {
 		return -1; /* TODO */
 	} else {
-		err = trc_rec(fd, 0);
-		if (err < 0) {
-			return -1;
+		if (need_truncute == True) {
+			err = trc_rec(fd, 0);
+			if (err < 0) {
+				return -1;
+			}
 		}
 	}
 
@@ -389,9 +478,29 @@ EXPORT W datcache_datasize(datcache_t *cache)
 	return cache->s_datsize;
 }
 
+LOCAL W datcache_writefile_latestheader(datcache_t *cache)
+{
+	W err;
+
+	if (cache->latestheader_len <= 0) {
+		return 0;
+	}
+
+	err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, True);
+	if (err < 0) {
+		return err;
+	}
+	err = wri_rec(cache->fd, -1, cache->latestheader, cache->latestheader_len, NULL, NULL, 0);
+	if (err < 0) {
+		return err;
+	}
+
+	return 0;
+}
+
 LOCAL W datcache_writefile_residhash(datcache_t *cache)
 {
-	Bool cont;
+	Bool cont, updated;
 	W err, len;
 	residhash_iterator_t iter;
 	TC *idstr;
@@ -400,9 +509,14 @@ LOCAL W datcache_writefile_residhash(datcache_t *cache)
 	COLOR color;
 	UB bin[10];
 
+	updated = datcache_issetidinfoupdatedflag(cache);
+	if (updated == False) {
+		return 0;
+	}
+
 	len = residhash_datanum(&cache->residhash);
 	if (len > 0) {
-		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESIDINFO);
+		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESIDINFO, True);
 		if (err < 0) {
 			return err;
 		}
@@ -442,16 +556,21 @@ LOCAL W datcache_writefile_residhash(datcache_t *cache)
 
 LOCAL W datcache_writefile_resindexhash(datcache_t *cache)
 {
-	Bool cont;
+	Bool cont, updated;
 	W err, len, index;
 	resindexhash_iterator_t iter;
 	UW attr;
 	COLOR color;
 	UB bin[10];
 
+	updated = datcache_issetindexinfoupdatedflag(cache);
+	if (updated == False) {
+		return 0;
+	}
+
 	len = resindexhash_datanum(&cache->resindexhash);
 	if (len > 0) {
-		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESINDEXINFO);
+		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RESINDEXINFO, True);
 		if (err < 0) {
 			return err;
 		}
@@ -493,36 +612,120 @@ LOCAL W datcache_writefile_resindexhash(datcache_t *cache)
 	return 0;
 }
 
-EXPORT W datcache_writefile(datcache_t *cache)
+LOCAL W datcache_writedat_appended(datcache_t *cache)
+{
+	W err, size;
+	F_STATE fstate;
+	datcache_data_t *cache_data;
+
+	err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_MAIN, 0, False);
+	if (err < 0) {
+		return err;
+	}
+
+	err = loc_rec(cache->fd, F_LOCK);
+	if (err < 0) {
+		return err;
+	}
+
+	err = ofl_sts(cache->fd, NULL, &fstate, NULL);
+	if (err < 0) {
+		loc_rec(cache->fd, F_UNLOCK);
+		return err;
+	}
+	if (cache->mtime_open != fstate.f_mtime) {
+		loc_rec(cache->fd, F_UNLOCK);
+		return 0;
+	}
+	err = rea_rec(cache->fd, 0, NULL, 0, &size, NULL);
+	if (err < 0) {
+		loc_rec(cache->fd, F_UNLOCK);
+		return err;
+	}
+	if (cache->recsize_open != size) {
+		loc_rec(cache->fd, F_UNLOCK);
+		return 0;
+	}
+
+	cache_data = datcache_data_next(&(cache->datalist));
+	for (;;) {
+		if (cache_data == &(cache->datalist)) {
+			break;
+		}
+
+		err = wri_rec(cache->fd, -1, cache_data->data, cache_data->len, NULL, NULL, 0);
+		if (err < 0) {
+			loc_rec(cache->fd, F_UNLOCK);
+			return err;
+		}
+
+		cache_data = datcache_data_next(cache_data);
+	}
+
+	loc_rec(cache->fd, F_UNLOCK);
+
+	return 0;
+}
+
+LOCAL W datcache_writedat_allupdateded(datcache_t *cache)
 {
 	W err;
 	datcache_data_t *cache_data;
 
-	/* TODO: blush up implementation for speed up. */
-	if (cache->s_datsize > 0) {
-		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_MAIN, 0);
+	if (cache->s_datsize <= 0) {
+		return 0;
+	}
+
+	err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_MAIN, 0, True);
+	if (err < 0) {
+		return err;
+	}
+
+	err = loc_rec(cache->fd, F_LOCK);
+	if (err < 0) {
+		return err;
+	}
+
+	cache_data = &(cache->datalist);
+	for (;;) {
+		err = wri_rec(cache->fd, -1, cache_data->data, cache_data->len, NULL, NULL, 0);
 		if (err < 0) {
+			loc_rec(cache->fd, F_UNLOCK);
 			return err;
 		}
-		cache_data = &(cache->datalist);
-		for (;;) {
-			err = wri_rec(cache->fd, -1, cache_data->data, cache_data->len, NULL, NULL, 0);
-			if (err < 0) {
-				return err;
-			}
-			cache_data = datcache_data_next(cache_data);
-			if (cache_data == &(cache->datalist)) {
-				break;
-			}
+		cache_data = datcache_data_next(cache_data);
+		if (cache_data == &(cache->datalist)) {
+			break;
 		}
 	}
 
-	if (cache->latestheader_len > 0) {
-		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER);
+	loc_rec(cache->fd, F_UNLOCK);
+
+	return 0;
+}
+
+EXPORT W datcache_writefile(datcache_t *cache)
+{
+	W err;
+	Bool appended, reseted, header_updated;
+
+	appended = datcache_issetappendedflag(cache);
+	reseted = datcache_issetresetedflag(cache);
+	header_updated = datcache_issetlatestheaderupdatedflag(cache);
+
+	if (appended == True) {
+		if (reseted == True) {
+			err = datcache_writedat_allupdateded(cache);
+		} else {
+			err = datcache_writedat_appended(cache);
+		}
 		if (err < 0) {
 			return err;
 		}
-		err = wri_rec(cache->fd, -1, cache->latestheader, cache->latestheader_len, NULL, NULL, 0);
+	}
+
+	if (header_updated == True) {
+		err = datcache_writefile_latestheader(cache);
 		if (err < 0) {
 			return err;
 		}
@@ -542,6 +745,7 @@ EXPORT W datcache_writefile(datcache_t *cache)
 
 EXPORT W datcache_addresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW attr, COLOR color)
 {
+	datcache_setidinfoupdatedflag(cache);
 	return residhash_adddata(&cache->residhash, idstr, idstr_len, attr, color);
 }
 
@@ -552,11 +756,13 @@ EXPORT W datcache_searchresiddata(datcache_t *cache, TC *idstr, W idstr_len, UW 
 
 EXPORT VOID datcache_removeresiddata(datcache_t *cache, TC *idstr, W idstr_len)
 {
+	datcache_setidinfoupdatedflag(cache);
 	residhash_removedata(&cache->residhash, idstr, idstr_len);
 }
 
 EXPORT W datcache_addresindexdata(datcache_t *cache, W index, UW attr, COLOR color)
 {
+	datcache_setindexinfoupdatedflag(cache);
 	return resindexhash_adddata(&cache->resindexhash, index, attr, color);
 }
 
@@ -567,6 +773,7 @@ EXPORT W datcache_searchresindexdata(datcache_t *cache, W index, UW *attr, COLOR
 
 EXPORT VOID datcache_removeresindexdata(datcache_t *cache, W index)
 {
+	datcache_setindexinfoupdatedflag(cache);
 	resindexhash_removedata(&cache->resindexhash, index);
 }
 
@@ -721,9 +928,14 @@ EXPORT datcache_t* datcache_new(VID vid)
 	W fd,err;
 	W size, retrinfo_len, header_len;
 	UB *rawdat, *retrinfo, *header;
+	F_STATE fstate;
 
 	fd = oopn_obj(vid, NULL, F_READ|F_WRITE, NULL);
 	if (fd < 0) {
+		return NULL;
+	}
+	err = ofl_sts(fd, NULL, &fstate, NULL);
+	if (err < 0) {
 		return NULL;
 	}
 	semid = cre_sem(1, SEM_EXCL|DELEXIT);
@@ -767,12 +979,15 @@ EXPORT datcache_t* datcache_new(VID vid)
 		cls_fil(fd);
 		return NULL;
 	}
+	cache->flag = 0;
 	cache->fd = fd;
+	cache->mtime_open = fstate.f_mtime;
 	cache->semid = semid;
 	QueInit(&(cache->datalist.queue));
 	cache->datalist.data = rawdat;
 	cache->datalist.len = size;
 	cache->s_datsize = size;
+	cache->recsize_open = size;
 	cache->context = NULL;
 
 	datcache_setupretrinfo(cache, retrinfo, retrinfo_len);
