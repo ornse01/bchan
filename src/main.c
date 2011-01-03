@@ -1455,7 +1455,7 @@ LOCAL W bchan_networkrequest(bchan_t *bchan)
 	return 0;
 }
 
-LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
+LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch, UW stat)
 {
 	W l,t,r,b,l1,t1,r1,b1,scr;
 
@@ -1546,6 +1546,11 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch)
 		break;
 	case KC_PF5:
 		bchan_networkrequest(bchan);
+		break;
+	case TK_E: /* temporary */
+		if (stat & ES_CMD) {
+			killme(bchan);
+		}
 		break;
 	}
 }
@@ -1905,13 +1910,13 @@ EXPORT	W	MAIN(MESSAGE *msg)
 				if (wev0.s.stat & ES_CMD) {	/*Ì¿Îá¥­¡¼*/
 					bchan_setupmenu(&bchan);
 					i = mfnd_key(bchan.mnid, wev0.e.data.key.code);
-					if (i >= 0) {
+					if (i > 0) {
 						bchan_selectmenu(&bchan, i);
 						break;
 					}
 				}
 			case	EV_AUTKEY:
-				keydwn(&bchan, wev0.e.data.key.keytop, wev0.e.data.key.code);
+				keydwn(&bchan, wev0.e.data.key.keytop, wev0.e.data.key.code, wev0.e.stat);
 				break;
 			case	EV_INACT:
 				pdsp_msg(NULL);
