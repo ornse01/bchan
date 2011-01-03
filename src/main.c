@@ -503,7 +503,7 @@ LOCAL VOID bchan_separete_bbs_url(UB *url, W url_len, UB **host, W *host_len, UB
 #define BCHAN_CREATEVOBJ_CANCELED 0
 #define BCHAN_CREATEVOBJ_CREATED 1
 
-LOCAL W bchan_createvobj(bchan_t *bchan, UB *data, W data_len, VOBJSEG *vseg, LINK *lnk)
+LOCAL W bchan_createvobj(UB *data, W data_len, VOBJSEG *vseg, LINK *lnk)
 {
 	W err, fsn_bbb_len, fsn_texedit_len, fsn_viewer_len, url_len, ascii_url_len;
 	TC *url;
@@ -920,7 +920,7 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 		return;
 	}
 
-	err = bchan_createvobj(bchan, start, len, &vrec.vseg, (LINK*)&vrec.vlnk);
+	err = bchan_createvobj(start, len, &vrec.vseg, (LINK*)&vrec.vlnk);
 	if (err < 0) {
 		DP_ER("bchan_createvobj error", err);
 		return;
