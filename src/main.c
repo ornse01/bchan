@@ -42,8 +42,7 @@
 
 #include	"postres.h"
 #include	"poptray.h"
-#include	"confirm.h"
-#include	"window.h"
+#include	"hmi.h"
 #include	"cache.h"
 #include	"parser.h"
 #include	"layoutarray.h"
@@ -140,7 +139,7 @@ LOCAL VOID bchan_hmistate_display_postdenied(bchan_hmistate_t *hmistate, TC *str
 
 typedef struct bchan_t_ bchan_t;
 struct bchan_t_ {
-	W wid;
+	W wid; /* tmp */
 	W gid;
 	W taskid;
 	W mbfid;
@@ -164,6 +163,7 @@ struct bchan_t_ {
 	datlayout_t *layout;
 	datrender_t *render;
 	dattraydata_t *traydata;
+	dathmi_t *hmi;
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
@@ -178,8 +178,6 @@ struct bchan_t_ {
 #define BCHAN_MESSAGE_RETRIEVER_NOTFOUND 5
 #define BCHAN_MESSAGE_RETRIEVER_ERROR -1
 
-static	WEVENT	wev0;
-
 void	killme(bchan_t *bchan)
 {
 	gset_ptr(PS_BUSY, NULL, -1, -1);
@@ -189,61 +187,47 @@ void	killme(bchan_t *bchan)
 	if (bchan->exectype == EXECREQ) {
 		oend_prc(bchan->vid, NULL, 0);
 	}
-	if (bchan->wid > 0) {
-		wcls_wnd(bchan->wid, CLR);
-	}
+	dathmi_delete(bchan->hmi);
 	ext_prc(0);
+}
+
+LOCAL VOID bchan_draw(bchan_t *bchan)
+{
+	RECT r;
+	do {
+		if (datwindow_startredisp(bchan->window, &r) == 0) {
+			break;
+		}
+		datwindow_eraseworkarea(bchan->window, &r);
+		datrender_draw(bchan->render, &r);
+	} while (datwindow_endredisp(bchan->window) > 0);
 }
 
 LOCAL VOID bchan_scroll(VP arg, W dh, W dv)
 {
 	bchan_t *bchan = (bchan_t*)arg;
 	datrender_scrollviewrect(bchan->render, dh, dv);
-	wscr_wnd(bchan->wid, NULL, -dh, -dv, W_MOVE|W_RDSET);
+	datwindow_scrollworkarea(bchan->window, -dh, -dv);
+	bchan_draw(bchan);
 }
 
-LOCAL VOID bchan_draw(VP arg, RECT *r)
+LOCAL VOID bchan_resize(bchan_t *bchan, SIZE newsize)
 {
-	bchan_t *bchan = (bchan_t*)arg;
-	datrender_draw(bchan->render, r);
-}
-
-LOCAL VOID bchan_resize(VP arg)
-{
-	bchan_t *bchan = (bchan_t*)arg;
 	W l,t,r,b;
-	RECT work;
-	Bool workchange = False;
-
-	wget_wrk(bchan->wid, &work);
-	if (work.c.left != 0) {
-		work.c.left = 0;
-		workchange = True;
-	}
-	if (work.c.top != 0) {
-		work.c.top = 0;
-		workchange = True;
-	}
-	wset_wrk(bchan->wid, &work);
-	gset_vis(bchan->gid, work);
 
 	datrender_getviewrect(bchan->render, &l, &t, &r, &b);
 
-	r = l + work.c.right - work.c.left;
-	b = t + work.c.bottom - work.c.top;
+	r = l + newsize.h;
+	b = t + newsize.v;
 
 	datrender_setviewrect(bchan->render, l, t, r, b);
 	datwindow_setworkrect(bchan->window, l, t, r, b);
 
-	if (workchange == True) {
-		wera_wnd(bchan->wid, NULL);
-		wreq_dsp(bchan->wid);
-	}
+	bchan_draw(bchan);
 }
 
-LOCAL VOID bchan_close(VP arg)
+LOCAL VOID bchan_close(bchan_t *bchan, Bool save)
 {
-	bchan_t *bchan = (bchan_t*)arg;
 	/* TODO: guard request event W_DELETE and W_FINISH. */
 	datcache_writefile(bchan->cache);
 	killme(bchan);
@@ -663,7 +647,7 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyindex(bchan_t *bchan, W resindex, UW a
 
 	bchan_layout_res_updateattrbyindex(layout_res, attr, color);
 
-	wreq_dsp(bchan->wid);
+	datwindow_requestredisp(bchan->window);
 }
 
 LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, UW attr, COLOR color)
@@ -687,10 +671,10 @@ LOCAL VOID bchan_butdn_updatedisplayinfobyid(bchan_t *bchan, TC *id, W id_len, U
 		bchan_layout_res_updateattrbyid(layout_res, attr, color);
 	}
 
-	wreq_dsp(bchan->wid);
+	datwindow_requestredisp(bchan->window);
 }
 
-LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
+LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, PNT evpos, W resindex)
 {
 	W size, err;
 	PNT pos;
@@ -724,8 +708,8 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 		err = bchan_resnumbermenu_setngselected(&bchan->resnumbermenu, False);
 	}
 
-	pos.x = wev->s.pos.x;
-	pos.y = wev->s.pos.y;
+	pos.x = evpos.x;
+	pos.y = evpos.y;
 	gcnv_abs(bchan->gid, &pos);
 	err = bchan_resnumbermenu_select(&bchan->resnumbermenu, pos);
 	if (err == BCHAN_RESNUMBERMENU_SELECT_PUSHTRAY) {
@@ -749,7 +733,7 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, WEVENT *wev, W resindex)
 	}
 }
 
-LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
+LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, PNT evpos, W resindex)
 {
 	W id_len, size, err;
 	TC *id;
@@ -791,8 +775,8 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 		err = bchan_residmenu_setngselected(&bchan->residmenu, False);
 	}
 
-	pos.x = wev->s.pos.x;
-	pos.y = wev->s.pos.y;
+	pos.x = evpos.x;
+	pos.y = evpos.y;
 	gcnv_abs(bchan->gid, &pos);
 	err = bchan_residmenu_select(&bchan->residmenu, pos);
 	if (err == BCHAN_RESIDMENU_SELECT_PUSHTRAY) {
@@ -816,24 +800,22 @@ LOCAL VOID bchan_butdn_pressresheaderid(bchan_t *bchan, WEVENT *wev, W resindex)
 	}
 }
 
-LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
+LOCAL VOID bchan_butdn(bchan_t *bchan, W dck, PNT evpos)
 {
-	bchan_t *bchan = (bchan_t*)arg;
 	W fnd, event_type, type, len, dx, dy, err, size, resindex;
 	WID wid_butup;
 	GID gid;
 	RECT r, r0;
 	UB *start;
-	PNT p1, pos;
+	PNT p1, pos, pos_butup;
 	TR_VOBJREC vrec;
 	TRAYREC tr_rec;
 	WEVENT paste_ev;
 	SEL_RGN	sel;
 
-	/* TODO: change to same as bchanl's commonwindow */
-	switch (wchk_dck(wev->s.time)) {
+	switch (dck) {
 	case	W_CLICK:
-		fnd = datrender_findaction(bchan->render, wev->s.pos, &r, &type, &start, &len, &resindex);
+		fnd = datrender_findaction(bchan->render, evpos, &r, &type, &start, &len, &resindex);
 		if (fnd == 0) {
 			return;
 		}
@@ -849,23 +831,23 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	case	W_PRESS:
 	}
 
-	fnd = datrender_findaction(bchan->render, wev->s.pos, &r, &type, &start, &len, &resindex);
+	fnd = datrender_findaction(bchan->render, evpos, &r, &type, &start, &len, &resindex);
 	if (fnd == 0) {
 		return;
 	}
 	if (type == DATRENDER_FINDACTION_TYPE_NUMBER) {
-		bchan_butdn_pressnumber(bchan, wev, resindex);
+		bchan_butdn_pressnumber(bchan, evpos, resindex);
 		return;
 	}
 	if (type == DATRENDER_FINDACTION_TYPE_RESID) {
-		bchan_butdn_pressresheaderid(bchan, wev, resindex);
+		bchan_butdn_pressresheaderid(bchan, evpos, resindex);
 		return;
 	}
 	if (type != DATRENDER_FINDACTION_TYPE_URL) {
 		return;
 	}
 
-	gid = wsta_drg(bchan->wid, 0);
+	gid = datwindow_startdrag(bchan->window);
 	if (gid < 0) {
 		DP_ER("wsta_drg error:", gid);
 		return;
@@ -874,10 +856,10 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	gget_fra(gid, &r0);
 	gset_vis(gid, r0);
 
-	dx = r.c.left - wev->s.pos.x;
-	dy = r.c.top - wev->s.pos.y;
+	dx = r.c.left - evpos.x;
+	dy = r.c.top - evpos.y;
 
-	p1 = wev->s.pos;
+	p1 = evpos;
 	sel.sts = 0;
 	sel.rgn.r.c.left = r.c.left;
 	sel.rgn.r.c.top = r.c.top;
@@ -887,9 +869,8 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 
 	gset_ptr(PS_GRIP, NULL, -1, -1);
 	for (;;) {
-		event_type = wget_drg(&pos, wev);
+		event_type = datwindow_getdrag(bchan->window, &pos, &wid_butup, &pos_butup);
 		if (event_type == EV_BUTUP) {
-			wid_butup = wev->s.wid;
 			break;
 		}
 		if (event_type != EV_NULL) {
@@ -908,7 +889,7 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	}
 	gset_ptr(PS_SELECT, NULL, -1, -1);
 	adsp_sel(gid, &sel, 0);
-	wend_drg();
+	datwindow_enddrag(bchan->window);
 
 	/* BUTUP on self window or no window or system message panel */
 	if ((wid_butup == bchan->wid)||(wid_butup == 0)||(wid_butup == -1)) {
@@ -943,8 +924,8 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	}
 
 	paste_ev.r.type = EV_REQUEST;
-	paste_ev.r.r.p.rightbot.x = wev->s.pos.x + dx;
-	paste_ev.r.r.p.rightbot.y = wev->s.pos.y + dy;
+	paste_ev.r.r.p.rightbot.x = pos_butup.x + dx;
+	paste_ev.r.r.p.rightbot.y = pos_butup.y + dy;
 	paste_ev.r.cmd = W_PASTE;
 	paste_ev.r.wid = wid_butup;
 	err = wsnd_evt(&paste_ev);
@@ -971,19 +952,21 @@ LOCAL VOID bchan_butdn(VP arg, WEVENT *wev)
 	req_tmg(0, BCHAN_MESSAGE_RETRIEVER_UPDATE);
 }
 
-LOCAL W bchan_paste(VP arg, WEVENT *wev)
+LOCAL VOID bchan_paste(bchan_t *bchan)
 {
-	bchan_t *bchan = (bchan_t*)arg;
 	W err;
+	PNT p;
 	postresdata_t *post = NULL;
 
 	err = poptray_gettraydata(&post);
 	if (err < 0) {
-		return 1; /* NACK */
+		datwindow_responsepasterequest(bchan->window, /* NACK */ 1, NULL);
+		return;
 	}
 
-	wev->r.r.p.rightbot.x = 0x8000;
-	wev->r.r.p.rightbot.y = 0x8000;
+	p.x = 0x8000;
+	p.y = 0x8000;
+	datwindow_responsepasterequest(bchan->window, /* ACK */ 0, &p);
 
 	if (post != NULL) {
 		if (bchan->resdata != NULL) {
@@ -993,18 +976,15 @@ LOCAL W bchan_paste(VP arg, WEVENT *wev)
 		cfrmwindow_setpostresdata(bchan->confirm, post);
 		bchan->request_confirm_open = True;
 	}
-
-	return 0; /* ACK */
 }
 
-LOCAL VOID bchan_recieveclose(VP arg, W send)
+LOCAL VOID bchan_recieveclose(bchan_t *bchan, Bool send)
 {
-	bchan_t *bchan = (bchan_t*)arg;
 	TC *dmsg = NULL;
 	W dmsg_len, err;
 
 	DP(("bchan_recieveclose = %d\n", send));
-	if (send == 1) {
+	if (send == True) {
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_BUSY);
 		err = ressubmit_respost(bchan->submit, bchan->resdata, &dmsg, &dmsg_len);
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
@@ -1081,7 +1061,7 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	}
 }
 
-LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
+LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, dathmi_t *hmi, datwindow_t *datwindow, cfrmwindow_t *cfrmwindow)
 {
 	GID gid;
 	datcache_t *cache;
@@ -1090,17 +1070,14 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	datlayout_t *layout;
 	datrender_t *render;
 	dattraydata_t *traydata;
-	datwindow_t *window;
 	datretriever_t *retriever;
 	ressubmit_t *submit;
-	cfrmwindow_t *confirm;
 	MENUITEM *mnitem_dbx, *mnitem;
 	MNID mnid;
-	static	RECT	r0 = {{200, 80, 500+7, 230+30}};
 	RECT w_work;
 	W len, err;
 
-	gid = wget_gid(wid);
+	gid = datwindow_getGID(datwindow);
 
 	cache = datcache_new(vid);
 	if (cache == NULL) {
@@ -1133,11 +1110,6 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 		DP_ER("dattraydata_new error", 0);
 		goto error_traydata;
 	}
-	window = datwindow_new(wid, bchan_scroll, bchan_draw, bchan_resize, bchan_close, bchan_butdn, bchan_paste, bchan);
-	if (window == NULL) {
-		DP_ER("datwindow_new error", 0);
-		goto error_window;
-	}
 	retriever = datretriever_new(cache);
 	if (retriever == NULL) {
 		DP_ER("datretriever_new error", 0);
@@ -1147,11 +1119,6 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	if (submit == NULL) {
 		DP_ER("ressubmit_new error", 0);
 		goto error_submit;
-	}
-	confirm = cfrmwindow_new(&r0, wid, bchan_recieveclose, bchan, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
-	if (confirm == NULL) {
-		DP_ER("dfrmwindow_new error", 0);
-		goto error_confirm;
 	}
 	err = dget_dtp(8, BCHAN_DBX_MENU_TEST, (void**)&mnitem_dbx);
 	if (err < 0) {
@@ -1183,9 +1150,9 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 
 	bchan_hmistate_initialize(&bchan->hmistate);
 
-	wget_wrk(wid, &w_work);
+	datwindow_getworkrect(datwindow, &w_work);
 	datrender_setviewrect(render, 0, 0, w_work.c.right, w_work.c.bottom);
-	datwindow_setworkrect(window, 0, 0, w_work.c.right, w_work.c.bottom);
+	datwindow_setworkrect(datwindow, 0, 0, w_work.c.right, w_work.c.bottom);
 
 	if (exectype == EXECREQ) {
 		osta_prc(vid, wid);
@@ -1204,10 +1171,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid, W exectype)
 	bchan->layout = layout;
 	bchan->render = render;
 	bchan->traydata = traydata;
-	bchan->window = window;
+	bchan->hmi = hmi;
+	bchan->window = datwindow;
 	bchan->retriever = retriever;
 	bchan->submit = submit;
-	bchan->confirm = confirm;
+	bchan->confirm = cfrmwindow;
 	bchan->resdata = NULL;
 	bchan->mnitem = mnitem;
 	bchan->mnid = mnid;
@@ -1222,14 +1190,10 @@ error_mcre_men:
 	free(mnitem);
 error_mnitem:
 error_dget_dtp:
-	cfrmwindow_delete(confirm);
-error_confirm:
 	ressubmit_delete(submit);
 error_submit:
 	datretriever_delete(retriever);
 error_retriever:
-	datwindow_delete(window);
-error_window:
 	dattraydata_delete(traydata);
 error_traydata:
 	datrender_delete(render);
@@ -1306,15 +1270,15 @@ LOCAL VOID bchan_relayout(bchan_t *bchan)
 		bchan_layout_appendres(bchan, res);
 	}
 
-	wget_wrk(bchan->wid, &w_work);
+	datwindow_getworkrect(bchan->window, &w_work);
 
 	datlayout_getdrawrect(bchan->layout, &l, &t, &r, &b);
 	datwindow_setdrawrect(bchan->window, l, t, r, b);
 
 	title = datlayout_gettitle(bchan->layout);
-	wset_tit(bchan->wid, -1, title, 0);
+	datwindow_settitle(bchan->window, title);
 
-	wreq_dsp(bchan->wid);
+	datwindow_requestredisp(bchan->window);
 }
 
 LOCAL VOID bchan_update(bchan_t *bchan)
@@ -1339,12 +1303,12 @@ LOCAL VOID bchan_update(bchan_t *bchan)
 		bchan_layout_appendres(bchan, res);
 	}
 
-	wget_wrk(bchan->wid, &w_work);
+	datwindow_getworkrect(bchan->window, &w_work);
 
 	datlayout_getdrawrect(bchan->layout, &l, &t, &r, &b);
 	datwindow_setdrawrect(bchan->window, l, t, r, b);
 
-	wreq_dsp(bchan->wid);
+	datwindow_requestredisp(bchan->window);
 }
 
 LOCAL VOID bchan_retriever_task(W arg)
@@ -1598,7 +1562,7 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 	case 1: /* [表示] */
 		switch(i & 0xff) {
 		case 1: /* [再表示] */
-			wreq_dsp(bchan->wid);
+			datwindow_requestredisp(bchan->window);
 			break;
 		case 2: /* [スレッド情報を表示] */
 			datcache_gethost(bchan->cache, &host, &host_len);
@@ -1647,46 +1611,103 @@ LOCAL VOID bchan_popupmenu(bchan_t *bchan, PNT pos)
 	}
 }
 
-LOCAL VOID receive_message(bchan_t *bchan)
+LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 {
-	MESSAGE msg;
-	W code, err;
+	switch (code) {
+	case BCHAN_MESSAGE_RETRIEVER_UPDATE:
+		bchan_update(bchan);
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(NULL);
+		break;
+	case BCHAN_MESSAGE_RETRIEVER_RELAYOUT:
+		bchan_relayout(bchan);
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(NULL);
+		break;
+	case BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED:
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(bchan->hmistate.msg_notmodified);
+		break;
+	case BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE:
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(bchan->hmistate.msg_nonauthoritative);
+		break;
+	case BCHAN_MESSAGE_RETRIEVER_NOTFOUND:
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(bchan->hmistate.msg_notfound);
+		break;
+	case BCHAN_MESSAGE_RETRIEVER_ERROR:
+		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
+		pdsp_msg(bchan->hmistate.msg_networkerror);
+		break;
+	}
+}
 
-    err = rcv_msg(MM_ALL, &msg, sizeof(MESSAGE), WAIT|NOCLR);
-	if (err >= 0) {
-		if (msg.msg_type == MS_TMOUT) { /* should be use other type? */
-			code = msg.msg_body.TMOUT.code;
-			switch (code) {
-			case BCHAN_MESSAGE_RETRIEVER_UPDATE:
-				bchan_update(bchan);
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(NULL);
-				break;
-			case BCHAN_MESSAGE_RETRIEVER_RELAYOUT:
-				bchan_relayout(bchan);
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(NULL);
-				break;
-			case BCHAN_MESSAGE_RETRIEVER_NOTMODIFIED:
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(bchan->hmistate.msg_notmodified);
-				break;
-			case BCHAN_MESSAGE_RETRIEVER_NONAUTHORITATIVE:
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(bchan->hmistate.msg_nonauthoritative);
-				break;
-			case BCHAN_MESSAGE_RETRIEVER_NOTFOUND:
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(bchan->hmistate.msg_notfound);
-				break;
-			case BCHAN_MESSAGE_RETRIEVER_ERROR:
-				bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
-				pdsp_msg(bchan->hmistate.msg_networkerror);
+LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
+{
+	W i, err;
+	dathmievent_t *evt;
+
+	err = dathmi_getevent(hmi, &evt);
+	if (err < 0) {
+		/* TODO: error handling or ext_prc ? */
+		return;
+	}
+
+	switch (evt->type) {
+	case DATHMIEVENT_TYPE_COMMON_MOUSEMOVE:
+		break;
+	case DATHMIEVENT_TYPE_COMMON_KEYDOWN:
+		if (evt->data.common_keydown.stat & ES_CMD) {	/*命令キー*/
+			bchan_setupmenu(bchan);
+			i = mfnd_key(bchan->mnid, evt->data.common_keydown.keycode);
+			if (i > 0) {
+				bchan_selectmenu(bchan, i);
 				break;
 			}
 		}
+		keydwn(bchan, evt->data.common_keydown.keytop, evt->data.common_keydown.keycode, evt->data.common_keydown.stat);
+		break;
+	case DATHMIEVENT_TYPE_COMMON_MENU:
+		bchan_popupmenu(bchan, evt->data.common_menu.pos);
+		break;
+	case DATHMIEVENT_TYPE_COMMON_TIMEOUT:
+		bchan_handletimeout(bchan, evt->data.common_timeout.code);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_DRAW:
+		bchan_draw(bchan);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_RESIZE:
+		bchan_resize(bchan, evt->data.main_resize.work_sz);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_CLOSE:
+		bchan_close(bchan, evt->data.main_close.save);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_BUTDN:
+		bchan_butdn(bchan, evt->data.main_butdn.type, evt->data.main_butdn.pos);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_PASTE:
+		bchan_paste(bchan);
+		break;
+	case DATHMIEVENT_TYPE_THREAD_SWITCH:
+		if (bchan->request_confirm_open == True) {
+			cfrmwindow_open(bchan->confirm);
+			bchan->request_confirm_open = False;
+		}
+		if (evt->data.main_switch.needdraw == True) {
+			bchan_draw(bchan);
+		}
+		break;
+	case DATHMIEVENT_TYPE_THREAD_MOUSEMOVE:
+		gset_ptr(bchan->hmistate.ptr, NULL, -1, -1);
+		break;
+	case DATHMIEVENT_TYPE_CONFIRM_CLOSE:
+		bchan_recieveclose(bchan, evt->data.confirm_close.send);
+		break;
+	case DATHMIEVENT_TYPE_NONE:
+	default:
+		break;
 	}
-	clr_msg(MM_ALL, MM_ALL);
 }
 
 typedef struct _arg {
@@ -1744,6 +1765,7 @@ LOCAL    CLI_arg   MESSAGEtoargv(const MESSAGE *src)
 EXPORT	W	MAIN(MESSAGE *msg)
 {
 	static	RECT	r0 = {{100, 100, 650+7, 400+30}};
+	static	RECT	r1 = {{200, 80, 500+7, 230+30}};
 	static	TC	tit0[21];
 	static	PAT	pat0 = {{
 		0,
@@ -1752,13 +1774,14 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		0x10efefef,
 		FILL100
 	}};
-	W	i, err, size;
-	WID wid;
+	W	err, size;
 	VID vid;
 	LINK lnk, dbx;
 	CLI_arg arg;
 	bchan_t bchan;
+	dathmi_t *hmi;
 	datwindow_t *window;
+	cfrmwindow_t *cfrmwindow;
 	VOBJSEG vseg = {
 		{{0,0,100,20}},
 		16, 16,
@@ -1823,17 +1846,27 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		break;
 	}
 
-	wid = wopn_wnd(WA_SIZE|WA_HHDL|WA_VHDL|WA_BBAR|WA_RBAR, 0, &r0, NULL, 1, tit0, &pat0, NULL);
-	if (wid < 0) {
+	hmi = dathmi_new();
+	if (hmi == NULL) {
+		ext_prc(0);
+	}
+	window = dathmi_newmainwindow(hmi, &r0, tit0, &pat0, bchan_scroll, &bchan/* Ugh! */);
+	if (window == NULL) {
+		dathmi_delete(hmi);
+		ext_prc(0);
+	}
+	cfrmwindow = dathmi_newconfirmwindow(hmi, &r1, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
+	if (cfrmwindow == NULL) {
+		dathmi_deletemainwindow(hmi, window);
+		dathmi_delete(hmi);
 		ext_prc(0);
 	}
 	
-	err = bchan_initialize(&bchan, vid, wid, msg->msg_type);
+	err = bchan_initialize(&bchan, vid, datwindow_getWID(window), msg->msg_type, hmi, window, cfrmwindow);
 	if (err < 0) {
 		DP_ER("bchan_initialize error", err);
 		ext_prc(0);
 	}
-	window = bchan.window;
 
 	err = bchan_prepare_network(&bchan);
 	if (err < 0) {
@@ -1848,89 +1881,11 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		req_tmg(0, BCHAN_MESSAGE_RETRIEVER_RELAYOUT);
 	}
 
-	wreq_dsp(bchan.wid);
+	datwindow_requestredisp(window);
 
 	/*イベントループ*/
 	for (;;) {
-		wget_evt(&wev0, WAIT);
-		switch (wev0.s.type) {
-			case	EV_NULL:
-				if ((wev0.s.wid != wid)
-					&&(cfrmwindow_compairwid(bchan.confirm, wev0.s.wid) == False)) {
-					gset_ptr(bchan.hmistate.ptr, NULL, -1, -1);
-					break;		/*ウィンドウ外*/
-				}
-				if (wev0.s.cmd != W_WORK)
-					break;		/*作業領域外*/
-				if (wev0.s.stat & ES_CMD)
-					break;	/*命令キーが押されている*/
-				gset_ptr(bchan.hmistate.ptr, NULL, -1, -1);
-				break;
-			case	EV_REQUEST:
-				if (wev0.g.wid == wid) {
-					datwindow_weventrequest(window, &wev0);
-				}
-				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
-					cfrmwindow_weventrequest(bchan.confirm, &wev0);
-				}
-				break;
-			case	EV_RSWITCH:
-				if (wev0.s.wid == wid) {
-					datwindow_weventreswitch(window, &wev0);
-					if (bchan.request_confirm_open == True) {
-						cfrmwindow_open(bchan.confirm);
-						bchan.request_confirm_open = False;
-					}
-				}
-				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
-					cfrmwindow_weventreswitch(bchan.confirm, &wev0);
-				}
-				break;
-			case	EV_SWITCH:
-				if (wev0.s.wid == wid) {
-					datwindow_weventswitch(window, &wev0);
-					if (bchan.request_confirm_open == True) {
-						cfrmwindow_open(bchan.confirm);
-						bchan.request_confirm_open = False;
-					}
-				}
-				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
-					cfrmwindow_weventswitch(bchan.confirm, &wev0);
-				}
-				break;
-			case	EV_BUTDWN:
-				if (wev0.g.wid == wid) {
-					datwindow_weventbutdn(window, &wev0);
-				}
-				if (cfrmwindow_compairwid(bchan.confirm, wev0.s.wid)) {
-					cfrmwindow_weventbutdn(bchan.confirm, &wev0);
-				}
-				break;
-			case	EV_KEYDWN:
-				if (wev0.s.stat & ES_CMD) {	/*命令キー*/
-					bchan_setupmenu(&bchan);
-					i = mfnd_key(bchan.mnid, wev0.e.data.key.code);
-					if (i > 0) {
-						bchan_selectmenu(&bchan, i);
-						break;
-					}
-				}
-			case	EV_AUTKEY:
-				keydwn(&bchan, wev0.e.data.key.keytop, wev0.e.data.key.code, wev0.e.stat);
-				break;
-			case	EV_INACT:
-				pdsp_msg(NULL);
-				break;
-			case	EV_DEVICE:
-				oprc_dev(&wev0.e, NULL, 0);
-				break;
-			case	EV_MSG:
-				receive_message(&bchan);
-				break;
-			case	EV_MENU:
-				bchan_popupmenu(&bchan, wev0.s.pos);
-				break;
-		}
+		bchan_eventdispatch(&bchan, hmi);
 	}
 
 	return 0;
