@@ -142,6 +142,9 @@ EXPORT W bchan_mainmenu_popup(bchan_mainmenu_t *mainmenu, PNT pos)
 		DP_ER("msel_men error:", i);
 		return i;
 	}
+	if (i == 0) {
+		return BCHAN_MAINMENU_SELECT_NOSELECT;
+	}
 	return bchan_mainmenu_select(mainmenu, i);
 }
 
@@ -152,6 +155,9 @@ EXPORT W bchan_mainmenu_keyselect(bchan_mainmenu_t *mainmenu, TC keycode)
 	if (i < 0) {
 		DP_ER("mfnd_key error:", i);
 		return i;
+	}
+	if (i == 0) {
+		return BCHAN_MAINMENU_SELECT_NOSELECT;
 	}
 	return bchan_mainmenu_select(mainmenu, i);
 }
