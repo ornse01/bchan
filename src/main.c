@@ -165,6 +165,7 @@ struct bchan_t_ {
 	datwindow_t *window;
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
+	ngwordwindow_t *ngword;
 
 	postresdata_t *resdata;
 };
@@ -1059,7 +1060,7 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	}
 }
 
-LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, dathmi_t *hmi, datwindow_t *datwindow, cfrmwindow_t *cfrmwindow)
+LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, dathmi_t *hmi, datwindow_t *datwindow, cfrmwindow_t *cfrmwindow, ngwordwindow_t *ngwordwindow)
 {
 	GID gid;
 	datcache_t *cache;
@@ -1161,6 +1162,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	bchan->submit = submit;
 	bchan->confirm = cfrmwindow;
 	bchan->resdata = NULL;
+	bchan->ngword = ngwordwindow;
 
 	return 0;
 
@@ -1540,7 +1542,7 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 		bchan_pushthreadurl(bchan);
 		break;
 	case BCHAN_MAINMENU_SELECT_NGWORD: /* [ＮＧワード設定] */
-		printf("NG WORD\n");
+		ngwordwindow_open(bchan->ngword);
 		break;
 	case BCHAN_MAINMENU_SELECT_THREADFETCH:	/* [スレッド取得] */
 		bchan_networkrequest(bchan);
@@ -1654,6 +1656,7 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 	case DATHMIEVENT_TYPE_CONFIRM_CLOSE:
 		bchan_recieveclose(bchan, evt->data.confirm_close.send);
 		break;
+	case DATHMIEVENT_TYPE_NGWORD_CLOSE:
 	case DATHMIEVENT_TYPE_NONE:
 	default:
 		break;
@@ -1716,6 +1719,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 {
 	static	RECT	r0 = {{100, 100, 650+7, 400+30}};
 	static	RECT	r1 = {{200, 80, 500+7, 230+30}};
+	static	RECT	r2 = {{200, 80, 500+7, 230+30}};
 	static	TC	tit0[21];
 	static	PAT	pat0 = {{
 		0,
@@ -1732,6 +1736,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	dathmi_t *hmi;
 	datwindow_t *window;
 	cfrmwindow_t *cfrmwindow;
+	ngwordwindow_t *ngwordwindow;
 	VOBJSEG vseg = {
 		{{0,0,100,20}},
 		16, 16,
@@ -1802,17 +1807,27 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	}
 	window = dathmi_newmainwindow(hmi, &r0, tit0, &pat0, bchan_scroll, &bchan/* Ugh! */);
 	if (window == NULL) {
+		DP_ER("dathmi_newmainwindow error:", 0);
 		dathmi_delete(hmi);
 		ext_prc(0);
 	}
 	cfrmwindow = dathmi_newconfirmwindow(hmi, &r1, BCHAN_DBX_TEXT_CONFIRM_TITLE, BCHAN_DBX_MS_CONFIRM_POST, BCHAN_DBX_MS_CONFIRM_CANCEL);
 	if (cfrmwindow == NULL) {
+		DP_ER("dathmi_newconfirmwindow error:", 0);
+		dathmi_deletemainwindow(hmi, window);
+		dathmi_delete(hmi);
+		ext_prc(0);
+	}
+	ngwordwindow = dathmi_newngwordwindow(hmi, &r2);
+	if (ngwordwindow == NULL) {
+		DP_ER("dathmi_newngwordwindow error:", 0);
+		dathmi_deleteconfirmwindow(hmi, cfrmwindow);
 		dathmi_deletemainwindow(hmi, window);
 		dathmi_delete(hmi);
 		ext_prc(0);
 	}
 	
-	err = bchan_initialize(&bchan, vid, datwindow_getWID(window), msg->msg_type, hmi, window, cfrmwindow);
+	err = bchan_initialize(&bchan, vid, datwindow_getWID(window), msg->msg_type, hmi, window, cfrmwindow, ngwordwindow);
 	if (err < 0) {
 		DP_ER("bchan_initialize error", err);
 		ext_prc(0);

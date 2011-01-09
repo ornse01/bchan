@@ -384,10 +384,19 @@ struct cfrmwindow_t_ {
 	PNT pos_post;
 };
 
+struct ngwordwindow_t_ {
+	WID wid;
+	GID gid;
+	WID parent;
+	RECT r;
+	PAT bgpat;
+};
+
 struct dathmi_t_ {
 	dathmievent_t evt;
 	datwindow_t *mainwindow;
 	cfrmwindow_t *cfrmwindow;
+	ngwordwindow_t *ngwordwindow;
 };
 
 EXPORT W datwindow_startredisp(datwindow_t *window, RECT *r)
@@ -496,6 +505,14 @@ LOCAL WID dathmi_getcfrmWID(dathmi_t *hmi)
 		return -1;
 	}
 	return hmi->cfrmwindow->wid;
+}
+
+LOCAL WID dathmi_getngwordWID(dathmi_t *hmi)
+{
+	if (hmi->ngwordwindow == NULL) {
+		return -1;
+	}
+	return hmi->ngwordwindow->wid;
 }
 
 /* TODO: same as layoutstyle_resetgenvfont */
@@ -661,6 +678,28 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 	return 0;
 }
 
+EXPORT W ngwordwindow_open(ngwordwindow_t *window)
+{
+	TC test[] = {TK_N, TK_G, 0x256F, 0x213C, 0x2549, 0x306C, 0x4D77,TNULL};
+	WID wid;
+
+	if (window->wid > 0) {
+		return 0;
+	}
+
+	wid = wopn_wnd(WA_SUBW, window->parent, &(window->r), NULL, 2, test, &window->bgpat, NULL);
+	if (wid < 0) {
+		DP_ER("wopn_wnd: ngword error", wid);
+		return wid;
+	}
+	window->wid = wid;
+	window->gid = wget_gid(wid);
+
+	wreq_dsp(wid);
+
+	return 0;
+}
+
 EXPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 {
 	SIZE sz;
@@ -770,12 +809,45 @@ LOCAL VOID cfrmwindow_close(cfrmwindow_t *window, dathmievent_t *evt)
 	evt->data.confirm_close.send = False;
 }
 
+LOCAL VOID ngwordwindow_close(ngwordwindow_t *window)
+{
+	WDSTAT stat;
+	W err;
+
+	stat.attr = WA_STD;
+	err = wget_sts(window->wid, &stat, NULL);
+	if (err >= 0) {
+		window->r = stat.r;
+	}
+	wcls_wnd(window->wid, CLR);
+	window->wid = -1;
+	window->gid = -1;
+}
+
+LOCAL VOID ngwordwindow_draw(ngwordwindow_t *window, RECT *r)
+{
+	cdsp_pwd(window->wid, r, P_RDISP);
+}
+
+LOCAL VOID ngwordwindow_redisp(ngwordwindow_t *window)
+{
+	RECT r;
+	do {
+		if (wsta_dsp(window->wid, &r, NULL) == 0) {
+			break;
+		}
+		wera_wnd(window->wid, &r);
+		ngwordwindow_draw(window, &r);
+	} while (wend_dsp(window->wid) > 0);
+}
+
 LOCAL VOID dathmi_weventrequest(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 {
-	WID main_wid, cfrm_wid;
+	WID main_wid, cfrm_wid, ngword_wid;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
+	ngword_wid = dathmi_getngwordWID(hmi);
 
 	switch (wev->g.cmd) {
 	case	W_REDISP:	/*ºÆÉ½¼¨Í×µá*/
@@ -783,6 +855,8 @@ LOCAL VOID dathmi_weventrequest(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 			evt->type = DATHMIEVENT_TYPE_THREAD_DRAW;
 		} else if (wev->g.wid == cfrm_wid) {
 			cfrmwindow_redisp(hmi->cfrmwindow);
+		} else if (wev->g.wid == ngword_wid) {
+			ngwordwindow_redisp(hmi->ngwordwindow);
 		}
 		break;
 	case	W_PASTE:	/*Å½¹þ¤ßÍ×µá*/
@@ -790,6 +864,8 @@ LOCAL VOID dathmi_weventrequest(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 			evt->type = DATHMIEVENT_TYPE_THREAD_PASTE;
 			memcpy(&hmi->mainwindow->savedwev, wev, sizeof(WEVENT));
 		} else if (wev->g.wid == cfrm_wid) {
+			wrsp_evt(wev, 1); /*NACK*/
+		} else if (wev->g.wid == ngword_wid) {
 			wrsp_evt(wev, 1); /*NACK*/
 		}
 		break;
@@ -800,6 +876,9 @@ LOCAL VOID dathmi_weventrequest(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 			evt->data.main_close.save = True;
 		} else if (wev->g.wid == cfrm_wid) {
 			cfrmwindow_close(hmi->cfrmwindow, evt);
+		} else if (wev->g.wid == ngword_wid) {
+			ngwordwindow_close(hmi->ngwordwindow);
+			evt->type = DATHMIEVENT_TYPE_NGWORD_CLOSE;
 		}
 		break;
 	case	W_FINISH:	/*ÇÑ´þ½ªÎ»*/
@@ -809,6 +888,9 @@ LOCAL VOID dathmi_weventrequest(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 			evt->data.main_close.save = False;
 		} else if (wev->g.wid == cfrm_wid) {
 			cfrmwindow_close(hmi->cfrmwindow, evt);
+		} else if (wev->g.wid == ngword_wid) {
+			ngwordwindow_close(hmi->ngwordwindow);
+			evt->type = DATHMIEVENT_TYPE_NGWORD_CLOSE;
 		}
 		break;
 	}
@@ -896,13 +978,18 @@ LOCAL VOID cfrmwindow_butdnwork(cfrmwindow_t *window, WEVENT *wev, dathmievent_t
 	}
 }
 
+LOCAL VOID ngwordwindow_butdnwork(ngwordwindow_t *window, WEVENT *wev, dathmievent_t *evt)
+{
+}
+
 LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 {
 	W i;
-	WID main_wid, cfrm_wid;
+	WID main_wid, cfrm_wid, ngword_wid;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
+	ngword_wid = dathmi_getngwordWID(hmi);
 
 	switch	(wev->s.cmd) {
 	case	W_PICT:
@@ -915,6 +1002,9 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 				cfrmwindow_close2(hmi->cfrmwindow);
 				evt->type = DATHMIEVENT_TYPE_CONFIRM_CLOSE;
 				evt->data.confirm_close.send = False;
+			} else if (wev->s.wid == ngword_wid) {
+				ngwordwindow_close(hmi->ngwordwindow);
+				evt->type = DATHMIEVENT_TYPE_NGWORD_CLOSE;
 			}
 			return;
 		case	W_PRESS:
@@ -929,6 +1019,8 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 				evt->type = DATHMIEVENT_TYPE_THREAD_DRAW;
 			} else if (wev->s.wid == cfrm_wid) {
 				cfrmwindow_redisp(hmi->cfrmwindow);
+			} else if (wev->s.wid == ngword_wid) {
+				ngwordwindow_redisp(hmi->ngwordwindow);
 			}
 		}
 		return;
@@ -965,6 +1057,7 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 				cfrmwindow_redisp(hmi->cfrmwindow);
 			}
 		}
+		/* ngword window need not do nothing. */
 		return;
 	case	W_RBAR:
 		if (wev->s.wid == main_wid) {
@@ -972,6 +1065,7 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 		} else if (wev->s.wid == cfrm_wid) {
 			windowscroll_weventrbar(&hmi->cfrmwindow->wscr, wev);
 		}
+		/* ngword window need not do nothing. */
 		return;
 	case	W_BBAR:
 		if (wev->s.wid == main_wid) {
@@ -979,6 +1073,7 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 		} else if (wev->s.wid == cfrm_wid) {
 			windowscroll_weventbbar(&hmi->cfrmwindow->wscr, wev);
 		}
+		/* ngword window need not do nothing. */
 		return;
 	case	W_WORK:
 		if (wev->s.wid == main_wid) {
@@ -988,6 +1083,8 @@ LOCAL VOID dathmi_weventbutdn(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 			memcpy(&hmi->mainwindow->savedwev, wev, sizeof(WEVENT));
 		} else if (wev->s.wid == cfrm_wid) {
 			cfrmwindow_butdnwork(hmi->cfrmwindow, wev, evt);
+		} else if (wev->s.wid == ngword_wid) {
+			ngwordwindow_butdnwork(hmi->ngwordwindow, wev, evt);
 		}
 		return;
 	}
@@ -1004,16 +1101,19 @@ LOCAL VOID dathmi_weventswitch(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 
 LOCAL VOID dathmi_weventreswitch(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 {
-	WID main_wid, cfrm_wid;
+	WID main_wid, cfrm_wid, ngword_wid;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
+	ngword_wid = dathmi_getngwordWID(hmi);
 
 	if (wev->s.wid == main_wid) {
 		evt->type = DATHMIEVENT_TYPE_THREAD_SWITCH;
 		evt->data.main_switch.needdraw = True;
 	} else if (wev->s.wid == cfrm_wid) {
 		cfrmwindow_redisp(hmi->cfrmwindow);
+	} else if (wev->s.wid == ngword_wid) {
+		ngwordwindow_redisp(hmi->ngwordwindow);
 	}
 	//dathmi_weventbutdn(hmi, wev, evt); TODO: event queueing
 }
@@ -1036,10 +1136,11 @@ LOCAL VOID dathmi_receivemessage(dathmi_t *hmi, dathmievent_t *evt)
 EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 {
 	WEVENT	wev0;
-	WID main_wid, cfrm_wid;
+	WID main_wid, cfrm_wid, ngword_wid;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
+	ngword_wid = dathmi_getngwordWID(hmi);
 
 	hmi->evt.type = DATHMIEVENT_TYPE_NONE;
 
@@ -1060,6 +1161,7 @@ EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 			hmi->evt.data.main_mousemove.pos = wev0.s.pos;
 			hmi->evt.data.main_mousemove.stat = wev0.s.stat;
 		} else if (wev0.s.wid == cfrm_wid) {
+		} else if (wev0.s.wid == ngword_wid) {
 		}
 		break;
 	case	EV_REQUEST:
@@ -1221,6 +1323,7 @@ EXPORT cfrmwindow_t *dathmi_newconfirmwindow(dathmi_t *hmi, RECT *r, W dnum_titl
 	W main_wid;
 	main_wid = dathmi_getmainWID(hmi);
 	if (main_wid < 0) {
+		DP_ER("main window not exist", 0);
 		return NULL;
 	}
 	hmi->cfrmwindow = cfrmwindow_new(r, main_wid, dnum_title, dnum_post, dnum_cancel);
@@ -1242,6 +1345,60 @@ EXPORT VOID dathmi_deleteconfirmwindow(dathmi_t *hmi, cfrmwindow_t *window)
 	hmi->cfrmwindow = NULL;
 }
 
+LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent)
+{
+	ngwordwindow_t *window;
+	W err;
+
+	window = (ngwordwindow_t*)malloc(sizeof(ngwordwindow_t));
+	if (window == NULL) {
+		DP_ER("malloc error:", 0);
+		return NULL;
+	}
+	window->wid = -1;
+	window->gid = -1;
+	window->parent = parent;
+	window->r = *r;
+	err = wget_inf(WI_PANELBACK, &window->bgpat, sizeof(PAT));
+	if (err != sizeof(PAT)) {
+		DP_ER("wget_inf error:", err);
+		window->bgpat.spat.kind = 0;
+		window->bgpat.spat.hsize = 16;
+		window->bgpat.spat.vsize = 16;
+		window->bgpat.spat.fgcol = 0x10ffffff;
+		window->bgpat.spat.bgcol = 0;
+		window->bgpat.spat.mask = FILL100;
+	}	
+
+	return window;
+}
+
+LOCAL VOID ngwordwindow_delete(ngwordwindow_t *window)
+{
+	if (window->wid > 0) {
+		wcls_wnd(window->wid, CLR);
+	}
+	free(window);
+}
+
+EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r)
+{
+	W main_wid;
+	main_wid = dathmi_getmainWID(hmi);
+	if (main_wid < 0) {
+		DP_ER("main window not exist", 0);
+		return NULL;
+	}
+	hmi->ngwordwindow = ngwordwindow_new(r, main_wid);
+	return hmi->ngwordwindow;
+}
+
+EXPORT VOID dathmi_deletengwordwindow(dathmi_t *hmi, ngwordwindow_t *window)
+{
+	ngwordwindow_delete(window);
+	hmi->ngwordwindow = NULL;
+}
+
 EXPORT dathmi_t* dathmi_new()
 {
 	dathmi_t *hmi;
@@ -1252,12 +1409,16 @@ EXPORT dathmi_t* dathmi_new()
 	}
 	hmi->mainwindow = NULL;
 	hmi->cfrmwindow = NULL;
+	hmi->ngwordwindow = NULL;
 
 	return hmi;
 }
 
 EXPORT VOID dathmi_delete(dathmi_t *hmi)
 {
+	if (hmi->ngwordwindow != NULL) {
+		ngwordwindow_delete(hmi->ngwordwindow);
+	}
 	if (hmi->cfrmwindow != NULL) {
 		cfrmwindow_delete(hmi->cfrmwindow);
 	}
