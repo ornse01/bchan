@@ -59,6 +59,10 @@
 .MLIST_RESNUMBER	=	46
 .GMENU_RESID	=	47
 .MLIST_RESID	=	48
+.SS_NGWORD_LIST	=	49
+.MS_NGWORD_DELETE	=	50
+.TB_NGWORD_APPEND	=	51
+.MS_NGWORD_APPEND	=	52
 
 ---------
 -- data type = PARTS_DATA
@@ -88,6 +92,37 @@
 	OFFSET:L+20		-- name ()
 	{0L 0L -1L 0L}		-- PARTDISP
 	MC_STR "確認\0"
+
+	{# SS_NGWORD_LIST 0 0} 	-- data number
+	SS_PARTS+P_DISP+P_NOSEL:L	-- type
+	{0H 0H 180H 100H}	-- r
+	0L			-- cv
+	OFFSET:L+20		-- name
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "\0"
+
+	{# MS_NGWORD_DELETE 0 0} 	-- data number
+	MS_PARTS+P_DISP:L	-- type
+	{0H 0H 80H 24H}	-- r
+	0L			-- cv (unused)
+	OFFSET:L+20		-- name ()
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "削除\0"
+
+	{# TB_NGWORD_APPEND 0 0} 	-- data number
+	TB_PARTS+P_DISP:L	-- type
+	{0H 0H 180H 24H}	-- r
+	128L			-- txsize
+	0L			-- text
+	{0L 0L -1L 0L}		-- PARTDISP
+
+	{# MS_NGWORD_APPEND 0 0} 	-- data number
+	MS_PARTS+P_DISP:L	-- type
+	{0H 0H 80H 24H}	-- r
+	0L			-- cv (unused)
+	OFFSET:L+20		-- name ()
+	{0L 0L -1L 0L}		-- PARTDISP
+	MC_STR "追加\0"
 
 ---------
 -- data type = TEXT_DATA

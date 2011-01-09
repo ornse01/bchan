@@ -87,6 +87,10 @@
 #define BCHAN_DBX_MSGTEXT_CANTRETRIEVE 44
 #define BCHAN_DBX_GMENU_RESNUMBER 45
 #define BCHAN_DBX_GMENU_RESID 47
+#define BCHAN_DBX_SS_NGWORD_LIST 49
+#define BCHAN_DBX_MS_NGWORD_DELETE 50
+#define BCHAN_DBX_TB_NGWORD_APPEND 51
+#define BCHAN_DBX_MS_NGWORD_APPEND 52
 
 typedef struct bchan_hmistate_t_ bchan_hmistate_t;
 struct bchan_hmistate_t_ {
@@ -1816,7 +1820,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		dathmi_delete(hmi);
 		ext_prc(0);
 	}
-	ngwordwindow = dathmi_newngwordwindow(hmi, &r2);
+	ngwordwindow = dathmi_newngwordwindow(hmi, &r2, BCHAN_DBX_SS_NGWORD_LIST, BCHAN_DBX_MS_NGWORD_DELETE, BCHAN_DBX_TB_NGWORD_APPEND, BCHAN_DBX_MS_NGWORD_APPEND);
 	if (ngwordwindow == NULL) {
 		DP_ER("dathmi_newngwordwindow error:", 0);
 		dathmi_deleteconfirmwindow(hmi, cfrmwindow);

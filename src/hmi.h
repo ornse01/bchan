@@ -169,7 +169,7 @@ IMPORT VOID dathmi_delete(dathmi_t *hmi);
 IMPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt);
 IMPORT datwindow_t* dathmi_newmainwindow(dathmi_t *hmi, RECT *r, TC *title, PAT *bgpat, datwindow_scrollcalback scrollcallback, VP arg);
 IMPORT cfrmwindow_t *dathmi_newconfirmwindow(dathmi_t *hmi, RECT *r, W dnum_title, W dnum_post, W dnum_cancel);
-IMPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r);
+IMPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r, W dnum_list, W dnum_delete, W dnum_input, W dnum_append);
 IMPORT VOID dathmi_deletemainwindow(dathmi_t *hmi, datwindow_t *window);
 IMPORT VOID dathmi_deleteconfirmwindow(dathmi_t *hmi, cfrmwindow_t *window);
 IMPORT VOID dathmi_deletengwordwindow(dathmi_t *hmi, ngwordwindow_t *window);

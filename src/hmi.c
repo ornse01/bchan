@@ -390,6 +390,14 @@ struct ngwordwindow_t_ {
 	WID parent;
 	RECT r;
 	PAT bgpat;
+	W dnum_list;
+	W dnum_delete;
+	W dnum_input;
+	W dnum_append;
+	PAID ss_list_id;
+	PAID ms_delete_id;
+	PAID tb_input_id;
+	PAID ms_append_id;
 };
 
 struct dathmi_t_ {
@@ -682,6 +690,7 @@ EXPORT W ngwordwindow_open(ngwordwindow_t *window)
 {
 	TC test[] = {TK_N, TK_G, 0x256F, 0x213C, 0x2549, 0x306C, 0x4D77,TNULL};
 	WID wid;
+	PNT pos;
 
 	if (window->wid > 0) {
 		return 0;
@@ -694,6 +703,31 @@ EXPORT W ngwordwindow_open(ngwordwindow_t *window)
 	}
 	window->wid = wid;
 	window->gid = wget_gid(wid);
+
+	pos.x = 0;
+	pos.y = 0;
+	window->ss_list_id = copn_par(wid, window->dnum_list, &pos);
+	if (window->ss_list_id < 0) {
+		DP_ER("copn_par list error:", window->ss_list_id);
+	}
+	pos.x = 0;
+	pos.y = 100;
+	window->ms_delete_id = copn_par(wid, window->dnum_delete, &pos);
+	if (window->ms_delete_id < 0) {
+		DP_ER("copn_par delete error:", window->ms_delete_id);
+	}
+	pos.x = 0;
+	pos.y = 130;
+	window->tb_input_id = copn_par(wid, window->dnum_input, &pos);
+	if (window->tb_input_id < 0) {
+		DP_ER("copn_par input error:", window->tb_input_id);
+	}
+	pos.x = 0;
+	pos.y = 160;
+	window->ms_append_id = copn_par(wid, window->dnum_append, &pos);
+	if (window->ms_append_id < 0) {
+		DP_ER("copn_par append error:", window->ms_append_id);
+	}
 
 	wreq_dsp(wid);
 
@@ -1345,7 +1379,7 @@ EXPORT VOID dathmi_deleteconfirmwindow(dathmi_t *hmi, cfrmwindow_t *window)
 	hmi->cfrmwindow = NULL;
 }
 
-LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent)
+LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
 {
 	ngwordwindow_t *window;
 	W err;
@@ -1368,7 +1402,15 @@ LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent)
 		window->bgpat.spat.fgcol = 0x10ffffff;
 		window->bgpat.spat.bgcol = 0;
 		window->bgpat.spat.mask = FILL100;
-	}	
+	}
+	window->dnum_list = dnum_list;
+	window->dnum_delete = dnum_delete;
+	window->dnum_input = dnum_input;
+	window->dnum_append = dnum_append;
+	window->ss_list_id = -1;
+	window->ms_delete_id = -1;
+	window->tb_input_id = -1;
+	window->ms_append_id = -1;
 
 	return window;
 }
@@ -1381,7 +1423,7 @@ LOCAL VOID ngwordwindow_delete(ngwordwindow_t *window)
 	free(window);
 }
 
-EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r)
+EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
 {
 	W main_wid;
 	main_wid = dathmi_getmainWID(hmi);
@@ -1389,7 +1431,7 @@ EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r)
 		DP_ER("main window not exist", 0);
 		return NULL;
 	}
-	hmi->ngwordwindow = ngwordwindow_new(r, main_wid);
+	hmi->ngwordwindow = ngwordwindow_new(r, main_wid, dnum_list, dnum_delete, dnum_input, dnum_append);
 	return hmi->ngwordwindow;
 }
 
