@@ -1721,7 +1721,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 {
 	static	RECT	r0 = {{100, 100, 650+7, 400+30}};
 	static	RECT	r1 = {{200, 80, 500+7, 230+30}};
-	static	RECT	r2 = {{200, 80, 500+7, 230+30}};
+	static	PNT	p2 = {200, 80};
 	static	TC	tit0[21];
 	static	PAT	pat0 = {{
 		0,
@@ -1820,7 +1820,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		dathmi_delete(hmi);
 		ext_prc(0);
 	}
-	ngwordwindow = dathmi_newngwordwindow(hmi, &r2, BCHAN_DBX_SS_NGWORD_LIST, BCHAN_DBX_MS_NGWORD_DELETE, BCHAN_DBX_TB_NGWORD_APPEND, BCHAN_DBX_MS_NGWORD_APPEND);
+	ngwordwindow = dathmi_newngwordwindow(hmi, &p2, BCHAN_DBX_SS_NGWORD_LIST, BCHAN_DBX_MS_NGWORD_DELETE, BCHAN_DBX_TB_NGWORD_APPEND, BCHAN_DBX_MS_NGWORD_APPEND);
 	if (ngwordwindow == NULL) {
 		DP_ER("dathmi_newngwordwindow error:", 0);
 		dathmi_deleteconfirmwindow(hmi, cfrmwindow);

@@ -1379,7 +1379,7 @@ EXPORT VOID dathmi_deleteconfirmwindow(dathmi_t *hmi, cfrmwindow_t *window)
 	hmi->cfrmwindow = NULL;
 }
 
-LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
+LOCAL ngwordwindow_t* ngwordwindow_new(PNT *p, WID parent, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
 {
 	ngwordwindow_t *window;
 	W err;
@@ -1392,7 +1392,9 @@ LOCAL ngwordwindow_t* ngwordwindow_new(RECT *r, WID parent, W dnum_list, W dnum_
 	window->wid = -1;
 	window->gid = -1;
 	window->parent = parent;
-	window->r = *r;
+	window->r.p.lefttop = *p;
+	window->r.p.rightbot.x = p->x + 300 + 7;
+	window->r.p.rightbot.y = p->y + 200 + 30;
 	err = wget_inf(WI_PANELBACK, &window->bgpat, sizeof(PAT));
 	if (err != sizeof(PAT)) {
 		DP_ER("wget_inf error:", err);
@@ -1423,7 +1425,7 @@ LOCAL VOID ngwordwindow_delete(ngwordwindow_t *window)
 	free(window);
 }
 
-EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
+EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, PNT *p, W dnum_list, W dnum_delete, W dnum_input, W dnum_append)
 {
 	W main_wid;
 	main_wid = dathmi_getmainWID(hmi);
@@ -1431,7 +1433,7 @@ EXPORT ngwordwindow_t *dathmi_newngwordwindow(dathmi_t *hmi, RECT *r, W dnum_lis
 		DP_ER("main window not exist", 0);
 		return NULL;
 	}
-	hmi->ngwordwindow = ngwordwindow_new(r, main_wid, dnum_list, dnum_delete, dnum_input, dnum_append);
+	hmi->ngwordwindow = ngwordwindow_new(p, main_wid, dnum_list, dnum_delete, dnum_input, dnum_append);
 	return hmi->ngwordwindow;
 }
 
