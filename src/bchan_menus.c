@@ -94,13 +94,16 @@ LOCAL W bchan_mainmenu_select(bchan_mainmenu_t *mainmenu, W i)
 			break;
 		}
 		break;
-	case 2:	/* [操作] */
+	case 2:	/* [編集] */
 		switch(i & 0xff) {
 		case 1: /* [スレタイをトレーに複写] */
 			ret = BCHAN_MAINMENU_SELECT_TITLETOTRAY;
 			break;
 		case 2: /* [スレッドＵＲＬをトレーに複写] */
 			ret = BCHAN_MAINMENU_SELECT_URLTOTRAY;
+			break;
+		case 3: /* [ＮＧワード設定] */
+			ret = BCHAN_MAINMENU_SELECT_NGWORD;
 			break;
 		default:
 			ret = BCHAN_MAINMENU_SELECT_NOSELECT;

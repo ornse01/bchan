@@ -46,6 +46,7 @@ IMPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool
 #define BCHAN_MAINMENU_SELECT_TITLETOTRAY 4
 #define BCHAN_MAINMENU_SELECT_URLTOTRAY 5
 #define BCHAN_MAINMENU_SELECT_THREADFETCH 6
+#define BCHAN_MAINMENU_SELECT_NGWORD 7
 IMPORT W bchan_mainmenu_popup(bchan_mainmenu_t *mainmenu, PNT pos);
 IMPORT W bchan_mainmenu_keyselect(bchan_mainmenu_t *mainmenu, TC keycode);
 

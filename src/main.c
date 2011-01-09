@@ -1539,7 +1539,10 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 	case BCHAN_MAINMENU_SELECT_URLTOTRAY: /* [スレッドＵＲＬをトレーに複写] */
 		bchan_pushthreadurl(bchan);
 		break;
-	case BCHAN_MAINMENU_SELECT_THREADFETCH:	/* [操作] */
+	case BCHAN_MAINMENU_SELECT_NGWORD: /* [ＮＧワード設定] */
+		printf("NG WORD\n");
+		break;
+	case BCHAN_MAINMENU_SELECT_THREADFETCH:	/* [スレッド取得] */
 		bchan_networkrequest(bchan);
 		break;
 	}
