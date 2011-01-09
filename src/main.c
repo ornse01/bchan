@@ -1520,7 +1520,7 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 	UB *host, *board, *thread;
 	W host_len, board_len, thread_len;
 
-	switch(sel) {
+	switch (sel) {
 	case BCHAN_MAINMENU_SELECT_CLOSE: /* [½ªÎ»] */
 		killme(bchan);
 		break;
