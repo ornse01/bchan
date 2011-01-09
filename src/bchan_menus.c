@@ -30,6 +30,7 @@
 #include	<bstdio.h>
 #include	<bstdlib.h>
 #include	<btron/hmi.h>
+#include	<btron/vobj.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -38,6 +39,159 @@
 # define DP(arg) /**/
 # define DP_ER(msg, err) /**/
 #endif
+
+#define BCHAN_MAINMENU_ITEMNUM_WINDOW 4
+#define BCHAN_MAINMENU_ITEMNUM_GADGET (BCHAN_MAINMENU_ITEMNUM_WINDOW + 1)
+
+EXPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable)
+{
+	/* [操作] -> [スレタイをトレーに複写] */
+	if (titleenable == False) {
+		mchg_atr(mainmenu->mnid, (2 << 8)|1, M_INACT);
+	} else {
+		mchg_atr(mainmenu->mnid, (2 << 8)|1, M_ACT);
+	}
+
+	/* [表示] -> [スレッド情報を表示] */
+	/* [編集] -> [スレッドＵＲＬをトレーに複写] */
+	/* [操作] -> [スレッド取得] */
+	if (networkenable == False) {
+		mchg_atr(mainmenu->mnid, (1 << 8)|2, M_INACT);
+		mchg_atr(mainmenu->mnid, (2 << 8)|2, M_INACT);
+		mchg_atr(mainmenu->mnid, (3 << 8)|1, M_INACT);
+	} else {
+		mchg_atr(mainmenu->mnid, (1 << 8)|2, M_ACT);
+		mchg_atr(mainmenu->mnid, (2 << 8)|2, M_ACT);
+		mchg_atr(mainmenu->mnid, (3 << 8)|1, M_ACT);
+	}
+
+	wget_dmn(&(mainmenu->mnitem[BCHAN_MAINMENU_ITEMNUM_WINDOW].ptr));
+	mset_itm(mainmenu->mnid, BCHAN_MAINMENU_ITEMNUM_WINDOW, mainmenu->mnitem+BCHAN_MAINMENU_ITEMNUM_WINDOW);
+	oget_men(0, NULL, &(mainmenu->mnitem[BCHAN_MAINMENU_ITEMNUM_GADGET].ptr), NULL, NULL);
+	mset_itm(mainmenu->mnid, BCHAN_MAINMENU_ITEMNUM_GADGET, mainmenu->mnitem+BCHAN_MAINMENU_ITEMNUM_GADGET);
+
+	return 0; /* tmp */
+}
+
+LOCAL W bchan_mainmenu_select(bchan_mainmenu_t *mainmenu, W i)
+{
+	W ret;
+
+	switch(i >> 8) {
+	case 0: /* [終了] */
+		ret = BCHAN_MAINMENU_SELECT_CLOSE;
+		break;
+	case 1: /* [表示] */
+		switch(i & 0xff) {
+		case 1: /* [再表示] */
+			ret = BCHAN_MAINMENU_SELECT_REDISPLAY;
+			break;
+		case 2: /* [スレッド情報を表示] */
+			ret = BCHAN_MAINMENU_SELECT_THREADINFO;
+			break;
+		default:
+			ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+			break;
+		}
+		break;
+	case 2:	/* [操作] */
+		switch(i & 0xff) {
+		case 1: /* [スレタイをトレーに複写] */
+			ret = BCHAN_MAINMENU_SELECT_TITLETOTRAY;
+			break;
+		case 2: /* [スレッドＵＲＬをトレーに複写] */
+			ret = BCHAN_MAINMENU_SELECT_URLTOTRAY;
+			break;
+		default:
+			ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+			break;
+		}
+		break;
+	case 3:	/* [操作] */
+		switch(i & 0xff) {
+		case 1: /* [スレッド取得] */
+			ret = BCHAN_MAINMENU_SELECT_THREADFETCH;
+			break;
+		default:
+			ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+			break;
+		}
+		break;
+	case BCHAN_MAINMENU_ITEMNUM_WINDOW: /* [ウィンドウ] */
+		wexe_dmn(i);
+		ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+		break;
+	case BCHAN_MAINMENU_ITEMNUM_GADGET: /* [小物] */
+	    oexe_apg(0, i);
+		ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+		break;
+	default:
+		ret = BCHAN_MAINMENU_SELECT_NOSELECT;
+		break;
+	}
+
+	return ret;
+}
+
+EXPORT W bchan_mainmenu_popup(bchan_mainmenu_t *mainmenu, PNT pos)
+{
+	W i;
+	gset_ptr(PS_SELECT, NULL, -1, -1);
+	i = msel_men(mainmenu->mnid, pos);
+	if (i < 0) {
+		DP_ER("msel_men error:", i);
+		return i;
+	}
+	return bchan_mainmenu_select(mainmenu, i);
+}
+
+EXPORT W bchan_mainmenu_keyselect(bchan_mainmenu_t *mainmenu, TC keycode)
+{
+	W i;
+	i = mfnd_key(mainmenu->mnid, keycode);
+	if (i < 0) {
+		DP_ER("mfnd_key error:", i);
+		return i;
+	}
+	return bchan_mainmenu_select(mainmenu, i);
+}
+
+EXPORT W bchan_mainmenu_initialize(bchan_mainmenu_t *mainmenu, W dnum)
+{
+	MENUITEM *mnitem_dbx, *mnitem;
+	MNID mnid;
+	W len, err;
+
+	err = dget_dtp(8, dnum, (void**)&mnitem_dbx);
+	if (err < 0) {
+		DP_ER("dget_dtp error:", err);
+		return err;
+	}
+	len = dget_siz((B*)mnitem_dbx);
+	mnitem = malloc(len);
+	if (mnitem == NULL) {
+		DP_ER("mallod error", err);
+		return -1;
+	}
+	memcpy(mnitem, mnitem_dbx, len);
+	mnid = mcre_men(BCHAN_MAINMENU_ITEMNUM_WINDOW+2, mnitem, NULL);
+	if (mnid < 0) {
+		DP_ER("mcre_men error", mnid);
+		free(mnitem);
+		return -1;
+	}
+
+	mainmenu->mnid = mnid;
+	mainmenu->mnitem = mnitem;
+
+	return 0;
+}
+
+EXPORT VOID bchan_mainmenu_finalize(bchan_mainmenu_t *mainmenu)
+{
+	mdel_men(mainmenu->mnid);
+	free(mainmenu->mnitem);
+}
 
 EXPORT W bchan_resnumbermenu_setngselected(bchan_resnumbermenu_t *resnumbermenu, Bool selected)
 {

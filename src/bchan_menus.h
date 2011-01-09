@@ -30,6 +30,25 @@
 #ifndef __BCHAN_MENUS_H__
 #define __BCHAN_MENUS_H__
 
+struct bchan_mainmenu_t_ {
+	MENUITEM *mnitem;
+	MNID mnid;
+};
+typedef struct bchan_mainmenu_t_ bchan_mainmenu_t;
+
+IMPORT W bchan_mainmenu_initialize(bchan_mainmenu_t *mainmenu, W dnum);
+IMPORT VOID bchan_mainmenu_finalize(bchan_mainmenu_t *mainmenu);
+IMPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable);
+#define BCHAN_MAINMENU_SELECT_NOSELECT 0
+#define BCHAN_MAINMENU_SELECT_CLOSE 1
+#define BCHAN_MAINMENU_SELECT_REDISPLAY 2
+#define BCHAN_MAINMENU_SELECT_THREADINFO 3
+#define BCHAN_MAINMENU_SELECT_TITLETOTRAY 4
+#define BCHAN_MAINMENU_SELECT_URLTOTRAY 5
+#define BCHAN_MAINMENU_SELECT_THREADFETCH 6
+IMPORT W bchan_mainmenu_popup(bchan_mainmenu_t *mainmenu, PNT pos);
+IMPORT W bchan_mainmenu_keyselect(bchan_mainmenu_t *mainmenu, TC keycode);
+
 struct bchan_resnumbermenu_t_ {
 	MNID mnid;
 };

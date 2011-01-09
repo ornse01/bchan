@@ -148,10 +148,8 @@ struct bchan_t_ {
 
 	Bool request_confirm_open; /* TODO: should be other implememt? */
 
-	MENUITEM *mnitem;
-	MNID mnid;
-
 	bchan_hmistate_t hmistate;
+	bchan_mainmenu_t mainmenu;
 	bchan_resnumbermenu_t resnumbermenu;
 	bchan_residmenu_t residmenu;
 
@@ -1072,10 +1070,8 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	dattraydata_t *traydata;
 	datretriever_t *retriever;
 	ressubmit_t *submit;
-	MENUITEM *mnitem_dbx, *mnitem;
-	MNID mnid;
 	RECT w_work;
-	W len, err;
+	W err;
 
 	gid = datwindow_getGID(datwindow);
 
@@ -1120,22 +1116,10 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 		DP_ER("ressubmit_new error", 0);
 		goto error_submit;
 	}
-	err = dget_dtp(8, BCHAN_DBX_MENU_TEST, (void**)&mnitem_dbx);
+	err = bchan_mainmenu_initialize(&bchan->mainmenu, BCHAN_DBX_MENU_TEST);
 	if (err < 0) {
-		DP_ER("dget_dtp error:", err);
-		goto error_dget_dtp;
-	}
-	len = dget_siz((B*)mnitem_dbx);
-	mnitem = malloc(len);
-	if (mnitem == NULL) {
-		DP_ER("mallod error", err);
-		goto error_mnitem;
-	}
-	memcpy(mnitem, mnitem_dbx, len);
-	mnid = mcre_men(BCHAN_MENU_WINDOW+2, mnitem, NULL);
-	if (mnid < 0) {
-		DP_ER("mcre_men error", mnid);
-		goto error_mcre_men;
+		DP_ER("bchan_mainmenu_initialize error", err);
+		goto error_mainmenu_initialize;
 	}
 	err = bchan_resnumbermenu_initialize(&bchan->resnumbermenu, BCHAN_DBX_GMENU_RESNUMBER);
 	if (err < 0) {
@@ -1177,19 +1161,14 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	bchan->submit = submit;
 	bchan->confirm = cfrmwindow;
 	bchan->resdata = NULL;
-	bchan->mnitem = mnitem;
-	bchan->mnid = mnid;
 
 	return 0;
 
 error_residmenu_initialize:
 	bchan_resnumbermenu_finalize(&bchan->resnumbermenu);
 error_resnumbermenu_initialize:
-	mdel_men(mnid);
-error_mcre_men:
-	free(mnitem);
-error_mnitem:
-error_dget_dtp:
+	bchan_mainmenu_finalize(&bchan->mainmenu);
+error_mainmenu_initialize:
 	ressubmit_delete(submit);
 error_submit:
 	datretriever_delete(retriever);
@@ -1522,78 +1501,46 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch, UW stat)
 LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 {
 	TC *str;
+	Bool titleenable, networkenable;
 
-	/* [操作] -> [スレタイをトレーに複写] */
 	str = datlayout_gettitle(bchan->layout);
 	if (str == NULL) {
-		mchg_atr(bchan->mnid, (2 << 8)|1, M_INACT);
+		titleenable = False;
 	} else {
-		mchg_atr(bchan->mnid, (2 << 8)|1, M_ACT);
+		titleenable = True;
 	}
 
-	/* [表示] -> [スレッド情報を表示] */
-	/* [編集] -> [スレッドＵＲＬをトレーに複写] */
-	/* [操作] -> [スレッド取得] */
-	if (datretriever_isenablenetwork(bchan->retriever) == False) {
-		mchg_atr(bchan->mnid, (1 << 8)|2, M_INACT);
-		mchg_atr(bchan->mnid, (2 << 8)|2, M_INACT);
-		mchg_atr(bchan->mnid, (3 << 8)|1, M_INACT);
-	} else {
-		mchg_atr(bchan->mnid, (1 << 8)|2, M_ACT);
-		mchg_atr(bchan->mnid, (2 << 8)|2, M_ACT);
-		mchg_atr(bchan->mnid, (3 << 8)|1, M_ACT);
-	}
+	networkenable = datretriever_isenablenetwork(bchan->retriever);
 
-	wget_dmn(&(bchan->mnitem[BCHAN_MENU_WINDOW].ptr));
-	mset_itm(bchan->mnid, BCHAN_MENU_WINDOW, bchan->mnitem+BCHAN_MENU_WINDOW);
-	oget_men(0, NULL, &(bchan->mnitem[BCHAN_MENU_WINDOW+1].ptr), NULL, NULL);
-	mset_itm(bchan->mnid, BCHAN_MENU_WINDOW+1, bchan->mnitem+BCHAN_MENU_WINDOW+1);
+	bchan_mainmenu_setup(&bchan->mainmenu, titleenable, networkenable);
 }
 
-LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
+LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 {
 	UB *host, *board, *thread;
 	W host_len, board_len, thread_len;
 
-	switch(i >> 8) {
-	case 0: /* [終了] */
+	switch(sel) {
+	case BCHAN_MAINMENU_SELECT_CLOSE: /* [終了] */
 		killme(bchan);
 		break;
-	case 1: /* [表示] */
-		switch(i & 0xff) {
-		case 1: /* [再表示] */
-			datwindow_requestredisp(bchan->window);
-			break;
-		case 2: /* [スレッド情報を表示] */
-			datcache_gethost(bchan->cache, &host, &host_len);
-			datcache_getborad(bchan->cache, &board, &board_len);
-			datcache_getthread(bchan->cache, &thread, &thread_len);
-			bchan_panels_threadinfo(host, host_len, board, board_len, thread, thread_len);
-			break;
-		}
+	case BCHAN_MAINMENU_SELECT_REDISPLAY: /* [再表示] */
+		datwindow_requestredisp(bchan->window);
 		break;
-	case 2:	/* [操作] */
-		switch(i & 0xff) {
-		case 1: /* [スレタイをトレーに複写] */
-			bchan_pushthreadtitle(bchan);
-			break;
-		case 2: /* [スレッドＵＲＬをトレーに複写] */
-			bchan_pushthreadurl(bchan);
-			break;
-		}
+	case BCHAN_MAINMENU_SELECT_THREADINFO: /* [スレッド情報を表示] */
+		datcache_gethost(bchan->cache, &host, &host_len);
+		datcache_getborad(bchan->cache, &board, &board_len);
+		datcache_getthread(bchan->cache, &thread, &thread_len);
+		bchan_panels_threadinfo(host, host_len, board, board_len, thread, thread_len);
 		break;
-	case 3:	/* [操作] */
-		switch(i & 0xff) {
-		case 1: /* [スレッド取得] */
-			bchan_networkrequest(bchan);
-			break;
-		}
+	case BCHAN_MAINMENU_SELECT_TITLETOTRAY:	/* [スレタイをトレーに複写] */
+		bchan_pushthreadtitle(bchan);
 		break;
-	case BCHAN_MENU_WINDOW: /* [ウィンドウ] */
-		wexe_dmn(i);
+	case BCHAN_MAINMENU_SELECT_URLTOTRAY: /* [スレッドＵＲＬをトレーに複写] */
+		bchan_pushthreadurl(bchan);
 		break;
-	case BCHAN_MENU_WINDOW+1: /* [小物] */
-	    oexe_apg(0, i);
+	case BCHAN_MAINMENU_SELECT_THREADFETCH:	/* [操作] */
+		bchan_networkrequest(bchan);
 		break;
 	}
 	return;
@@ -1601,13 +1548,13 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W i)
 
 LOCAL VOID bchan_popupmenu(bchan_t *bchan, PNT pos)
 {
-	W	i;
+	W sel;
 
 	bchan_setupmenu(bchan);
 	gset_ptr(PS_SELECT, NULL, -1, -1);
-	i = msel_men(bchan->mnid, pos);
-	if (i > 0) {
-		bchan_selectmenu(bchan, i);
+	sel = bchan_mainmenu_popup(&bchan->mainmenu, pos);
+	if (sel > 0) {
+		bchan_selectmenu(bchan, sel);
 	}
 }
 
@@ -1645,7 +1592,7 @@ LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 
 LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 {
-	W i, err;
+	W sel, err;
 	dathmievent_t *evt;
 
 	err = dathmi_getevent(hmi, &evt);
@@ -1660,9 +1607,9 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 	case DATHMIEVENT_TYPE_COMMON_KEYDOWN:
 		if (evt->data.common_keydown.stat & ES_CMD) {	/*命令キー*/
 			bchan_setupmenu(bchan);
-			i = mfnd_key(bchan->mnid, evt->data.common_keydown.keycode);
-			if (i > 0) {
-				bchan_selectmenu(bchan, i);
+			sel = bchan_mainmenu_keyselect(&bchan->mainmenu, evt->data.common_keydown.keycode);
+			if (sel > 0) {
+				bchan_selectmenu(bchan, sel);
 				break;
 			}
 		}
