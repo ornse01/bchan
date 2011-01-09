@@ -88,8 +88,6 @@
 #define BCHAN_DBX_GMENU_RESNUMBER 45
 #define BCHAN_DBX_GMENU_RESID 47
 
-#define BCHAN_MENU_WINDOW 4
-
 typedef struct bchan_hmistate_t_ bchan_hmistate_t;
 struct bchan_hmistate_t_ {
 	PTRSTL ptr;
