@@ -26,6 +26,7 @@
 
 #include    "hmi.h"
 #include	"tadlib.h"
+#include	"wordlist.h"
 
 #include	<bstdio.h>
 #include	<bstdlib.h>
@@ -34,7 +35,6 @@
 #include	<btron/btron.h>
 #include	<btron/hmi.h>
 #include	<btron/vobj.h>
-#include	<bsys/queue.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
 # define DP(arg) printf arg
@@ -352,51 +352,6 @@ LOCAL W windowscroll_initialize(windowscroll_t *wscr, WID target, windowscroll_s
 
 LOCAL VOID windowscroll_finalize(windowscroll_t *wscr)
 {
-}
-
-struct ngwordlist_node_t_ {
-	QUEUE queue;
-	TC *str;
-	W len;
-};
-typedef struct ngwordlist_node_t_ ngwordlist_node_t;
-
-LOCAL ngwordlist_node_t* ngwordlist_node_new(TC *str, W strlen)
-{
-	ngwordlist_node_t *node;
-
-	node = (ngwordlist_node_t*)malloc(sizeof(ngwordlist_node_t));
-	if (node == NULL) {
-		return NULL;
-	}
-
-	node->str = malloc(sizeof(TC)*strlen);
-	if (node->str == NULL) {
-		free(node);
-		return NULL;
-	}
-	memcpy(node->str, str, sizeof(TC)*strlen);
-	node->len = strlen;
-	QueInit(&(node->queue));
-
-	return node;
-}
-
-LOCAL VOID ngwordlist_node_delete(ngwordlist_node_t *node)
-{
-	QueRemove(&(node->queue));
-	free(node->str);
-	free(node);
-}
-
-LOCAL VOID ngwordlist_node_insert(ngwordlist_node_t *entry, ngwordlist_node_t *node)
-{
-	QueInsert(&(entry->queue), &(node->queue));
-}
-
-LOCAL ngwordlist_node_t* ngwordlist_node_next(ngwordlist_node_t *node)
-{
-	return (ngwordlist_node_t *)(node->queue.next);
 }
 
 struct datwindow_t_ {
