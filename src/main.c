@@ -1658,6 +1658,12 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 	case DATHMIEVENT_TYPE_CONFIRM_CLOSE:
 		bchan_recieveclose(bchan, evt->data.confirm_close.send);
 		break;
+	case DATHMIEVENT_TYPE_NGWORD_APPEND:
+		ngwordwindow_appendword(bchan->ngword, evt->data.ngword_append.str, evt->data.ngword_append.len);
+		break;
+	case DATHMIEVENT_TYPE_NGWORD_REMOVE:
+		ngwordwindow_removeword(bchan->ngword, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
+		break;
 	case DATHMIEVENT_TYPE_NGWORD_CLOSE:
 	case DATHMIEVENT_TYPE_NONE:
 	default:

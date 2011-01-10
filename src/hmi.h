@@ -61,6 +61,8 @@ IMPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 typedef struct ngwordwindow_t_ ngwordwindow_t;
 
 IMPORT W ngwordwindow_open(ngwordwindow_t *window);
+IMPORT W ngwordwindow_appendword(ngwordwindow_t *window, TC *str, W len);
+IMPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len);
 
 enum {
 	DATHMIEVENT_TYPE_NONE,
@@ -76,6 +78,8 @@ enum {
 	DATHMIEVENT_TYPE_THREAD_SWITCH,
 	DATHMIEVENT_TYPE_THREAD_MOUSEMOVE,
 	DATHMIEVENT_TYPE_CONFIRM_CLOSE,
+	DATHMIEVENT_TYPE_NGWORD_APPEND,
+	DATHMIEVENT_TYPE_NGWORD_REMOVE,
 	DATHMIEVENT_TYPE_NGWORD_CLOSE,
 };
 
@@ -130,6 +134,16 @@ struct cfrmwindow_eventdata_close_t_ {
 	Bool send;
 };
 
+struct ngwordwindow_eventdata_append_t_ {
+	TC *str;
+	W len;
+};
+
+struct ngwordwindow_eventdata_remove_t_ {
+	TC *str;
+	W len;
+};
+
 typedef struct dathmi_eventdata_mousemove_t_ dathmi_eventdata_mousemove_t;
 typedef struct dathmi_eventdata_keydown_t_ dathmi_eventdata_keydown_t;
 typedef struct dathmi_eventdata_menu_t_ dathmi_eventdata_menu_t;
@@ -142,6 +156,8 @@ typedef struct datwindow_eventdata_paste_t_ datwindow_eventdata_paste_t;
 typedef struct datwindow_eventdata_switch_t_ datwindow_eventdata_switch_t;
 typedef struct datwindow_eventdata_mousemove_t_ datwindow_eventdata_mousemove_t;
 typedef struct cfrmwindow_eventdata_close_t_ cfrmwindow_eventdata_close_t;
+typedef struct ngwordwindow_eventdata_append_t_ ngwordwindow_eventdata_append_t;
+typedef struct ngwordwindow_eventdata_remove_t_ ngwordwindow_eventdata_remove_t;
 
 struct dathmievent_t_ {
 	W type;
@@ -158,6 +174,8 @@ struct dathmievent_t_ {
 		datwindow_eventdata_switch_t main_switch;
 		datwindow_eventdata_mousemove_t main_mousemove;
 		cfrmwindow_eventdata_close_t confirm_close;
+		ngwordwindow_eventdata_append_t ngword_append;
+		ngwordwindow_eventdata_remove_t ngword_remove;
 	} data;
 };
 typedef struct dathmievent_t_ dathmievent_t;
