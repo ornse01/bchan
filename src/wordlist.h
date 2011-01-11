@@ -42,4 +42,26 @@ IMPORT VOID ngwordlist_node_delete(ngwordlist_node_t *node);
 IMPORT VOID ngwordlist_node_insert(ngwordlist_node_t *entry, ngwordlist_node_t *node);
 IMPORT ngwordlist_node_t* ngwordlist_node_next(ngwordlist_node_t *node);
 
+struct wordlist_t_ {
+	ngwordlist_node_t node;
+};
+typedef struct wordlist_t_ wordlist_t;
+
+IMPORT W wordlist_initialize(wordlist_t *list);
+IMPORT VOID wordlist_finalize(wordlist_t *list);
+IMPORT Bool wordlist_searchwordbyindex(wordlist_t *list, W index, TC **str, W *len);
+IMPORT Bool wordlist_checkexistbyword(wordlist_t *list, TC *str, W len);
+IMPORT W wordlist_appendword(wordlist_t *list, TC *str, W len);
+IMPORT Bool wordlist_removeword(wordlist_t *list, TC *str, W len);
+
+struct wordlist_iterator_t_ {
+	wordlist_t *wordlist;
+	ngwordlist_node_t *node;
+};
+typedef struct wordlist_iterator_t_ wordlist_iterator_t;
+
+IMPORT VOID wordlist_iterator_initialize(wordlist_iterator_t *iter, wordlist_t *target);
+IMPORT VOID wordlist_iterator_finalize(wordlist_iterator_t *iter);
+IMPORT Bool wordlist_iterator_next(wordlist_iterator_t *iter, TC **str, W *len);
+
 #endif
