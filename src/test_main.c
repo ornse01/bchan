@@ -1,7 +1,7 @@
 /*
  * test_main.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -54,6 +54,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_postres_main();
 	test_tadimf_main();
 	test_array_main();
+	test_wordlist_main();
 
 	return 0;
 }

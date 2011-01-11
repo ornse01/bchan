@@ -1,7 +1,7 @@
 /*
  * test.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -65,6 +65,9 @@ IMPORT VOID test_postres_main();
 IMPORT VOID test_tadimf_main();
 
 /* test_array.c */
-EXPORT VOID test_array_main();
+IMPORT VOID test_array_main();
+
+/* test_wordlist.c */
+IMPORT VOID test_wordlist_main();
 
 #endif
