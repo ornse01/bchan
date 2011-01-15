@@ -944,6 +944,7 @@ LOCAL VOID ngwordwindow_close(ngwordwindow_t *window)
 	if (err >= 0) {
 		window->r = stat.r;
 	}
+	cdel_pwd(window->wid, NOCLR);
 	wcls_wnd(window->wid, CLR);
 	window->wid = -1;
 	window->gid = -1;
@@ -1607,6 +1608,7 @@ LOCAL VOID ngwordwindow_delete(ngwordwindow_t *window)
 {
 	wordlist_finalize(&window->wordlist);
 	if (window->wid > 0) {
+		cdel_pwd(window->wid, NOCLR);
 		wcls_wnd(window->wid, CLR);
 	}
 	free(window);
