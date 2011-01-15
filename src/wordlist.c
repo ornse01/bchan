@@ -128,6 +128,7 @@ EXPORT W wordlist_appendword(wordlist_t *list, TC *str, W len)
 
 	newnode = wordlist_node_new(str, len);
 	if (newnode == NULL) {
+		DP_ER("wordlist_node_new error", 0);
 		return -1; /* TODO */
 	}
 	wordlist_node_insert(newnode, &list->node);
@@ -143,6 +144,11 @@ EXPORT Bool wordlist_removeword(wordlist_t *list, TC *str, W len)
 		wordlist_node_delete(node);
 	}
 	return found;
+}
+
+EXPORT Bool wordlist_isempty(wordlist_t *list)
+{
+	return isQueEmpty(&(list->node.queue));
 }
 
 EXPORT W wordlist_initialize(wordlist_t *list)

@@ -595,6 +595,83 @@ LOCAL TEST_RESULT test_wordlist_15()
 	return result;
 }
 
+LOCAL TEST_RESULT test_wordlist_16()
+{
+	wordlist_t wlist;
+	W err;
+	Bool empty;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	err = wordlist_initialize(&wlist);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	empty = wordlist_isempty(&wlist);
+	if (empty != True) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	wordlist_finalize(&wlist);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_wordlist_17()
+{
+	wordlist_t wlist;
+	W err;
+	Bool empty;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	err = wordlist_initialize(&wlist);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	err = wordlist_appendword(&wlist, test_wordlist_testdata001, 3);
+	if (err < 0) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	empty = wordlist_isempty(&wlist);
+	if (empty != False) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	wordlist_finalize(&wlist);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_wordlist_18()
+{
+	wordlist_t wlist;
+	W err;
+	Bool empty;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	err = wordlist_initialize(&wlist);
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+
+	err = wordlist_appendword(&wlist, test_wordlist_testdata001, 3);
+	if (err < 0) {
+		result = TEST_RESULT_FAIL;
+	}
+	wordlist_removeword(&wlist, test_wordlist_testdata001, 3);
+
+	empty = wordlist_isempty(&wlist);
+	if (empty != True) {
+		result = TEST_RESULT_FAIL;
+	}
+
+	wordlist_finalize(&wlist);
+
+	return result;
+}
+
 LOCAL VOID test_wordlist_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -627,4 +704,7 @@ EXPORT VOID test_wordlist_main()
 	test_wordlist_printresult(test_wordlist_13, "test_wordlist_13");
 	test_wordlist_printresult(test_wordlist_14, "test_wordlist_14");
 	test_wordlist_printresult(test_wordlist_15, "test_wordlist_15");
+	test_wordlist_printresult(test_wordlist_16, "test_wordlist_16");
+	test_wordlist_printresult(test_wordlist_17, "test_wordlist_17");
+	test_wordlist_printresult(test_wordlist_18, "test_wordlist_18");
 }

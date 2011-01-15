@@ -48,6 +48,7 @@ IMPORT Bool wordlist_searchwordbyindex(wordlist_t *list, W index, TC **str, W *l
 IMPORT Bool wordlist_checkexistbyword(wordlist_t *list, TC *str, W len);
 IMPORT W wordlist_appendword(wordlist_t *list, TC *str, W len);
 IMPORT Bool wordlist_removeword(wordlist_t *list, TC *str, W len);
+IMPORT Bool wordlist_isempty(wordlist_t *list);
 
 struct wordlist_iterator_t_ {
 	wordlist_t *wordlist;
