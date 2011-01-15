@@ -1192,6 +1192,36 @@ error_cache:
 	return -1; /* TODO */
 }
 
+LOCAL W bchan_ngword_copytowindow(bchan_t *bchan, ngwordwindow_t *window)
+{
+	W len, err;
+	TC *str;
+	Bool cont;
+	datcache_ngwordreadcontext_t *context;
+
+	context = datcache_startngwordread(bchan->cache);
+	if (context == NULL) {
+		DP_ER("datcache_startngwordread", 0);
+		return -1;
+	}
+
+	for (;;) {
+		cont = datcache_ngwordreadcontext_nextdata(context, &str, &len);
+		if (cont == False) {
+			break;
+		}
+		err = ngwordwindow_appendword(window, str, len);
+		if (err < 0) {
+			DP_ER("ngwordwindow_appendword error", err);
+			return err;
+		}
+	}
+
+	datcache_endngwordread(bchan->cache, context);
+
+	return 0;
+}
+
 #define BCHAN_LAYOUT_MAXBLOCKING 20
 
 LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
@@ -1600,6 +1630,7 @@ LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 {
 	W sel, err;
+	Bool found;
 	dathmievent_t *evt;
 
 	err = dathmi_getevent(hmi, &evt);
@@ -1659,9 +1690,15 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 		bchan_recieveclose(bchan, evt->data.confirm_close.send);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_APPEND:
+		found = datcache_checkngwordexist(bchan->cache, evt->data.ngword_append.str, evt->data.ngword_append.len);
+		if (found == True) {
+			break;
+		}
+		datcache_appendngword(bchan->cache, evt->data.ngword_append.str, evt->data.ngword_append.len);
 		ngwordwindow_appendword(bchan->ngword, evt->data.ngword_append.str, evt->data.ngword_append.len);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_REMOVE:
+		datcache_removengword(bchan->cache, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
 		ngwordwindow_removeword(bchan->ngword, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_CLOSE:
@@ -1839,6 +1876,12 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	if (err < 0) {
 		DP_ER("bchan_initialize error", err);
 		ext_prc(0);
+	}
+
+	err = bchan_ngword_copytowindow(&bchan, ngwordwindow);
+	if (err < 0) {
+		DP_ER("bchan_ngword_copytowindow error", err);
+		killme(&bchan);
 	}
 
 	err = bchan_prepare_network(&bchan);
