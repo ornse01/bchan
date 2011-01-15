@@ -400,7 +400,7 @@ struct ngwordwindow_t_ {
 	PAID ms_delete_id;
 	PAID tb_input_id;
 	PAID ms_append_id;
-	ngwordlist_node_t node;
+	wordlist_t wordlist;
 	TC strbuf[128];
 	TC *selector;
 };
@@ -693,35 +693,44 @@ EXPORT W cfrmwindow_open(cfrmwindow_t* window)
 
 LOCAL W ngwordwindow_writeswitchselecterstring(ngwordwindow_t *window, TC *str)
 {
-	ngwordlist_node_t *node;
-	W size = 0;
+	wordlist_iterator_t iter;
+	Bool cont;
+	TC *nodestr;
+	W size = 0, nodelen;
 
+	wordlist_iterator_initialize(&iter, &window->wordlist);
 	if (str == NULL) {
-		node = ngwordlist_node_next(&window->node);
-		for (; node != &window->node;) {
+		for (;;) {
+			cont = wordlist_iterator_next(&iter, &nodestr, &nodelen);
+			if (cont == False) {
+				break;
+			}
 			size += 1; /* MC_STR */
-			size += node->len;
-			node = ngwordlist_node_next(node);
+			size += nodelen;
 		}
 		if (size == 0) {
 			size = 1; /* MC_STR */
 		}
 		size++; /* TNULL */
-		return size + 1;
 	} else {
-		node = ngwordlist_node_next(&window->node);
-		for (; node != &window->node;) {
+		for (;;) {
+			cont = wordlist_iterator_next(&iter, &nodestr, &nodelen);
+			if (cont == False) {
+				break;
+			}
+
 			str[size++] = MC_STR;
-			memcpy(str + size, node->str, node->len * sizeof(TC));
-			size += node->len;
-			node = ngwordlist_node_next(node);
+			memcpy(str + size, nodestr, nodelen * sizeof(TC));
+			size += nodelen;
 		}
 		if (size == 0) {
 			str[size++] = MC_STR;
 		}
 		str[size++] = TNULL;
-		return size;
 	}
+
+	wordlist_iterator_finalize(&iter);
+	return size + 1;
 }
 
 LOCAL W ngwordwindow_updatescrollselector(ngwordwindow_t *window)
@@ -791,51 +800,27 @@ EXPORT W ngwordwindow_open(ngwordwindow_t *window)
 
 LOCAL Bool ngwordwindow_searchwordbyindex(ngwordwindow_t *window, W index, TC **str, W *len)
 {
-	ngwordlist_node_t *node;
-	W i;
-
-	i = 0;
-	node = ngwordlist_node_next(&window->node);
-	for (; node != &window->node;) {
-		if (i == index) {
-			*str = node->str;
-			*len = node->len;
-			return True;
-		}
-		node = ngwordlist_node_next(node);
-		i++;
-	}
-
-	return False;
+	return wordlist_searchwordbyindex(&window->wordlist, index, str, len);
 }
 
 EXPORT W ngwordwindow_appendword(ngwordwindow_t *window, TC *str, W len)
 {
-	ngwordlist_node_t *newnode;
+	W err;
 
-	newnode = ngwordlist_node_new(str, len);
-	if (newnode == NULL) {
-		return -1; /* TODO */
+	err = wordlist_appendword(&window->wordlist, str, len);
+	if (err < 0) {
+		return err;
 	}
-	ngwordlist_node_insert(newnode, &window->node);
 	return ngwordwindow_updatescrollselector(window);
 }
 
 EXPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len)
 {
-	ngwordlist_node_t *node;
-	W result;
+	Bool removed;
 
-	node = ngwordlist_node_next(&window->node);
-	for (; node != &window->node;) {
-		if (node->len == len) {
-			result = tc_strncmp(node->str, str, len);
-			if (result == 0) {
-				ngwordlist_node_delete(node);
-				return ngwordwindow_updatescrollselector(window);
-			}
-		}
-		node = ngwordlist_node_next(node);
+	removed = wordlist_removeword(&window->wordlist, str, len);
+	if (removed == True) {
+		return ngwordwindow_updatescrollselector(window);
 	}
 	return 0;
 }
@@ -1612,7 +1597,7 @@ LOCAL ngwordwindow_t* ngwordwindow_new(PNT *p, WID parent, W dnum_list, W dnum_d
 	window->ms_delete_id = -1;
 	window->tb_input_id = -1;
 	window->ms_append_id = -1;
-	QueInit(&(window->node.queue));
+	wordlist_initialize(&window->wordlist);
 	window->selector = NULL;
 
 	return window;
@@ -1620,13 +1605,7 @@ LOCAL ngwordwindow_t* ngwordwindow_new(PNT *p, WID parent, W dnum_list, W dnum_d
 
 LOCAL VOID ngwordwindow_delete(ngwordwindow_t *window)
 {
-	ngwordlist_node_t *node;
-
-	node = ngwordlist_node_next(&window->node);
-	for (; node != &window->node;) {
-		ngwordlist_node_delete(node);
-		node = ngwordlist_node_next(&window->node);
-	}
+	wordlist_finalize(&window->wordlist);
 	if (window->wid > 0) {
 		wcls_wnd(window->wid, CLR);
 	}
