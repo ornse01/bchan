@@ -35,6 +35,7 @@
 #include    "cache.h"
 #include    "residhash.h"
 #include    "resindexhash.h"
+#include    "wordlist.h"
 
 typedef struct datcache_data_t_ datcache_data_t;
 
@@ -49,6 +50,7 @@ struct datcache_data_t_ {
 #define DATCACHE_FLAG_IDINFOUPDATED 0x00000004
 #define DATCACHE_FLAG_INDEXINFOUPDATED 0x00000008
 #define DATCACHE_FLAG_LATESTHEADERUPDATED 0x00000010
+#define DATCACHE_FLAG_NGWORDINFOUPDATED 0x00000020
 
 struct datcache_t_ {
 	UW flag;
@@ -71,12 +73,17 @@ struct datcache_t_ {
 	W latestheader_len;
 	residhash_t residhash;
 	resindexhash_t resindexhash;
+	wordlist_t ngwordlist;
 };
 
 struct datcache_datareadcontext_t_ {
 	datcache_t *datcache;
 	datcache_data_t *current;
 	W index;
+};
+
+struct datcache_ngwordreadcontext_t_ {
+	wordlist_iterator_t iter;
 };
 
 LOCAL datcache_data_t* datcache_data_next(datcache_data_t *data)
@@ -164,6 +171,19 @@ LOCAL VOID datcache_setindexinfoupdatedflag(datcache_t *cache)
 LOCAL Bool datcache_issetindexinfoupdatedflag(datcache_t *cache)
 {
 	if ((cache->flag & DATCACHE_FLAG_INDEXINFOUPDATED) == 0) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL VOID datcache_setngwordinfoupdatedflag(datcache_t *cache)
+{
+	cache->flag = cache->flag | DATCACHE_FLAG_NGWORDINFOUPDATED;
+}
+
+LOCAL Bool datcache_issetngwordinfoupdatedflag(datcache_t *cache)
+{
+	if ((cache->flag & DATCACHE_FLAG_NGWORDINFOUPDATED) == 0) {
 		return False;
 	}
 	return True;
@@ -612,6 +632,62 @@ LOCAL W datcache_writefile_resindexhash(datcache_t *cache)
 	return 0;
 }
 
+LOCAL W datcache_writefile_ngwordlist(datcache_t *cache)
+{
+	Bool cont, updated, empty;
+	W err;
+	wordlist_iterator_t iter;
+	TC *str;
+	W str_len;
+	UB bin[10];
+
+	updated = datcache_issetngwordinfoupdatedflag(cache);
+	if (updated == False) {
+		return 0;
+	}
+
+	empty = wordlist_isempty(&cache->ngwordlist);
+	if (empty == False) {
+		err = datcache_preparerec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_NGWORDINFO, True);
+		if (err < 0) {
+			wordlist_iterator_finalize(&iter);
+			return err;
+		}
+
+		wordlist_iterator_initialize(&iter, &cache->ngwordlist);
+		for (;;) {
+			cont = wordlist_iterator_next(&iter, &str, &str_len);
+			if (cont == False) {
+				break;
+			}
+
+			*(UH*)bin = str_len * 2;
+			err = wri_rec(cache->fd, -1, bin, 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			err = wri_rec(cache->fd, -1, (UB*)str, str_len * 2, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+			*(UH*)bin = 2;
+			*(UH*)(bin + 2) = 0;
+			err = wri_rec(cache->fd, -1, bin, 4, NULL, NULL, 0);
+			if (err < 0) {
+				return err;
+			}
+		}
+		wordlist_iterator_finalize(&iter);
+	} else {
+		err = datcache_deleterec_forwritefile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_NGWORDINFO);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	return 0;
+}
+
 LOCAL W datcache_writedat_appended(datcache_t *cache)
 {
 	W err, size;
@@ -739,6 +815,10 @@ EXPORT W datcache_writefile(datcache_t *cache)
 	if (err < 0) {
 		return err;
 	}
+	err = datcache_writefile_ngwordlist(cache);
+	if (err < 0) {
+		return err;
+	}
 
 	return 0;
 }
@@ -775,6 +855,46 @@ EXPORT VOID datcache_removeresindexdata(datcache_t *cache, W index)
 {
 	datcache_setindexinfoupdatedflag(cache);
 	resindexhash_removedata(&cache->resindexhash, index);
+}
+
+EXPORT W datcache_appendngword(datcache_t *cache, TC *str, W len)
+{
+	datcache_setngwordinfoupdatedflag(cache);
+	return wordlist_appendword(&cache->ngwordlist, str, len);
+}
+
+EXPORT VOID datcache_removengword(datcache_t *cache, TC *str, W len)
+{
+	datcache_setngwordinfoupdatedflag(cache);
+	wordlist_removeword(&cache->ngwordlist, str, len);
+}
+
+EXPORT Bool datcache_checkngwordexist(datcache_t *cache, TC *str, W len)
+{
+	return wordlist_checkexistbyword(&cache->ngwordlist, str, len);
+}
+
+EXPORT datcache_ngwordreadcontext_t* datcache_startngwordread(datcache_t *cache)
+{
+	datcache_ngwordreadcontext_t *context;
+
+	context = malloc(sizeof(datcache_ngwordreadcontext_t));
+	if (context == NULL) {
+		return NULL;
+	}
+	wordlist_iterator_initialize(&context->iter, &cache->ngwordlist);
+	return context;
+}
+
+EXPORT VOID datcache_endngwordread(datcache_t *cache, datcache_ngwordreadcontext_t *context)
+{
+	wordlist_iterator_finalize(&context->iter);
+	free(context);
+}
+
+EXPORT Bool datcache_ngwordreadcontext_nextdata(datcache_ngwordreadcontext_t *context, TC **str, W *len)
+{
+	return wordlist_iterator_next(&context->iter, str, len);
 }
 
 LOCAL W datcache_getrec_fromfile(W fd, W rectype, W subtype, UB **data, W *size)
@@ -921,6 +1041,42 @@ LOCAL W datcache_readresindexinfo(datcache_t *cache)
 	return err;
 }
 
+LOCAL W datcache_readngwordinfo(datcache_t *cache)
+{
+	UB *recdata;
+	W recsize, err = 0, str_len, i;
+	TC *str;
+	UH chunksize;
+
+	err = datcache_getrec_fromfile(cache->fd, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_NGWORDINFO, &recdata, &recsize);
+	if (err < 0) {
+		return err;
+	}
+
+	if (recsize == 0) {
+		return 0; /* TODO */
+	}
+
+	for (i = 0; i < recsize; ) {
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		str = (TC*)(recdata + i);
+		str_len = chunksize / 2;
+		i += chunksize;
+		chunksize = *(UH*)(recdata + i);
+		i += 2;
+		err = wordlist_appendword(&cache->ngwordlist, str, str_len);
+		if (err < 0) {
+			break;
+		}
+		i += chunksize;
+	}
+
+	free(recdata);
+
+	return err;
+}
+
 EXPORT datcache_t* datcache_new(VID vid)
 {
 	datcache_t *cache;
@@ -1013,9 +1169,21 @@ EXPORT datcache_t* datcache_new(VID vid)
 		free(cache);
 		return NULL;
 	}
+	err = wordlist_initialize(&cache->ngwordlist);
+	if (err < 0) {
+		resindexhash_finalize(&cache->resindexhash);
+		residhash_finalize(&cache->residhash);
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
 
 	err = datcache_readresidinfo(cache);
 	if (err < 0) {
+		wordlist_finalize(&cache->ngwordlist);
 		resindexhash_finalize(&cache->resindexhash);
 		residhash_finalize(&cache->residhash);
 		free(retrinfo);
@@ -1027,6 +1195,19 @@ EXPORT datcache_t* datcache_new(VID vid)
 	}
 	err = datcache_readresindexinfo(cache);
 	if (err < 0) {
+		wordlist_finalize(&cache->ngwordlist);
+		resindexhash_finalize(&cache->resindexhash);
+		residhash_finalize(&cache->residhash);
+		free(retrinfo);
+		free(rawdat);
+		del_sem(semid);
+		cls_fil(fd);
+		free(cache);
+		return NULL;
+	}
+	err = datcache_readngwordinfo(cache);
+	if (err < 0) {
+		wordlist_finalize(&cache->ngwordlist);
 		resindexhash_finalize(&cache->resindexhash);
 		residhash_finalize(&cache->residhash);
 		free(retrinfo);
@@ -1045,6 +1226,7 @@ EXPORT VOID datcache_delete(datcache_t *cache)
 	datcache_data_t *cache_data;
 	Bool ok;
 
+	wordlist_finalize(&cache->ngwordlist);
 	resindexhash_finalize(&cache->resindexhash);
 	residhash_finalize(&cache->residhash);
 

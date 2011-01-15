@@ -3002,6 +3002,601 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	return result;
 }
 
+/* test_cache_ngwordinfo_1 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_1()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_2 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_2()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
+	if (err < 0) {
+		printf("datcache_addresiddata fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_3 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_3()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_4 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_4()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_5 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_5()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removengword(cache, ngword3_tc, ngword3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_6 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_6()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removengword(cache, ngword2_tc, ngword2_len);
+	datcache_removengword(cache, ngword3_tc, ngword3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != True) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_ngwordinfo_7 */
+
+LOCAL TEST_RESULT test_cache_ngwordinfo_7()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	datcache_t *cache;
+	UB ngword1[] = "yZXmy7Om0", ngword2[] = "GCQJ44Ao", ngword3[] = "V.jwWEDO";
+	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
+	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
+	Bool found;
+	TEST_RESULT result = TEST_RESULT_PASS;
+
+	sjstotcs(ngword1_tc, ngword1);
+	sjstotcs(ngword2_tc, ngword2);
+	sjstotcs(ngword3_tc, ngword3);
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	cache = datcache_new(vid);
+	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
+	if (err < 0) {
+		printf("datcache_appendngword fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+	datcache_removengword(cache, ngword1_tc, ngword1_len);
+	datcache_removengword(cache, ngword2_tc, ngword2_len);
+	datcache_removengword(cache, ngword3_tc, ngword3_len);
+	err = datcache_writefile(cache);
+	if (err < 0) {
+		printf("datcache_writefile error\n");
+		datcache_delete(cache);
+		return TEST_RESULT_FAIL;
+	}
+	datcache_delete(cache);
+
+	cache = datcache_new(vid);
+
+	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 1 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 2 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
+	if (found != False) {
+		printf("datcache_checkngwordexist 3 fail\n");
+		result = TEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = TEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
 LOCAL VOID test_cache_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -3048,6 +3643,13 @@ IMPORT VOID test_cache_main()
 	test_cache_printresult(test_cache_resindexinfo_5, "test_cache_resindexinfo_5");
 	test_cache_printresult(test_cache_resindexinfo_6, "test_cache_resindexinfo_6");
 	test_cache_printresult(test_cache_resindexinfo_7, "test_cache_resindexinfo_7");
+	test_cache_printresult(test_cache_ngwordinfo_1, "test_cache_ngwordinfo_1");
+	test_cache_printresult(test_cache_ngwordinfo_2, "test_cache_ngwordinfo_2");
+	test_cache_printresult(test_cache_ngwordinfo_3, "test_cache_ngwordinfo_3");
+	test_cache_printresult(test_cache_ngwordinfo_4, "test_cache_ngwordinfo_4");
+	test_cache_printresult(test_cache_ngwordinfo_5, "test_cache_ngwordinfo_5");
+	test_cache_printresult(test_cache_ngwordinfo_6, "test_cache_ngwordinfo_6");
+	test_cache_printresult(test_cache_ngwordinfo_7, "test_cache_ngwordinfo_7");
 	test_cache_printresult(test_cache_append_1, "test_cache_append_1");
 	test_cache_printresult(test_cache_append_2, "test_cache_append_2");
 	test_cache_printresult(test_cache_append_3, "test_cache_append_3");

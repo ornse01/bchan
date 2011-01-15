@@ -1,7 +1,7 @@
 /*
  * cache.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -36,6 +36,7 @@
 #define DATCACHE_RECORDSUBTYPE_HEADER 0x0002
 #define DATCACHE_RECORDSUBTYPE_RESIDINFO 0x0003
 #define DATCACHE_RECORDSUBTYPE_RESINDEXINFO 0x0004
+#define DATCACHE_RECORDSUBTYPE_NGWORDINFO 0x0005
 
 #define DATCACHE_RESIDDATA_FLAG_NG    0x00000001
 #define DATCACHE_RESIDDATA_FLAG_COLOR 0x00000002
@@ -44,6 +45,7 @@
 
 typedef struct datcache_t_ datcache_t;
 typedef struct datcache_datareadcontext_t_ datcache_datareadcontext_t;
+typedef struct datcache_ngwordreadcontext_t_ datcache_ngwordreadcontext_t;
 
 IMPORT datcache_t* datcache_new(VID vid);
 IMPORT VOID datcache_delete(datcache_t *cache);
@@ -66,10 +68,17 @@ IMPORT W datcache_addresindexdata(datcache_t *cache, W index, UW attr, COLOR col
 #define DATCACHE_SEARCHRESINDEXDATA_FOUND    1 /* RESINDEXHASH_SEARCHDATA_FOUND */
 IMPORT W datcache_searchresindexdata(datcache_t *cache, W index, UW *attr, COLOR *color);
 IMPORT VOID datcache_removeresindexdata(datcache_t *cache, W index);
+IMPORT W datcache_appendngword(datcache_t *cache, TC *str, W len);
+IMPORT VOID datcache_removengword(datcache_t *cache, TC *str, W len);
+IMPORT Bool datcache_checkngwordexist(datcache_t *cache, TC *str, W len);
 
 IMPORT datcache_datareadcontext_t* datcache_startdataread(datcache_t *cache, W start);
 IMPORT VOID datcache_enddataread(datcache_t *cache, datcache_datareadcontext_t *context);
 
 IMPORT Bool datcache_datareadcontext_nextdata(datcache_datareadcontext_t *context, UB **bin, W *len);
+
+IMPORT datcache_ngwordreadcontext_t* datcache_startngwordread(datcache_t *cache);
+IMPORT VOID datcache_endngwordread(datcache_t *cache, datcache_ngwordreadcontext_t *context);
+IMPORT Bool datcache_ngwordreadcontext_nextdata(datcache_ngwordreadcontext_t *context, TC **str, W *len);
 
 #endif
