@@ -39,21 +39,21 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-EXPORT VOID ngwordlist_node_insert(ngwordlist_node_t *entry, ngwordlist_node_t *node)
+LOCAL VOID wordlist_node_insert(wordlist_node_t *entry, wordlist_node_t *node)
 {
 	QueInsert(&(entry->queue), &(node->queue));
 }
 
-EXPORT ngwordlist_node_t* ngwordlist_node_next(ngwordlist_node_t *node)
+LOCAL wordlist_node_t* wordlist_node_next(wordlist_node_t *node)
 {
-	return (ngwordlist_node_t *)(node->queue.next);
+	return (wordlist_node_t *)(node->queue.next);
 }
 
-EXPORT ngwordlist_node_t* ngwordlist_node_new(TC *str, W strlen)
+LOCAL wordlist_node_t* wordlist_node_new(TC *str, W strlen)
 {
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 
-	node = (ngwordlist_node_t*)malloc(sizeof(ngwordlist_node_t));
+	node = (wordlist_node_t*)malloc(sizeof(wordlist_node_t));
 	if (node == NULL) {
 		return NULL;
 	}
@@ -70,7 +70,7 @@ EXPORT ngwordlist_node_t* ngwordlist_node_new(TC *str, W strlen)
 	return node;
 }
 
-EXPORT VOID ngwordlist_node_delete(ngwordlist_node_t *node)
+LOCAL VOID wordlist_node_delete(wordlist_node_t *node)
 {
 	QueRemove(&(node->queue));
 	free(node->str);
@@ -79,30 +79,30 @@ EXPORT VOID ngwordlist_node_delete(ngwordlist_node_t *node)
 
 EXPORT Bool wordlist_searchwordbyindex(wordlist_t *list, W index, TC **str, W *len)
 {
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 	W i;
 
 	i = 0;
-	node = ngwordlist_node_next(&list->node);
+	node = wordlist_node_next(&list->node);
 	for (; node != &list->node;) {
 		if (i == index) {
 			*str = node->str;
 			*len = node->len;
 			return True;
 		}
-		node = ngwordlist_node_next(node);
+		node = wordlist_node_next(node);
 		i++;
 	}
 
 	return False;
 }
 
-LOCAL Bool wordlist_searchnodebyword(wordlist_t *list, TC *str, W len, ngwordlist_node_t **node)
+LOCAL Bool wordlist_searchnodebyword(wordlist_t *list, TC *str, W len, wordlist_node_t **node)
 {
-	ngwordlist_node_t *node0;
+	wordlist_node_t *node0;
 	W result;
 
-	node0 = ngwordlist_node_next(&list->node);
+	node0 = wordlist_node_next(&list->node);
 	for (; node0 != &list->node;) {
 		if (node0->len == len) {
 			result = tc_strncmp(node0->str, str, len);
@@ -111,36 +111,36 @@ LOCAL Bool wordlist_searchnodebyword(wordlist_t *list, TC *str, W len, ngwordlis
 				return True;
 			}
 		}
-		node0 = ngwordlist_node_next(node0);
+		node0 = wordlist_node_next(node0);
 	}
 	return False;
 }
 
 EXPORT Bool wordlist_checkexistbyword(wordlist_t *list, TC *str, W len)
 {
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 	return wordlist_searchnodebyword(list, str, len, &node);
 }
 
 EXPORT W wordlist_appendword(wordlist_t *list, TC *str, W len)
 {
-	ngwordlist_node_t *newnode;
+	wordlist_node_t *newnode;
 
-	newnode = ngwordlist_node_new(str, len);
+	newnode = wordlist_node_new(str, len);
 	if (newnode == NULL) {
 		return -1; /* TODO */
 	}
-	ngwordlist_node_insert(newnode, &list->node);
+	wordlist_node_insert(newnode, &list->node);
 	return 0;
 }
 
 EXPORT Bool wordlist_removeword(wordlist_t *list, TC *str, W len)
 {
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 	Bool found;
 	found = wordlist_searchnodebyword(list, str, len, &node);
 	if (found == True) {
-		ngwordlist_node_delete(node);
+		wordlist_node_delete(node);
 	}
 	return found;
 }
@@ -153,12 +153,12 @@ EXPORT W wordlist_initialize(wordlist_t *list)
 
 EXPORT VOID wordlist_finalize(wordlist_t *list)
 {
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 
-	node = ngwordlist_node_next(&list->node);
+	node = wordlist_node_next(&list->node);
 	for (; node != &list->node;) {
-		ngwordlist_node_delete(node);
-		node = ngwordlist_node_next(&list->node);
+		wordlist_node_delete(node);
+		node = wordlist_node_next(&list->node);
 	}
 }
 
@@ -171,7 +171,7 @@ EXPORT Bool wordlist_iterator_next(wordlist_iterator_t *iter, TC **str, W *len)
 	*str = iter->node->str;
 	*len = iter->node->len;
 
-	iter->node = ngwordlist_node_next(iter->node);
+	iter->node = wordlist_node_next(iter->node);
 
 	return True;
 }
@@ -179,7 +179,7 @@ EXPORT Bool wordlist_iterator_next(wordlist_iterator_t *iter, TC **str, W *len)
 EXPORT VOID wordlist_iterator_initialize(wordlist_iterator_t *iter, wordlist_t *target)
 {
 	iter->wordlist = target;
-	iter->node = ngwordlist_node_next(&target->node);
+	iter->node = wordlist_node_next(&target->node);
 }
 
 EXPORT VOID wordlist_iterator_finalize(wordlist_iterator_t *iter)

@@ -30,20 +30,15 @@
 #ifndef __WORDLIST_H__
 #define __WORDLIST_H__
 
-struct ngwordlist_node_t_ {
+struct wordlist_node_t_ {
 	QUEUE queue;
 	TC *str;
 	W len;
 };
-typedef struct ngwordlist_node_t_ ngwordlist_node_t;
-
-IMPORT ngwordlist_node_t* ngwordlist_node_new(TC *str, W strlen);
-IMPORT VOID ngwordlist_node_delete(ngwordlist_node_t *node);
-IMPORT VOID ngwordlist_node_insert(ngwordlist_node_t *entry, ngwordlist_node_t *node);
-IMPORT ngwordlist_node_t* ngwordlist_node_next(ngwordlist_node_t *node);
+typedef struct wordlist_node_t_ wordlist_node_t;
 
 struct wordlist_t_ {
-	ngwordlist_node_t node;
+	wordlist_node_t node;
 };
 typedef struct wordlist_t_ wordlist_t;
 
@@ -56,7 +51,7 @@ IMPORT Bool wordlist_removeword(wordlist_t *list, TC *str, W len);
 
 struct wordlist_iterator_t_ {
 	wordlist_t *wordlist;
-	ngwordlist_node_t *node;
+	wordlist_node_t *node;
 };
 typedef struct wordlist_iterator_t_ wordlist_iterator_t;
 
