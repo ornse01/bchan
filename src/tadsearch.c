@@ -47,19 +47,17 @@ LOCAL TC tcloopbuf_getbackchar(tcloopbuf_t *loopbuf, W n)
 	return loopbuf->buf[(loopbuf->pos - 1 - n) % loopbuf->len];
 }
 
-LOCAL Bool tcloopbuf_compair(tcloopbuf_t *loopbuf, tcstrbuffer_t *str)
+LOCAL Bool tcloopbuf_compairtail(tcloopbuf_t *loopbuf, tcstrbuffer_t *str)
 {
-	W n, result;
+	W i;
+	TC ch_buf, ch_str;
 
-	n = loopbuf->pos % loopbuf->len;
-
-	result = tc_strncmp(loopbuf->buf, str->buffer + str->strlen - n, n);
-	if (result != 0) {
-		return False;
-	}
-	result = tc_strncmp(loopbuf->buf + str->strlen - n, str->buffer, str->strlen - n);
-	if (result != 0) {
-		return False;
+	for (i = 0; i < str->strlen; i++) {
+		ch_buf = loopbuf->buf[(loopbuf->pos - 1 - i) % loopbuf->len];
+		ch_str = str->buffer[(str->strlen - 1 - i)];
+		if (ch_buf != ch_str) {
+			return False;
+		}
 	}
 	return True;
 }
@@ -131,7 +129,7 @@ LOCAL Bool rk_hash_count(tadlib_rk_hash_t *hash, TC ch, W pos, tcloopbuf_t *loop
 	}
 
 	if (hash->currenthash == hash->expectedhash) {
-		ok = tcloopbuf_compair(loopbuf, hash->orig);
+		ok = tcloopbuf_compairtail(loopbuf, hash->orig);
 		if (ok == True) {
 			return True;
 		}
