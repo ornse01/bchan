@@ -73,12 +73,12 @@ LOCAL tcloopbuf_t *tcloopbuf_new(W len)
 {
 	tcloopbuf_t *loopbuf;
 
-	loopbuf = malloc(sizeof(tcloopbuf_t) + sizeof(W)*(len - 1));
+	loopbuf = malloc(sizeof(tcloopbuf_t) + sizeof(W)*len);
 	if (loopbuf == NULL) {
 		return NULL;
 	}
 
-	loopbuf->len = len;
+	loopbuf->len = len + 1;
 	loopbuf->pos = 0;
 
 	return loopbuf;
@@ -120,14 +120,20 @@ LOCAL Bool rk_hash_count(tadlib_rk_hash_t *hash, TC ch, W pos, tcloopbuf_t *loop
 
 	if (pos < hash->orig->strlen) {
 		hash->currenthash += ch;
+		return False;
+	}
+
+	if (pos == hash->orig->strlen) {
+		hash->currenthash += ch;
 	} else {
-		prev_ch = tcloopbuf_getbackchar(loopbuf, hash->orig->strlen - 1);
+		prev_ch = tcloopbuf_getbackchar(loopbuf, hash->orig->strlen);
 		hash->currenthash += ch - prev_ch;
-		if (hash->currenthash == hash->expectedhash) {
-			ok = tcloopbuf_compair(loopbuf, hash->orig);
-			if (ok == True) {
-				return True;
-			}
+	}
+
+	if (hash->currenthash == hash->expectedhash) {
+		ok = tcloopbuf_compair(loopbuf, hash->orig);
+		if (ok == True) {
+			return True;
 		}
 	}
 
