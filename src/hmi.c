@@ -1449,6 +1449,7 @@ LOCAL datwindow_t* datwindow_new(RECT *r, TC *title, PAT *bgpat, datwindow_scrol
 		free(window);
 		return NULL;
 	}
+	window->gid = wget_gid(window->wid);
 	window->scroll_callback = scrollcallback;
 	window->arg = arg;
 
