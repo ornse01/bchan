@@ -55,6 +55,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_tadimf_main();
 	test_array_main();
 	test_wordlist_main();
+	test_tadsearch_main();
 
 	return 0;
 }

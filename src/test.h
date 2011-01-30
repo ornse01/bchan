@@ -70,4 +70,7 @@ IMPORT VOID test_array_main();
 /* test_wordlist.c */
 IMPORT VOID test_wordlist_main();
 
+/* test_tadsearch.c */
+IMPORT VOID test_tadsearch_main();
+
 #endif
