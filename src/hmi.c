@@ -400,6 +400,7 @@ struct ngwordwindow_t_ {
 	PAID ms_delete_id;
 	PAID tb_input_id;
 	PAID ms_append_id;
+	WEVENT savedwev;
 	wordlist_t wordlist;
 	TC strbuf[128];
 	TC *selector;
@@ -825,6 +826,14 @@ EXPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len)
 	return 0;
 }
 
+LOCAL Bool ngwordwindow_isopen(ngwordwindow_t *window)
+{
+	if (window->wid < 0) {
+		return False;
+	}
+	return True;
+}
+
 EXPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 {
 	SIZE sz;
@@ -1104,6 +1113,67 @@ LOCAL VOID cfrmwindow_butdnwork(cfrmwindow_t *window, WEVENT *wev, dathmievent_t
 	}
 }
 
+EXPORT W ngwordwindow_starttextboxaction(ngwordwindow_t *window)
+{
+	return 0;
+}
+
+EXPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key)
+{
+	W ret;
+	WEVENT *wev;
+
+	wev = &window->savedwev;
+
+	for (;;) {
+		ret = cact_par(window->tb_input_id, wev);
+		if (ret < 0) {
+			DP_ER("cact_par tb_input_id error:", ret);
+			return ret;
+		}
+		switch (ret & 0xefff) {
+		case P_EVENT:
+			switch (wev->s.type) {
+			case EV_INACT:
+			case EV_REQUEST:
+				wugt_evt(wev);
+				return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+			case EV_DEVICE:
+				oprc_dev(&wev->e, NULL, 0);
+				break;
+			}
+			wev->s.type = EV_NULL;
+			continue;
+		case P_MENU:
+			wev->s.type = EV_NULL;
+			if ((wev->s.type == EV_KEYDWN)&&(wev->s.stat & ES_CMD)) {
+				*key = wev->e.data.key.code;
+				return NGWORDWINDOW_GETTEXTBOXACTION_KEYMENU;
+			}
+			return NGWORDWINDOW_GETTEXTBOXACTION_MENU;
+		case (0x4000|P_MOVE):
+			return NGWORDWINDOW_GETTEXTBOXACTION_MOVE;
+		case (0x4000|P_COPY):
+			return NGWORDWINDOW_GETTEXTBOXACTION_COPY;
+		case (0x4000|P_NL):
+		case (0x4000|P_TAB):
+			return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+		case (0x4000|P_BUT):
+			wugt_evt(wev);
+			return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+		default:
+			return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+		}
+	}
+
+	return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+}
+
+EXPORT W ngwordwindow_endtextboxaction(ngwordwindow_t *window)
+{
+	return 0;
+}
+
 LOCAL VOID ngwordwindow_butdnwork(ngwordwindow_t *window, WEVENT *wev, dathmievent_t *evt)
 {
 	PAID id;
@@ -1143,41 +1213,9 @@ LOCAL VOID ngwordwindow_butdnwork(ngwordwindow_t *window, WEVENT *wev, dathmieve
 		return;
 	}
 	if (id == window->tb_input_id) {
-		for (;;) {
-			ret = cact_par(window->tb_input_id, wev);
-			if (ret < 0) {
-				DP_ER("cact_par tb_input_id error:", ret);
-				return;
-			}
-			switch (ret & 0xefff) {
-			case P_EVENT:
-				switch (wev->s.type) {
-				case EV_INACT:
-				case EV_REQUEST:
-					wugt_evt(wev);
-					return;
-				case EV_DEVICE:
-					oprc_dev(&wev->e, NULL, 0);
-					break;
-				}
-				wev->s.type = EV_NULL;
-				continue;
-			case P_MENU:
-				if ((wev->s.type == EV_KEYDWN)&&(wev->s.stat & ES_CMD)) {
-				} else {
-				}
-				wev->s.type = EV_NULL;
-				continue;
-			case (0x4000|P_NL):
-			case (0x4000|P_TAB):
-				return;
-			case (0x4000|P_BUT):
-				wugt_evt(wev);
-				return;
-			default:
-				return;
-			}
-		}
+		memcpy(&window->savedwev, wev, sizeof(WEVENT));
+		evt->type = DATHMIEVENT_TYPE_NGWORD_TEXTBOX;
+		return;
 	}
 	if (id == window->ms_append_id) {
 		ret = cact_par(window->ms_append_id, wev);
@@ -1354,6 +1392,7 @@ EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 {
 	WEVENT	wev0;
 	WID main_wid, cfrm_wid, ngword_wid;
+	Bool open;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
@@ -1364,6 +1403,7 @@ EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 	wget_evt(&wev0, WAIT);
 	switch (wev0.s.type) {
 	case	EV_NULL:
+		cidl_par(wev0.s.wid, &wev0.s.pos);
 		if ((wev0.s.wid != main_wid)&&(wev0.s.wid != cfrm_wid)&&(wev0.s.wid != ngword_wid)) {
 			hmi->evt.type = DATHMIEVENT_TYPE_COMMON_MOUSEMOVE;
 			hmi->evt.data.common_mousemove.pos = wev0.s.pos;
@@ -1377,10 +1417,6 @@ EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 			hmi->evt.type = DATHMIEVENT_TYPE_THREAD_MOUSEMOVE;
 			hmi->evt.data.main_mousemove.pos = wev0.s.pos;
 			hmi->evt.data.main_mousemove.stat = wev0.s.stat;
-		} else if (wev0.s.wid == cfrm_wid) {
-			cidl_par(wev0.s.wid, &wev0.s.pos);
-		} else if (wev0.s.wid == ngword_wid) {
-			cidl_par(wev0.s.wid, &wev0.s.pos);
 		}
 		break;
 	case	EV_REQUEST:
@@ -1397,6 +1433,12 @@ EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 		break;
 	case	EV_KEYDWN:
 	case	EV_AUTKEY:
+		open = ngwordwindow_isopen(hmi->ngwordwindow);
+		if (open == True) {
+			memcpy(&hmi->ngwordwindow->savedwev, &wev0, sizeof(WEVENT));
+			hmi->evt.type = DATHMIEVENT_TYPE_NGWORD_TEXTBOX;
+			break;
+		}
 		hmi->evt.type = DATHMIEVENT_TYPE_COMMON_KEYDOWN;
 		hmi->evt.data.common_keydown.keycode = wev0.e.data.key.code;
 		hmi->evt.data.common_keydown.keytop = wev0.e.data.key.keytop;

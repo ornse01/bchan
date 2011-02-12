@@ -63,6 +63,14 @@ typedef struct ngwordwindow_t_ ngwordwindow_t;
 IMPORT W ngwordwindow_open(ngwordwindow_t *window);
 IMPORT W ngwordwindow_appendword(ngwordwindow_t *window, TC *str, W len);
 IMPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len);
+IMPORT W ngwordwindow_starttextboxaction(ngwordwindow_t *window);
+#define NGWORDWINDOW_GETTEXTBOXACTION_FINISH 0
+#define NGWORDWINDOW_GETTEXTBOXACTION_MENU 1
+#define NGWORDWINDOW_GETTEXTBOXACTION_KEYMENU 2
+#define NGWORDWINDOW_GETTEXTBOXACTION_MOVE 3
+#define NGWORDWINDOW_GETTEXTBOXACTION_COPY 4
+IMPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key);
+IMPORT W ngwordwindow_endtextboxaction(ngwordwindow_t *window);
 
 enum {
 	DATHMIEVENT_TYPE_NONE,
@@ -81,6 +89,7 @@ enum {
 	DATHMIEVENT_TYPE_NGWORD_APPEND,
 	DATHMIEVENT_TYPE_NGWORD_REMOVE,
 	DATHMIEVENT_TYPE_NGWORD_CLOSE,
+	DATHMIEVENT_TYPE_NGWORD_TEXTBOX,
 };
 
 struct dathmi_eventdata_mousemove_t_ {

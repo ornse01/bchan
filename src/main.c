@@ -1627,6 +1627,33 @@ LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 	}
 }
 
+LOCAL VOID bchan_event_ngwordtextbox(bchan_t *bchan)
+{
+	ngwordwindow_t *ngword;
+	W ret;
+	TC key;
+
+	ngword = bchan->ngword;
+
+	ngwordwindow_starttextboxaction(ngword);
+
+	for (;;) {
+		ret = ngwordwindow_gettextboxaction(ngword, &key);
+		if (ret < 0) {
+			break;
+		}
+		if (ret == NGWORDWINDOW_GETTEXTBOXACTION_FINISH) {
+			break;
+		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_MENU) {
+		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_KEYMENU) {
+		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_MOVE) {
+		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_COPY) {
+		}
+	}
+
+	ngwordwindow_endtextboxaction(ngword);
+}
+
 LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 {
 	W sel, err;
@@ -1700,6 +1727,9 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 	case DATHMIEVENT_TYPE_NGWORD_REMOVE:
 		datcache_removengword(bchan->cache, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
 		ngwordwindow_removeword(bchan->ngword, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
+		break;
+	case DATHMIEVENT_TYPE_NGWORD_TEXTBOX:
+		bchan_event_ngwordtextbox(bchan);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_CLOSE:
 	case DATHMIEVENT_TYPE_NONE:
