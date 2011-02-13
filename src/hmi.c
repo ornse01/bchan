@@ -406,8 +406,12 @@ struct ngwordwindow_t_ {
 	TC *selector;
 };
 
+#define DATHMI_FLAG_SWITCHBUTDN 0x00000001
+
 struct dathmi_t_ {
+	WEVENT wev;
 	dathmievent_t evt;
+	UW flag;
 	datwindow_t *mainwindow;
 	cfrmwindow_t *cfrmwindow;
 	ngwordwindow_t *ngwordwindow;
@@ -503,6 +507,24 @@ EXPORT W datwindow_setdrawrect(datwindow_t *window, W l, W t, W r, W b)
 EXPORT W datwindow_setworkrect(datwindow_t *window, W l, W t, W r, W b)
 {
 	return windowscroll_setworkrect(&window->wscr, l, t, r, b);
+}
+
+LOCAL VOID dathmi_setswitchbutdnflag(dathmi_t *hmi)
+{
+	hmi->flag = hmi->flag | DATHMI_FLAG_SWITCHBUTDN;
+}
+
+LOCAL VOID dathmi_clearswitchbutdnflag(dathmi_t *hmi)
+{
+	hmi->flag = hmi->flag & ~DATHMI_FLAG_SWITCHBUTDN;
+}
+
+LOCAL Bool dathmi_issetswitchbutdnflag(dathmi_t *hmi)
+{
+	if ((hmi->flag & DATHMI_FLAG_SWITCHBUTDN) == 0) {
+		return False;
+	}
+	return True;
 }
 
 LOCAL WID dathmi_getmainWID(dathmi_t *hmi)
@@ -1363,7 +1385,7 @@ LOCAL VOID dathmi_weventswitch(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 {
 	evt->type = DATHMIEVENT_TYPE_THREAD_SWITCH;
 	evt->data.main_switch.needdraw = False;
-	//dathmi_weventbutdn(hmi, wev, evt);
+	dathmi_setswitchbutdnflag(hmi);
 }
 
 LOCAL VOID dathmi_weventreswitch(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
@@ -1382,7 +1404,7 @@ LOCAL VOID dathmi_weventreswitch(dathmi_t *hmi, WEVENT *wev, dathmievent_t *evt)
 	} else if (wev->s.wid == ngword_wid) {
 		ngwordwindow_redisp(hmi->ngwordwindow);
 	}
-	//dathmi_weventbutdn(hmi, wev, evt); TODO: event queueing
+	dathmi_setswitchbutdnflag(hmi);
 }
 
 LOCAL VOID dathmi_receivemessage(dathmi_t *hmi, dathmievent_t *evt)
@@ -1402,72 +1424,80 @@ LOCAL VOID dathmi_receivemessage(dathmi_t *hmi, dathmievent_t *evt)
 
 EXPORT W dathmi_getevent(dathmi_t *hmi, dathmievent_t **evt)
 {
-	WEVENT	wev0;
+	WEVENT	*wev0;
 	WID main_wid, cfrm_wid, ngword_wid;
-	Bool open;
+	Bool open, ok;
 
 	main_wid = dathmi_getmainWID(hmi);
 	cfrm_wid = dathmi_getcfrmWID(hmi);
 	ngword_wid = dathmi_getngwordWID(hmi);
 
 	hmi->evt.type = DATHMIEVENT_TYPE_NONE;
+	wev0 = &hmi->wev;
 
-	wget_evt(&wev0, WAIT);
-	switch (wev0.s.type) {
+	ok = dathmi_issetswitchbutdnflag(hmi);
+	if (ok == True) {
+		dathmi_weventbutdn(hmi, wev0, &hmi->evt);
+		dathmi_clearswitchbutdnflag(hmi);
+		return 0;
+	}
+
+	wget_evt(wev0, WAIT);
+	switch (wev0->s.type) {
 	case	EV_NULL:
-		cidl_par(wev0.s.wid, &wev0.s.pos);
-		if ((wev0.s.wid != main_wid)&&(wev0.s.wid != cfrm_wid)&&(wev0.s.wid != ngword_wid)) {
+		cidl_par(wev0->s.wid, &wev0->s.pos);
+		if ((wev0->s.wid != main_wid)&&(wev0->s.wid != cfrm_wid)&&(wev0->s.wid != ngword_wid)) {
 			hmi->evt.type = DATHMIEVENT_TYPE_COMMON_MOUSEMOVE;
-			hmi->evt.data.common_mousemove.pos = wev0.s.pos;
+			hmi->evt.data.common_mousemove.pos = wev0->s.pos;
 			break;		/*ウィンドウ外*/
 		}
-		if (wev0.s.cmd != W_WORK)
+		if (wev0->s.cmd != W_WORK)
 			break;		/*作業領域外*/
-		if (wev0.s.stat & ES_CMD)
+		if (wev0->s.stat & ES_CMD)
 			break;	/*命令キーが押されている*/
-		if (wev0.s.wid == main_wid) {
+		if (wev0->s.wid == main_wid) {
 			hmi->evt.type = DATHMIEVENT_TYPE_THREAD_MOUSEMOVE;
-			hmi->evt.data.main_mousemove.pos = wev0.s.pos;
-			hmi->evt.data.main_mousemove.stat = wev0.s.stat;
+			hmi->evt.data.main_mousemove.pos = wev0->s.pos;
+			hmi->evt.data.main_mousemove.stat = wev0->s.stat;
 		}
 		break;
 	case	EV_REQUEST:
-		dathmi_weventrequest(hmi, &wev0, &hmi->evt);
+		dathmi_weventrequest(hmi, wev0, &hmi->evt);
 		break;
 	case	EV_RSWITCH:
-		dathmi_weventreswitch(hmi, &wev0, &hmi->evt);
+		dathmi_weventreswitch(hmi, wev0, &hmi->evt);
 		break;
 	case	EV_SWITCH:
-		dathmi_weventswitch(hmi, &wev0, &hmi->evt);
+		dathmi_weventswitch(hmi, wev0, &hmi->evt);
 		break;
 	case	EV_BUTDWN:
-		dathmi_weventbutdn(hmi, &wev0, &hmi->evt);
+		dathmi_weventbutdn(hmi, wev0, &hmi->evt);
 		break;
 	case	EV_KEYDWN:
 	case	EV_AUTKEY:
 		open = ngwordwindow_isopen(hmi->ngwordwindow);
 		if (open == True) {
-			memcpy(&hmi->ngwordwindow->savedwev, &wev0, sizeof(WEVENT));
+			memcpy(&hmi->ngwordwindow->savedwev, wev0, sizeof(WEVENT));
 			hmi->evt.type = DATHMIEVENT_TYPE_NGWORD_TEXTBOX;
 			break;
 		}
 		hmi->evt.type = DATHMIEVENT_TYPE_COMMON_KEYDOWN;
-		hmi->evt.data.common_keydown.keycode = wev0.e.data.key.code;
-		hmi->evt.data.common_keydown.keytop = wev0.e.data.key.keytop;
-		hmi->evt.data.common_keydown.stat = wev0.e.stat;
+		hmi->evt.data.common_keydown.keycode = wev0->e.data.key.code;
+		hmi->evt.data.common_keydown.keytop = wev0->e.data.key.keytop;
+		hmi->evt.data.common_keydown.stat = wev0->e.stat;
 		break;
 	case	EV_INACT:
 		pdsp_msg(NULL);
 		break;
 	case	EV_DEVICE:
-		oprc_dev(&wev0.e, NULL, 0);
+		oprc_dev(&wev0->e, NULL, 0);
 		break;
 	case	EV_MSG:
 		dathmi_receivemessage(hmi, &hmi->evt);
 		break;
 	case	EV_MENU:
 		hmi->evt.type = DATHMIEVENT_TYPE_COMMON_MENU;
-		hmi->evt.data.common_menu.pos = wev0.s.pos;
+		hmi->evt.data.common_menu.pos = wev0->s.pos;
 		break;
 	}
 
