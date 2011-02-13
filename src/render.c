@@ -422,7 +422,7 @@ LOCAL W datrender_entrydraw_drawNGrect(datrender_t *render, datlayout_res_t *ent
 	return 0;
 }
 
-LOCAL W datrender_entrydrawNG(datrender_t *render, datlayout_res_t *entry, W index, RECT *r, W dh, W dv, Bool is_display_id)
+LOCAL W datrender_entrydrawNG(datrender_t *render, datlayout_res_t *entry, W index, RECT *r, W dh, W dv, Bool is_display_id, Bool is_number_grayout)
 {
 	W sect, err, len;
 	W rv_l, rv_t, rv_r, rv_b;
@@ -451,7 +451,11 @@ LOCAL W datrender_entrydrawNG(datrender_t *render, datlayout_res_t *entry, W ind
 		return err;
 	}
 
-	gset_chc(target, 0x10000000, 0x10efefef);
+	if (is_number_grayout == True) {
+		gset_chc(target, 0x10888888, 0x10efefef); /* tmp color */
+	} else {
+		gset_chc(target, 0x10000000, 0x10efefef);
+	}
 	err = gset_chp(target, entry->box.resheader.l - dh, entry->box.resheader.t + 16 - dv, 1);
 	if (err < 0) {
 		return err;
@@ -462,6 +466,7 @@ LOCAL W datrender_entrydrawNG(datrender_t *render, datlayout_res_t *entry, W ind
 	}
 
 	if ((is_display_id == True) && (entry->parser_res->dateinfo.id != NULL)) {
+		gset_chc(target, 0x10000000, 0x10efefef);
 		err = gset_chp(target, entry->box.resheader.l - dh + entry->headerinfo.rel_id_pos.c.left, entry->box.resheader.t + 16 - dv, 1);
 		if (err < 0) {
 			return err;
@@ -487,15 +492,15 @@ LOCAL W datrender_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle,
 
 	isNG = datlayout_res_isenableindexNG(entry);
 	if (isNG == True) {
-		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False);
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False, False);
 	}
 	isNG = datlayout_res_isenableidNG(entry);
 	if (isNG == True) {
-		return datrender_entrydrawNG(render, entry, index, r, dh, dv, True);
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, True, True);
 	}
 	isNG = datlayout_res_isenablewordNG(entry);
 	if (isNG == True) {
-		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False);
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False, True);
 	}
 	return datrender_entrydrawnormal(entry, resstyle, resheaderstyle, resmessagestyle, index, render, target, r, dh, dv);
 }
