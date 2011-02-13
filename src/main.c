@@ -52,6 +52,7 @@
 #include	"traydata.h"
 #include	"retriever.h"
 #include	"submit.h"
+#include	"tadsearch.h"
 #include	"tadurl.h"
 #include	"sjisstring.h"
 #include	"bchan_vobj.h"
@@ -1222,9 +1223,33 @@ LOCAL W bchan_ngword_copytowindow(bchan_t *bchan, ngwordwindow_t *window)
 	return 0;
 }
 
+LOCAL Bool bchan_checkword_layout_res(bchan_t *bchan, datlayout_res_t *res, tcstrbuffer_t *set, W setlen)
+{
+	tadlib_rk_result_t result;
+	W err;
+
+	if (set == NULL) {
+		return False;
+	}
+
+	err = tadlib_rabinkarpsearch(res->parser_res->name, res->parser_res->name_len, set, setlen, &result);
+	if (err == 1) {
+		return True;
+	}
+	err = tadlib_rabinkarpsearch(res->parser_res->mail, res->parser_res->mail_len, set, setlen, &result);
+	if (err == 1) {
+		return True;
+	}
+	err = tadlib_rabinkarpsearch(res->parser_res->body, res->parser_res->body_len, set, setlen, &result);
+	if (err == 1) {
+		return True;
+	}
+	return False;
+}
+
 #define BCHAN_LAYOUT_MAXBLOCKING 20
 
-LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
+LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res, tcstrbuffer_t *set, W setlen)
 {
 	W err, ret, index, id_len;
 	TC *id;
@@ -1253,19 +1278,60 @@ LOCAL W bchan_layout_appendres(bchan_t *bchan, datparser_res_t *res)
 	if (ret == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		bchan_layout_res_updateattrbyindex(layout_res, attr, color);
 	}
+	found = bchan_checkword_layout_res(bchan, layout_res, set, setlen);
+	if (found == True) {
+		datlayout_res_enablewordNG(layout_res);
+	}
 
 	return 0;
+}
+
+LOCAL VOID bchan_alloc_ngwordset(bchan_t *bchan, tcstrbuffer_t **set, W *setlen)
+{
+	datcache_ngwordreadcontext_t *context;
+	tcstrbuffer_t *set0;
+	W len, setlen0;
+	TC *str;
+	Bool cont;
+
+	context = datcache_startngwordread(bchan->cache);
+	if (context == NULL) {
+		DP_ER("datcache_startngwordread", 0);
+		*set = NULL;
+		*setlen = 0;
+		return;
+	}
+	set0 = NULL;
+	setlen0 = 0;
+	for (;;) {
+		cont = datcache_ngwordreadcontext_nextdata(context, &str, &len);
+		if (cont == False) {
+			break;
+		}
+
+		setlen0++;
+		set0 = realloc(set0, sizeof(tcstrbuffer_t)*setlen0);
+		set0[setlen0 - 1].buffer = str;
+		set0[setlen0 - 1].strlen = len;
+	}
+	datcache_endngwordread(bchan->cache, context);
+
+	*set = set0;
+	*setlen = setlen0;
 }
 
 LOCAL VOID bchan_relayout(bchan_t *bchan)
 {
 	datparser_res_t *res = NULL;
 	RECT w_work;
-	W i, err, l, t, r, b;
+	W i, err, l, t, r, b, setlen;
 	TC *title;
+	tcstrbuffer_t *set = NULL;
 
 	datlayout_clear(bchan->layout);
 	datparser_clear(bchan->parser);
+
+	bchan_alloc_ngwordset(bchan, &set, &setlen);
 
 	for (i=0;;i++) {
 		if (i >= BCHAN_LAYOUT_MAXBLOCKING) {
@@ -1280,7 +1346,11 @@ LOCAL VOID bchan_relayout(bchan_t *bchan)
 		if (res == NULL) {
 			break;
 		}
-		bchan_layout_appendres(bchan, res);
+		bchan_layout_appendres(bchan, res, set, setlen);
+	}
+
+	if (set != NULL) {
+		free(set);
 	}
 
 	datwindow_getworkrect(bchan->window, &w_work);
@@ -1298,7 +1368,10 @@ LOCAL VOID bchan_update(bchan_t *bchan)
 {
 	datparser_res_t *res = NULL;
 	RECT w_work;
-	W i, err, l, t, r, b;
+	W i, err, l, t, r, b, setlen;
+	tcstrbuffer_t *set = NULL;
+
+	bchan_alloc_ngwordset(bchan, &set, &setlen);
 
 	for (i=0;;i++) {
 		if (i >= BCHAN_LAYOUT_MAXBLOCKING) {
@@ -1313,8 +1386,10 @@ LOCAL VOID bchan_update(bchan_t *bchan)
 		if (res == NULL) {
 			break;
 		}
-		bchan_layout_appendres(bchan, res);
+		bchan_layout_appendres(bchan, res, set, setlen);
 	}
+
+	free(set);
 
 	datwindow_getworkrect(bchan->window, &w_work);
 
@@ -1627,6 +1702,37 @@ LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 	}
 }
 
+LOCAL VOID bchan_event_updatedisplayngword(bchan_t *bchan)
+{
+	datlayout_res_t *layout_res;
+	W i, len, setlen;
+	Bool found;
+	tcstrbuffer_t *set = NULL;
+
+	bchan_alloc_ngwordset(bchan, &set, &setlen);
+
+	len = datlayoutarray_length(bchan->layoutarray);
+	for (i = 0; i < len; i++) {
+		found = datlayoutarray_getresbyindex(bchan->layoutarray, i, &layout_res);
+		if (found == False) {
+			break;
+		}
+
+		found = bchan_checkword_layout_res(bchan, layout_res, set, setlen);
+		if (found == True) {
+			datlayout_res_enablewordNG(layout_res);
+		} else {
+			datlayout_res_disablewordNG(layout_res);
+		}
+	}
+
+	if (set != NULL) {
+		free(set);
+	}
+
+	datwindow_requestredisp(bchan->window);
+}
+
 LOCAL VOID bchan_event_ngwordtextbox(bchan_t *bchan)
 {
 	ngwordwindow_t *ngword;
@@ -1651,6 +1757,7 @@ LOCAL VOID bchan_event_ngwordtextbox(bchan_t *bchan)
 		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_APPEND) {
 			datcache_appendngword(bchan->cache, str, len);
 			ngwordwindow_appendword(ngword, str, len);
+			bchan_event_updatedisplayngword(bchan);
 		}
 	}
 
@@ -1726,10 +1833,12 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 		}
 		datcache_appendngword(bchan->cache, evt->data.ngword_append.str, evt->data.ngword_append.len);
 		ngwordwindow_appendword(bchan->ngword, evt->data.ngword_append.str, evt->data.ngword_append.len);
+		bchan_event_updatedisplayngword(bchan);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_REMOVE:
 		datcache_removengword(bchan->cache, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
 		ngwordwindow_removeword(bchan->ngword, evt->data.ngword_remove.str, evt->data.ngword_remove.len);
+		bchan_event_updatedisplayngword(bchan);
 		break;
 	case DATHMIEVENT_TYPE_NGWORD_TEXTBOX:
 		bchan_event_ngwordtextbox(bchan);
