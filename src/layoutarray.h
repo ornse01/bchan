@@ -1,7 +1,7 @@
 /*
  * layoutarray.h
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -46,6 +46,7 @@ IMPORT VOID datlayout_box_getcontentrect(datlayout_box_t *box, datlayout_style_t
 #define DATLAYOUT_RES_FLAG_IDCOLOR    0x00000002
 #define DATLAYOUT_RES_FLAG_INDEXNG    0x00000004
 #define DATLAYOUT_RES_FLAG_INDEXCOLOR 0x00000008
+#define DATLAYOUT_RES_FLAG_WORDNG     0x00000010
 
 typedef struct datlayout_res_t_ datlayout_res_t;
 struct datlayout_res_t_ {
@@ -84,6 +85,9 @@ IMPORT Bool datlayout_res_isenableindexNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_enableidNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res);
 IMPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_enablewordNG(datlayout_res_t *layout_res);
+IMPORT VOID datlayout_res_disablewordNG(datlayout_res_t *layout_res);
+IMPORT Bool datlayout_res_isenablewordNG(datlayout_res_t *layout_res);
 IMPORT VOID datlayout_res_getid(datlayout_res_t *layout_res, TC **id, W *id_len);
 IMPORT Bool datlayout_res_issameid(datlayout_res_t *layout_res, TC *id, W id_len);
 IMPORT VOID datlayout_res_getviewrect(datlayout_res_t *res, datlayout_style_t *resstyle, W *l, W *t, W *r, W *b);

@@ -1,7 +1,7 @@
 /*
  * layoutarray.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -117,6 +117,24 @@ EXPORT VOID datlayout_res_disableidNG(datlayout_res_t *layout_res)
 EXPORT Bool datlayout_res_isenableidNG(datlayout_res_t *layout_res)
 {
 	if ((layout_res->flag & DATLAYOUT_RES_FLAG_IDNG) != 0) {
+		return True;
+	}
+	return False;
+}
+
+EXPORT VOID datlayout_res_enablewordNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag | DATLAYOUT_RES_FLAG_WORDNG;
+}
+
+EXPORT VOID datlayout_res_disablewordNG(datlayout_res_t *layout_res)
+{
+	layout_res->flag = layout_res->flag & ~DATLAYOUT_RES_FLAG_WORDNG;
+}
+
+EXPORT Bool datlayout_res_isenablewordNG(datlayout_res_t *layout_res)
+{
+	if ((layout_res->flag & DATLAYOUT_RES_FLAG_WORDNG) != 0) {
 		return True;
 	}
 	return False;
