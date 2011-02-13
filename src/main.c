@@ -697,6 +697,10 @@ LOCAL VOID bchan_butdn_pressnumber(bchan_t *bchan, PNT evpos, W resindex)
 	if (ok == True) {
 		return;
 	}
+	ok = datlayout_res_isenablewordNG(layout_res);
+	if (ok == True) {
+		return;
+	}
 
 	err = datcache_searchresindexdata(bchan->cache, resindex, &attr, &color);
 	if (err == DATCACHE_SEARCHRESINDEXDATA_FOUND) {
