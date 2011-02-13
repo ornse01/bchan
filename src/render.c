@@ -1,7 +1,7 @@
 /*
  * render.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -492,6 +492,10 @@ LOCAL W datrender_entrydraw(datlayout_res_t *entry, datlayout_style_t *resstyle,
 	isNG = datlayout_res_isenableidNG(entry);
 	if (isNG == True) {
 		return datrender_entrydrawNG(render, entry, index, r, dh, dv, True);
+	}
+	isNG = datlayout_res_isenablewordNG(entry);
+	if (isNG == True) {
+		return datrender_entrydrawNG(render, entry, index, r, dh, dv, False);
 	}
 	return datrender_entrydrawnormal(entry, resstyle, resheaderstyle, resmessagestyle, index, render, target, r, dh, dv);
 }
