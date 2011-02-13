@@ -1630,15 +1630,15 @@ LOCAL VOID bchan_handletimeout(bchan_t *bchan, W code)
 LOCAL VOID bchan_event_ngwordtextbox(bchan_t *bchan)
 {
 	ngwordwindow_t *ngword;
-	W ret;
-	TC key;
+	W ret, len;
+	TC key, *str;
 
 	ngword = bchan->ngword;
 
 	ngwordwindow_starttextboxaction(ngword);
 
 	for (;;) {
-		ret = ngwordwindow_gettextboxaction(ngword, &key);
+		ret = ngwordwindow_gettextboxaction(ngword, &key, &str, &len);
 		if (ret < 0) {
 			break;
 		}
@@ -1648,6 +1648,9 @@ LOCAL VOID bchan_event_ngwordtextbox(bchan_t *bchan)
 		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_KEYMENU) {
 		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_MOVE) {
 		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_COPY) {
+		} else if (ret == NGWORDWINDOW_GETTEXTBOXACTION_APPEND) {
+			datcache_appendngword(bchan->cache, str, len);
+			ngwordwindow_appendword(ngword, str, len);
 		}
 	}
 

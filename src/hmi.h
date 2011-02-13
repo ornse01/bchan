@@ -69,7 +69,8 @@ IMPORT W ngwordwindow_starttextboxaction(ngwordwindow_t *window);
 #define NGWORDWINDOW_GETTEXTBOXACTION_KEYMENU 2
 #define NGWORDWINDOW_GETTEXTBOXACTION_MOVE 3
 #define NGWORDWINDOW_GETTEXTBOXACTION_COPY 4
-IMPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key);
+#define NGWORDWINDOW_GETTEXTBOXACTION_APPEND 5
+IMPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key, TC **val, W *len);
 IMPORT W ngwordwindow_endtextboxaction(ngwordwindow_t *window);
 
 enum {

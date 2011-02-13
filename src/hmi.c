@@ -1118,9 +1118,9 @@ EXPORT W ngwordwindow_starttextboxaction(ngwordwindow_t *window)
 	return 0;
 }
 
-EXPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key)
+EXPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key, TC **val, W *len)
 {
-	W ret;
+	W ret, len0;
 	WEVENT *wev;
 
 	wev = &window->savedwev;
@@ -1156,6 +1156,18 @@ EXPORT W ngwordwindow_gettextboxaction(ngwordwindow_t *window, TC *key)
 		case (0x4000|P_COPY):
 			return NGWORDWINDOW_GETTEXTBOXACTION_COPY;
 		case (0x4000|P_NL):
+			len0 = cget_val(window->tb_input_id, 128, (W*)window->strbuf);
+			if (len0 <= 0) {
+				return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
+			}
+			*val = window->strbuf;
+			*len = len0;
+			ret = cset_val(window->tb_input_id, 0, NULL);
+			if (ret < 0) {
+				DP_ER("cset_val tb_input_id error", ret);
+				return ret;
+			}
+			return NGWORDWINDOW_GETTEXTBOXACTION_APPEND;
 		case (0x4000|P_TAB):
 			return NGWORDWINDOW_GETTEXTBOXACTION_FINISH;
 		case (0x4000|P_BUT):
