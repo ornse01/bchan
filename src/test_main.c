@@ -56,6 +56,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_array_main();
 	test_wordlist_main();
 	test_tadsearch_main();
+	test_httpheaderlexer_main();
 
 	return 0;
 }

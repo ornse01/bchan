@@ -73,4 +73,7 @@ IMPORT VOID test_wordlist_main();
 /* test_tadsearch.c */
 IMPORT VOID test_tadsearch_main();
 
+/* test_httpheaderlexer.c */
+IMPORT VOID test_httpheaderlexer_main();
+
 #endif
