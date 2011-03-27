@@ -1,7 +1,7 @@
 /*
  * parselib.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -52,6 +52,10 @@ EXPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuet
 	checker->listindex_start = 0;
 	checker->listindex_end = checker->namelistnum;
 	checker->flag = 0;
+}
+
+EXPORT VOID tokenchecker_finalize(tokenchecker_t *checker)
+{
 }
 
 EXPORT VOID tokenchecker_clear(tokenchecker_t *checker)
