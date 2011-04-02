@@ -76,4 +76,10 @@ IMPORT VOID test_tadsearch_main();
 /* test_httpheaderlexer.c */
 IMPORT VOID test_httpheaderlexer_main();
 
+/* test_setcookieheader.c */
+IMPORT VOID test_setcookieheader_main();
+
+/* test_httpdateparser.c */
+IMPORT VOID test_httpdateparser_main();
+
 #endif
