@@ -125,6 +125,12 @@ EXPORT W tokenchecker_inputchar(tokenchecker_t *checker, UB c, W *val)
 	return TOKENCHECKER_CONTINUE;
 }
 
+EXPORT W tokenchecker_endinput(tokenchecker_t *checker, W *val)
+{
+	/* should be more efficient? */
+	return tokenchecker_inputchar(checker, checker->endtokens[0], val);
+}
+
 EXPORT VOID tokenchecker_getlastmatchedstring(tokenchecker_t *checker, UB **str, W *len)
 {
 	*str = (checker->namelist[checker->listindex_start]).name;

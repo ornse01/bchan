@@ -1,7 +1,7 @@
 /*
  * parselib.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -58,6 +58,7 @@ IMPORT VOID tokenchecker_initialize(tokenchecker_t *checker, tokenchecker_valuet
 IMPORT VOID tokenchecker_finalize(tokenchecker_t *checker);
 IMPORT VOID tokenchecker_clear(tokenchecker_t *checker);
 IMPORT W tokenchecker_inputchar(tokenchecker_t *checker, UB c, W *val);
+IMPORT W tokenchecker_endinput(tokenchecker_t *checker, W *val);
 IMPORT VOID tokenchecker_getlastmatchedstring(tokenchecker_t *checker, UB **str, W *len);
 
 typedef struct charreferparser_t_ charreferparser_t;
