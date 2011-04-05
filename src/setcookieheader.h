@@ -27,6 +27,7 @@
 #include    <basic.h>
 
 #include    "parselib.h"
+#include    "httpdateparser.h"
 
 #ifndef __SETCOOKIEHEADER_H__
 #define __SETCOOKIEHEADER_H__
@@ -58,6 +59,7 @@ enum SETCOOKIEPARSER_RESULT_TYPE_T_ {
 	SETCOOKIEPARSER_RESULT_TYPE_NAMEATTR,
 	SETCOOKIEPARSER_RESULT_TYPE_VALUE,
 	SETCOOKIEPARSER_RESULT_TYPE_SECUREATTR,
+	SETCOOKIEPARSER_RESULT_TYPE_EXPIRESATTR,
 };
 typedef enum SETCOOKIEPARSER_RESULT_TYPE_T_ SETCOOKIEPARSER_RESULT_TYPE_T;
 
@@ -73,6 +75,9 @@ struct setcookieparser_result_t_ {
 			W len;
 			SETCOOKIEPARSER_ATTR_T attr;
 		} value;
+		struct {
+			STIME time;
+		} expires;
 	} val;
 };
 typedef struct setcookieparser_result_t_ setcookieparser_result_t;
@@ -84,14 +89,17 @@ struct setcookieparser_t_ {
 		SETCOOKIEPARSER_STATE_READ_NAMEATTR,
 		SETCOOKIEPARSER_STATE_SKIP_AVPAIR,
 		SETCOOKIEPARSER_STATE_VALUE_NAME,
+		SETCOOKIEPARSER_STATE_VALUE_EXPIRES,
 		SETCOOKIEPARSER_STATE_VALUE_SUPPORTED,
 		SETCOOKIEPARSER_STATE_VALUE_UNSUPPORTED,
 	} state;
 	W attr;
 	httpcookiegeneral_t lexer;
 	tokenchecker_t attrchecker;
+	rfc733dateparser_t dateparser;
 	setcookieparser_result_t buffer[2];
 	UB buf_str[1];
+	DATE_TIM date;
 };
 typedef struct setcookieparser_t_ setcookieparser_t;
 

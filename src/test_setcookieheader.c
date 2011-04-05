@@ -42,43 +42,43 @@ typedef struct {
 	UB *value_name_exptd;
 	UB *value_comment_exptd;
 	UB *value_domain_exptd;
-	UB *value_expires_exptd;
 	UB *value_max_age_exptd;
 	UB *value_path_exptd;
 	UB *value_version_exptd;
 	Bool issecure_exptd;
+	STIME expires_exptd;
 
 	W i_a_name;
 	W i_v_name;
 	W i_v_comment;
 	W i_v_domain;
-	W i_v_expires;
 	W i_v_max_age;
 	W i_v_path;
 	W i_v_version;
 	Bool b_secure;
+	STIME t_v_expires;
 } test_cookieresult_t;
 
-LOCAL VOID test_cookieresult_initialize(test_cookieresult_t *result, UB *name, UB *val_name, UB *comment, UB *domain, UB *expires, UB *max_age, UB *path, UB *version, Bool secure)
+LOCAL VOID test_cookieresult_initialize(test_cookieresult_t *result, UB *name, UB *val_name, UB *comment, UB *domain, STIME expires, UB *max_age, UB *path, UB *version, Bool secure)
 {
 	result->attr_name_exptd = name;
 	result->value_name_exptd = val_name;
 	result->value_comment_exptd = comment;
 	result->value_domain_exptd = domain;
-	result->value_expires_exptd = expires;
 	result->value_max_age_exptd = max_age;
 	result->value_path_exptd = path;
 	result->value_version_exptd = version;
 	result->issecure_exptd = secure;
+	result->expires_exptd = expires;
 	result->i_a_name = 0;
 	result->i_v_name = 0;
 	result->i_v_comment = 0;
 	result->i_v_domain = 0;
-	result->i_v_expires = 0;
 	result->i_v_max_age = 0;
 	result->i_v_path = 0;
 	result->i_v_version = 0;
 	result->b_secure = False;
+	result->t_v_expires = 0;
 }
 
 LOCAL VOID test_cookieresult_checkstring(UB *target, W *target_len, UB *rcv, W rcv_len)
@@ -112,11 +112,6 @@ LOCAL VOID test_cookieresult_value_domain(test_cookieresult_t *result, UB *str, 
 	test_cookieresult_checkstring(result->value_domain_exptd, &result->i_v_domain, str, len);
 }
 
-LOCAL VOID test_cookieresult_value_expires(test_cookieresult_t *result, UB *str, W len)
-{
-	test_cookieresult_checkstring(result->value_expires_exptd, &result->i_v_expires, str, len);
-}
-
 LOCAL VOID test_cookieresult_value_max_age(test_cookieresult_t *result, UB *str, W len)
 {
 	test_cookieresult_checkstring(result->value_max_age_exptd, &result->i_v_max_age, str, len);
@@ -137,6 +132,11 @@ LOCAL VOID test_cookieresult_secure(test_cookieresult_t *result)
 	result->b_secure = True;
 }
 
+LOCAL VOID test_cookieresult_expires(test_cookieresult_t *result, STIME time)
+{
+	result->t_v_expires = time;
+}
+
 LOCAL VOID test_cookieresult_inputresult(test_cookieresult_t *result, setcookieparser_result_t *res)
 {
 	if (res->type == SETCOOKIEPARSER_RESULT_TYPE_NAMEATTR) {
@@ -148,9 +148,6 @@ LOCAL VOID test_cookieresult_inputresult(test_cookieresult_t *result, setcookiep
 			break;
 		case SETCOOKIEPARSER_ATTR_DOMAIN:
 			test_cookieresult_value_domain(result, res->val.name.str, res->val.name.len);
-			break;
-		case SETCOOKIEPARSER_ATTR_EXPIRES:
-			test_cookieresult_value_expires(result, res->val.name.str, res->val.name.len);
 			break;
 		case SETCOOKIEPARSER_ATTR_MAX_AGE:
 			test_cookieresult_value_max_age(result, res->val.name.str, res->val.name.len);
@@ -164,6 +161,7 @@ LOCAL VOID test_cookieresult_inputresult(test_cookieresult_t *result, setcookiep
 		case SETCOOKIEPARSER_ATTR_NAME:
 			test_cookieresult_value_name(result, res->val.name.str, res->val.name.len);
 			break;
+		case SETCOOKIEPARSER_ATTR_EXPIRES:
 		case SETCOOKIEPARSER_ATTR_SECURE:
 		default:
 			printf("invalid attr value\n");
@@ -171,6 +169,8 @@ LOCAL VOID test_cookieresult_inputresult(test_cookieresult_t *result, setcookiep
 		}
 	} else if (res->type == SETCOOKIEPARSER_RESULT_TYPE_SECUREATTR) {
 		test_cookieresult_secure(result);
+	} else if (res->type == SETCOOKIEPARSER_RESULT_TYPE_EXPIRESATTR) {
+		test_cookieresult_expires(result, res->val.expires.time);
 	} else {
 		printf("invalid value\n");
 	}
@@ -202,10 +202,6 @@ LOCAL Bool test_cookieresult_checkexpected(test_cookieresult_t *result)
 		printf("domain is not expected\n");
 		return False;
 	}
-	if (strlen(result->value_expires_exptd) != result->i_v_expires) {
-		printf("expires is not expected\n");
-		return False;
-	}
 	if (strlen(result->value_max_age_exptd) != result->i_v_max_age) {
 		printf("max-age is not expected\n");
 		return False;
@@ -220,6 +216,10 @@ LOCAL Bool test_cookieresult_checkexpected(test_cookieresult_t *result)
 	}
 	if (result->issecure_exptd != result->b_secure) {
 		printf("secure is not expected\n");
+		return False;
+	}
+	if (result->expires_exptd != result->t_v_expires) {
+		printf("expires is not expected\n");
 		return False;
 	}
 	return True;
@@ -299,7 +299,7 @@ LOCAL TEST_RESULT test_setcookieheader_1()
 	setcookieparser_result_t *res;
 	test_cookieresult_t check;
 
-	test_cookieresult_initialize(&check, "PON", "xAjpuk10.tky.hoge.co.jp", "", "", "Friday, 01-Jan-2016 00:00:00", "", "/", "", False);
+	test_cookieresult_initialize(&check, "PON", "xAjpuk10.tky.hoge.co.jp", "", "", /*"Friday, 01-Jan-2016 00:00:00"*/0x3a4e7700, "", "/", "", False);
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
@@ -328,7 +328,7 @@ LOCAL TEST_RESULT test_setcookieheader_2()
 	setcookieparser_result_t *res;
 	test_cookieresult_t check;
 
-	test_cookieresult_initialize(&check, "HAP", "0000000", "", ".2ch.net", "Friday, 01-Jan-2016 00:00:00 GMT", "", "/", "", False);
+	test_cookieresult_initialize(&check, "HAP", "0000000", "", ".2ch.net", /*"Friday, 01-Jan-2016 00:00:00 GMT"*/0x3a4e7700, "", "/", "", False);
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
@@ -357,7 +357,7 @@ LOCAL TEST_RESULT test_setcookieheader_3()
 	setcookieparser_result_t *res;
 	test_cookieresult_t check;
 
-	test_cookieresult_initialize(&check, "num", "123456", "", "", "Sun, 10-Jun-2001 12:00:00 GMT", "", "/HTTP/", "", False);
+	test_cookieresult_initialize(&check, "num", "123456", "", "", /*"Sun, 10-Jun-2001 12:00:00 GMT"*/0x1eec16c0, "", "/HTTP/", "", False);
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
@@ -386,7 +386,7 @@ LOCAL TEST_RESULT test_setcookieheader_4()
 	setcookieparser_result_t *res;
 	test_cookieresult_t check;
 
-	test_cookieresult_initialize(&check, "param2", "GHIJKL", "", "", "Mon, 31-Dec-2001 23:59:59 GMT", "", "/", "", True);
+	test_cookieresult_initialize(&check, "param2", "GHIJKL", "", "", /*"Mon, 31-Dec-2001 23:59:59 GMT"*/0x1ff9b17f, "", "/", "", True);
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {

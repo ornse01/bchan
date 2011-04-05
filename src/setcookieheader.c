@@ -26,6 +26,7 @@
 
 #include    "setcookieheader.h"
 #include    "parselib.h"
+#include    "httpdateparser.h"
 
 #include	<basic.h>
 #include	<bstdio.h>
@@ -155,7 +156,7 @@ LOCAL VOID setcookieparser_inputchar_resultVALUE_ch(setcookieparser_t *parser, U
 
 EXPORT W setcookieparser_inputchar(setcookieparser_t *parser, UB ch, setcookieparser_result_t **result, W *result_len)
 {
-	W ret, val;
+	W ret, val, err;
 	HTTPCOOKIEGENERAL_RESULT_T res;
 
 	*result_len = 0;
@@ -201,14 +202,21 @@ EXPORT W setcookieparser_inputchar(setcookieparser_t *parser, UB ch, setcookiepa
 			return SETCOOKIEPARSER_CONTINUE;
 		}
 		if (res == HTTPCOOKIEGENERAL_RESULT_VALUE) {
-			if (val != SETCOOKIEPARSER_ATTR_SECURE) {
+			if (val == SETCOOKIEPARSER_ATTR_SECURE) {
+				parser->state = SETCOOKIEPARSER_STATE_VALUE_UNSUPPORTED;
+			} else if (val == SETCOOKIEPARSER_ATTR_EXPIRES) {
+				parser->state = SETCOOKIEPARSER_STATE_VALUE_EXPIRES;
+				rfc733dateparser_initialize(&parser->dateparser);
+				err = rfc733dateparser_inputchar(&parser->dateparser, ch, &parser->date);
+				if (err != HTTPDATEPARSER_CONTINUE) {
+					return SETCOOKIEPARSER_ERROR;
+				}
+			} else {
 				parser->state = SETCOOKIEPARSER_STATE_VALUE_SUPPORTED;
 				parser->attr = val;
 				setcookieparser_inputchar_resultVALUE_ch(parser, ch, parser->buffer, parser->attr);
 				*result = parser->buffer;
 				*result_len = 1;
-			} else {
-				parser->state = SETCOOKIEPARSER_STATE_VALUE_UNSUPPORTED;
 			}
 			return SETCOOKIEPARSER_CONTINUE;
 		}
@@ -261,6 +269,24 @@ EXPORT W setcookieparser_inputchar(setcookieparser_t *parser, UB ch, setcookiepa
 		setcookieparser_inputchar_resultVALUE_ch(parser, ch, parser->buffer, SETCOOKIEPARSER_ATTR_NAME);
 		*result = parser->buffer;
 		*result_len = 1;
+		break;
+	case SETCOOKIEPARSER_STATE_VALUE_EXPIRES:
+		if (res == HTTPCOOKIEGENERAL_RESULT_AVPAIR_END) {
+			parser->state = SETCOOKIEPARSER_STATE_SEARCH_ATTR;
+			err = rfc733dateparser_endinput(&parser->dateparser, &parser->date);
+			if (err == HTTPDATEPARSER_DETERMINE) {
+				parser->buffer[0].type = SETCOOKIEPARSER_RESULT_TYPE_EXPIRESATTR;
+				set_tod(&parser->date, &(parser->buffer[0].val.expires.time), 0);
+				*result = parser->buffer;
+				*result_len = 1;
+			}
+			rfc733dateparser_finalize(&parser->dateparser);
+			break;
+		}
+		err = rfc733dateparser_inputchar(&parser->dateparser, ch, &parser->date);
+		if (err != HTTPDATEPARSER_CONTINUE) {
+			return SETCOOKIEPARSER_ERROR;
+		}
 		break;
 	}
 
