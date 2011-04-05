@@ -43,11 +43,11 @@ IMPORT W cookiedb_readheadercontext_appendchar_attr(cookiedb_readheadercontext_t
 IMPORT W cookiedb_readheadercontext_appendchar_name(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_appendchar_comment(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_appendchar_domain(cookiedb_readheadercontext_t *context, UB ch);
-IMPORT W cookiedb_readheadercontext_appendchar_expires(cookiedb_readheadercontext_t *context, UB ch);
-IMPORT W cookiedb_readheadercontext_appendchar_max_age(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_appendchar_path(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_appendchar_version(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_setsecure(cookiedb_readheadercontext_t *context);
+IMPORT W cookiedb_readheadercontext_setexpires(cookiedb_readheadercontext_t *context, STIME expires);
+IMPORT W cookiedb_readheadercontext_setmaxage(cookiedb_readheadercontext_t *context, W seconds);
 
 IMPORT cookiedb_writeheadercontext_t* cookiedb_startheaderwrite(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, Bool secure, STIME time);
 IMPORT VOID cookiedb_endheaderwrite(cookiedb_t *db, cookiedb_writeheadercontext_t *context);

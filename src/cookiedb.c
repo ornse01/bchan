@@ -89,16 +89,16 @@ struct httpcookie_t_ {
 	ascstr_t comment;
 	ascstr_t domain;
 	Bool persistent;
-	STIME expire;
+	STIME expires;
 	ascstr_t path;
 	ascstr_t version;
 	Bool secure;
 };
 typedef struct httpcookie_t_ httpcookie_t;
 
-LOCAL W httpcookie_setexpire(httpcookie_t *cookie, DATE_TIM *date)
+LOCAL VOID httpcookie_setexpires(httpcookie_t *cookie, STIME expires)
 {
-	return set_tod(date, &cookie->expire, 0);
+	cookie->expires = expires;
 }
 
 LOCAL VOID httpcookie_QueRemove(httpcookie_t *cookie)
@@ -143,6 +143,7 @@ LOCAL W httpcookie_initialize(httpcookie_t *cookie, UB *host, W host_len)
 
 	cookie->persistent = False;
 	cookie->secure = False;
+	cookie->expires = 0;
 
 	return 0;
 
@@ -245,11 +246,8 @@ struct cookiedb_readheadercontext_t_ {
 	enum {
 		COOKIEDB_READHEADERCONTEXT_STATE_START,
 		COOKIEDB_READHEADERCONTEXT_STATE_NAMEATTR,
-		COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE,
 		COOKIEDB_READHEADERCONTEXT_STATE_OTHERVAL,
 	} state;
-	rfc733dateparser_t dateparser;
-	DATE_TIM expire_buf;
 	httpcookie_t *reading;
 };
 
@@ -260,14 +258,6 @@ LOCAL VOID cookiedb_readheadercontext_insertcookie(cookiedb_readheadercontext_t 
 
 EXPORT W cookiedb_readheadercontext_appendchar_attr(cookiedb_readheadercontext_t *context, UB ch)
 {
-	W err;
-	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE) {
-		err = rfc733dateparser_endinput(&context->dateparser, &context->expire_buf);
-		rfc733dateparser_finalize(&context->dateparser);
-		if (err == HTTPDATEPARSER_DETERMINE) {
-			httpcookie_setexpire(context->reading, &context->expire_buf);
-		}
-	}
 	if (context->state != COOKIEDB_READHEADERCONTEXT_STATE_NAMEATTR) {
 		context->state = COOKIEDB_READHEADERCONTEXT_STATE_NAMEATTR;
 		if (context->reading != NULL) {
@@ -283,16 +273,8 @@ EXPORT W cookiedb_readheadercontext_appendchar_attr(cookiedb_readheadercontext_t
 
 LOCAL W cookiedb_readheadercontext_appdatechar_common(cookiedb_readheadercontext_t *context, ascstr_t *target, UB ch)
 {
-	W err;
 	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_START) {
 		return 0;
-	}
-	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE) {
-		err = rfc733dateparser_endinput(&context->dateparser, &context->expire_buf);
-		rfc733dateparser_finalize(&context->dateparser);
-		if (err == HTTPDATEPARSER_DETERMINE) {
-			httpcookie_setexpire(context->reading, &context->expire_buf);
-		}
 	}
 	context->state = COOKIEDB_READHEADERCONTEXT_STATE_OTHERVAL;
 	return ascstr_appendstr(target, &ch, 1);
@@ -313,29 +295,6 @@ EXPORT W cookiedb_readheadercontext_appendchar_domain(cookiedb_readheadercontext
 	return cookiedb_readheadercontext_appdatechar_common(context, &context->reading->domain, ch);
 }
 
-EXPORT W cookiedb_readheadercontext_appendchar_expires(cookiedb_readheadercontext_t *context, UB ch)
-{
-	W ret;
-
-	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_START) {
-		return 0;
-	}
-	if (context->state != COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE) {
-		rfc733dateparser_initialize(&context->dateparser);
-		memset(&context->expire_buf, 0, sizeof(DATE_TIM));
-		context->state = COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE;
-	}
-	ret = rfc733dateparser_inputchar(&context->dateparser, ch, &context->expire_buf);
-	/* TODO: format error handling */
-
-	return 0;
-}
-
-EXPORT W cookiedb_readheadercontext_appendchar_max_age(cookiedb_readheadercontext_t *context, UB ch)
-{
-	/* TODO */
-}
-
 EXPORT W cookiedb_readheadercontext_appendchar_path(cookiedb_readheadercontext_t *context, UB ch)
 {
 	return cookiedb_readheadercontext_appdatechar_common(context, &context->reading->path, ch);
@@ -351,11 +310,32 @@ EXPORT W cookiedb_readheadercontext_setsecure(cookiedb_readheadercontext_t *cont
 	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_START) {
 		return 0;
 	}
-	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_EXPIRE) {
-	}
 	context->state = COOKIEDB_READHEADERCONTEXT_STATE_OTHERVAL;
 
 	context->reading->secure = True;
+
+	return 0;
+}
+
+EXPORT W cookiedb_readheadercontext_setexpires(cookiedb_readheadercontext_t *context, STIME expires)
+{
+	if (context->state == COOKIEDB_READHEADERCONTEXT_STATE_START) {
+		return 0;
+	}
+	context->state = COOKIEDB_READHEADERCONTEXT_STATE_OTHERVAL;
+
+	httpcookie_setexpires(context->reading, expires);
+
+	return 0;
+}
+
+EXPORT W cookiedb_readheadercontext_setmaxage(cookiedb_readheadercontext_t *context, W seconds)
+{
+	if (seconds <= 0) {
+		return 0;
+	}
+
+	httpcookie_setexpires(context->reading, context->current + seconds);
 
 	return 0;
 }
