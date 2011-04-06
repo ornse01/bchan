@@ -51,6 +51,6 @@ IMPORT W cookiedb_readheadercontext_setmaxage(cookiedb_readheadercontext_t *cont
 
 IMPORT cookiedb_writeheadercontext_t* cookiedb_startheaderwrite(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, Bool secure, STIME time);
 IMPORT VOID cookiedb_endheaderwrite(cookiedb_t *db, cookiedb_writeheadercontext_t *context);
-IMPORT W cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t *context, UB **str, W *len);
+IMPORT Bool cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t *context, UB **str, W *len);
 
 #endif

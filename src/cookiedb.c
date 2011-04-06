@@ -84,8 +84,8 @@ struct httpcookie_t_ {
 	/* requested host */
 	ascstr_t host;
 	/* Set-Cookie value */
-	ascstr_t attr;
-	ascstr_t name;
+	ascstr_t attr; /* NAME string */
+	ascstr_t name; /* VALUE string */
 	ascstr_t comment;
 	ascstr_t domain;
 	Bool persistent;
@@ -95,6 +95,11 @@ struct httpcookie_t_ {
 	Bool secure;
 };
 typedef struct httpcookie_t_ httpcookie_t;
+
+LOCAL httpcookie_t* httpcookie_nextnode(httpcookie_t *cookie)
+{
+	return (httpcookie_t*)cookie->que.next;
+}
 
 LOCAL VOID httpcookie_setexpires(httpcookie_t *cookie, STIME expires)
 {
@@ -213,6 +218,11 @@ struct cookiedb_t_ {
 	cookiedb_readheadercontext_t *readcontext;
 };
 
+LOCAL httpcookie_t* cookie_volatiledb_sentinelnode(cookie_volatiledb_t *db)
+{
+	return (httpcookie_t*)&db->sentinel;
+}
+
 LOCAL VOID cookie_volatiledb_insertcookie(cookie_volatiledb_t *db, httpcookie_t *cookie)
 {
 	QueInsert(&cookie->que, &db->sentinel);
@@ -237,6 +247,205 @@ LOCAL VOID cookie_volatiledb_finalize(cookie_volatiledb_t *db)
 		cookie = (httpcookie_t*)db->sentinel.prev;
 		httpcookie_delete(cookie);
 	}
+}
+
+struct cookiedb_writeiterator_t_ {
+	cookiedb_t *origin;
+	ascstr_t host;
+	ascstr_t path;
+	Bool secure;
+	STIME time;
+	httpcookie_t *current;
+	enum {
+		COOKIEDB_WRITEITERATOR_STATE_VDB,
+		COOKIEDB_WRITEITERATOR_STATE_PDB,
+	} state;
+};
+typedef struct cookiedb_writeiterator_t_ cookiedb_writeiterator_t;
+
+LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
+{
+	return False;
+}
+
+LOCAL Bool cookiedb_writeiterator_next(cookiedb_writeiterator_t *iter, httpcookie_t **cookie)
+{
+	httpcookie_t *senti;
+	Bool send;
+
+	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_VDB) {
+		senti = cookie_volatiledb_sentinelnode(&iter->origin->vdb);
+		for (;;) {
+			if (iter->current == senti) {
+				break;
+			}
+			send = cookiedb_writeiterator_checksendcondition(iter, iter->current);
+			if (send == True) {
+				break;
+			}
+			iter->current = httpcookie_nextnode(iter->current);
+		}
+		if (iter->current != senti) {
+			*cookie = iter->current;
+			iter->current = httpcookie_nextnode(iter->current);
+			return True;
+		} else {
+			iter->state = COOKIEDB_WRITEITERATOR_STATE_PDB;
+		}
+	}
+	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_VDB) {
+	}
+
+	return False;
+}
+
+LOCAL W cookiedb_writeiterator_initialize(cookiedb_writeiterator_t *iter, cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, Bool secure, STIME time)
+{
+	W err;
+	httpcookie_t *senti;
+
+	err = ascstr_initialize(&iter->host);
+	if (err < 0) {
+		return err;
+	}
+	err = ascstr_appendstr(&iter->host, host, host_len);
+	if (err < 0) {
+		ascstr_finalize(&iter->host);
+		return err;
+	}
+	err = ascstr_initialize(&iter->path);
+	if (err < 0) {
+		ascstr_finalize(&iter->host);
+		return err;
+	}
+	err = ascstr_appendstr(&iter->path, path, path_len);
+	if (err < 0) {
+		ascstr_finalize(&iter->path);
+		ascstr_finalize(&iter->host);
+		return err;
+	}
+
+	iter->origin = db;
+	iter->secure = secure;
+	iter->time = time;
+	iter->state = COOKIEDB_WRITEITERATOR_STATE_VDB;
+	senti = cookie_volatiledb_sentinelnode(&db->vdb);
+	iter->current = httpcookie_nextnode(senti);
+
+	return 0;
+}
+
+LOCAL VOID cookiedb_writeiterator_finalize(cookiedb_writeiterator_t *iter)
+{
+	ascstr_finalize(&iter->path);
+	ascstr_finalize(&iter->host);
+}
+
+struct cookiedb_writeheadercontext_t_ {
+	cookiedb_writeiterator_t iter;
+	enum {
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_START,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_EQUAL,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_VALUE,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_COLON,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF,
+	} state;
+	httpcookie_t *current;
+};
+
+LOCAL UB cookiedb_writeheader_context_headername[] = "Cookie: ";
+LOCAL UB cookiedb_writeheader_context_equal[] = "=";
+LOCAL UB cookiedb_writeheader_context_colon[] = "; ";
+LOCAL UB cookiedb_writeheader_context_crlf[] = "\r\n";
+
+EXPORT Bool cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t *context, UB **str, W *len)
+{
+	Bool cont;
+
+	switch (context->state) {
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_START:
+		cont = cookiedb_writeiterator_next(&context->iter, &context->current);
+		if (cont == False) {
+			return False;
+		}
+		*str = cookiedb_writeheader_context_headername;
+		*len = 8;
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME:
+		*str = context->current->attr.str;
+		*len = context->current->attr.len;
+		context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_EQUAL;
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_EQUAL:
+		*str = cookiedb_writeheader_context_equal;
+		*len = 1;
+		context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_VALUE;
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_VALUE:
+		*str = context->current->name.str;
+		*len = context->current->name.len;
+		context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_COLON;
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_COLON:
+		*str = cookiedb_writeheader_context_colon;
+		*len = 2;
+		cont = cookiedb_writeiterator_next(&context->iter, &context->current);
+		if (cont == False) {
+			context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF;
+		} else {
+			context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME;
+		}
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF:
+		*str = cookiedb_writeheader_context_crlf;
+		*len = 2;
+		return False;
+	}
+
+	return False;
+}
+
+LOCAL cookiedb_writeheadercontext_t* cookiedb_writeheadercontext_new(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, Bool secure, STIME time)
+{
+	cookiedb_writeheadercontext_t *context;
+	W err;
+
+	context = (cookiedb_writeheadercontext_t*)malloc(sizeof(cookiedb_writeheadercontext_t));
+	if (context == NULL) {
+		return NULL;
+	}
+	err = cookiedb_writeiterator_initialize(&context->iter, db, host, host_len, path, path_len, secure, time);
+	if (err < 0) {
+		free(context);
+		return NULL;
+	}
+	context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_START;
+
+	return context;
+}
+
+LOCAL VOID cookiedb_writeheadercontext_delete(cookiedb_writeheadercontext_t *context)
+{
+	cookiedb_writeiterator_finalize(&context->iter);
+	free(context);
+}
+
+EXPORT cookiedb_writeheadercontext_t* cookiedb_startheaderwrite(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, Bool secure, STIME time)
+{
+	cookiedb_writeheadercontext_t *context;
+
+	context = cookiedb_writeheadercontext_new(db, host, host_len, path, path_len, secure, time);
+	if (context == NULL) {
+		return NULL;
+	}
+
+	return context;
+}
+
+EXPORT VOID cookiedb_endheaderwrite(cookiedb_t *db, cookiedb_writeheadercontext_t *context)
+{
+	cookiedb_writeheadercontext_delete(context);
 }
 
 struct cookiedb_readheadercontext_t_ {
