@@ -220,6 +220,35 @@ struct cookiedb_t_ {
 	cookie_persistentdb_t pdb;
 };
 
+LOCAL W cookie_persistentdb_writefile(cookie_persistentdb_t *db)
+{
+	/* TODO */
+	return -1;
+}
+
+LOCAL W cookie_persistentdb_readfile(cookie_persistentdb_t *db)
+{
+	/* TODO */
+	return -1;
+}
+
+LOCAL VOID cookie_persistentdb_clear(cookie_persistentdb_t *db)
+{
+	httpcookie_t *cookie;
+	Bool empty;
+
+	for (;;) {
+		empty = isQueEmpty(&db->sentinel);
+		if (empty == True) {
+			break;
+		}
+		cookie = (httpcookie_t*)db->sentinel.prev;
+		httpcookie_delete(cookie);
+	}
+
+	/* TODO clear file */
+}
+
 LOCAL httpcookie_t* cookie_persistentdb_sentinelnode(cookie_persistentdb_t *db)
 {
 	return (httpcookie_t*)&db->sentinel;
@@ -238,6 +267,21 @@ LOCAL W cookie_persistentdb_initialize(cookie_persistentdb_t *db, LINK *db_lnk)
 }
 
 LOCAL VOID cookie_persistentdb_finalize(cookie_persistentdb_t *db)
+{
+	httpcookie_t *cookie;
+	Bool empty;
+
+	for (;;) {
+		empty = isQueEmpty(&db->sentinel);
+		if (empty == True) {
+			break;
+		}
+		cookie = (httpcookie_t*)db->sentinel.prev;
+		httpcookie_delete(cookie);
+	}
+}
+
+LOCAL VOID cookie_volatiledb_clear(cookie_volatiledb_t *db)
 {
 	httpcookie_t *cookie;
 	Bool empty;
@@ -707,8 +751,20 @@ EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t 
 	cookiedb_readheadercontext_delete(context);
 }
 
-EXPORT W cookiedb_clearallcookie(cookiedb_t *db)
+EXPORT VOID cookiedb_clearallcookie(cookiedb_t *db)
 {
+	cookie_volatiledb_clear(&db->vdb);
+	cookie_persistentdb_clear(&db->pdb);
+}
+
+EXPORT W cookiedb_writefile(cookiedb_t *db)
+{
+	return cookie_persistentdb_writefile(&db->pdb);
+}
+
+EXPORT W cookiedb_readfile(cookiedb_t *db)
+{
+	return cookie_persistentdb_readfile(&db->pdb);
 }
 
 LOCAL W cookiedb_initialize(cookiedb_t *db, LINK *db_lnk)
