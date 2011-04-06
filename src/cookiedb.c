@@ -205,6 +205,8 @@ LOCAL VOID httpcookie_delete(httpcookie_t *cookie)
 }
 
 struct cookie_persistentdb_t_ {
+	QUEUE sentinel;
+	LINK *lnk;
 };
 typedef struct cookie_persistentdb_t_ cookie_persistentdb_t;
 
@@ -215,8 +217,40 @@ typedef struct cookie_volatiledb_t_ cookie_volatiledb_t;
 
 struct cookiedb_t_ {
 	cookie_volatiledb_t vdb;
-	cookiedb_readheadercontext_t *readcontext;
+	cookie_persistentdb_t pdb;
 };
+
+LOCAL httpcookie_t* cookie_persistentdb_sentinelnode(cookie_persistentdb_t *db)
+{
+	return (httpcookie_t*)&db->sentinel;
+}
+
+LOCAL VOID cookie_persistentdb_insertcookie(cookie_persistentdb_t *db, httpcookie_t *cookie)
+{
+	QueInsert(&cookie->que, &db->sentinel);
+}
+
+LOCAL W cookie_persistentdb_initialize(cookie_persistentdb_t *db, LINK *db_lnk)
+{
+	QueInit(&db->sentinel);
+	db->lnk = db_lnk;
+	return 0;
+}
+
+LOCAL VOID cookie_persistentdb_finalize(cookie_persistentdb_t *db)
+{
+	httpcookie_t *cookie;
+	Bool empty;
+
+	for (;;) {
+		empty = isQueEmpty(&db->sentinel);
+		if (empty == True) {
+			break;
+		}
+		cookie = (httpcookie_t*)db->sentinel.prev;
+		httpcookie_delete(cookie);
+	}
+}
 
 LOCAL httpcookie_t* cookie_volatiledb_sentinelnode(cookie_volatiledb_t *db)
 {
@@ -291,9 +325,27 @@ LOCAL Bool cookiedb_writeiterator_next(cookiedb_writeiterator_t *iter, httpcooki
 			return True;
 		} else {
 			iter->state = COOKIEDB_WRITEITERATOR_STATE_PDB;
+			senti = cookie_persistentdb_sentinelnode(&iter->origin->pdb);
+			iter->current = httpcookie_nextnode(senti);
 		}
 	}
-	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_VDB) {
+	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_PDB) {
+		senti = cookie_persistentdb_sentinelnode(&iter->origin->pdb);
+		for (;;) {
+			if (iter->current == senti) {
+				break;
+			}
+			send = cookiedb_writeiterator_checksendcondition(iter, iter->current);
+			if (send == True) {
+				break;
+			}
+			iter->current = httpcookie_nextnode(iter->current);
+		}
+		if (iter->current != senti) {
+			*cookie = iter->current;
+			iter->current = httpcookie_nextnode(iter->current);
+			return True;
+		}
 	}
 
 	return False;
@@ -615,17 +667,23 @@ EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB
 {
 	cookiedb_readheadercontext_t *context;
 
-	if (db->readcontext != NULL) {
-		return NULL;
-	}
-
 	context = cookiedb_readheadercontext_new(host, host_len, time);
 	if (context == NULL) {
 		return NULL;
 	}
-	db->readcontext = context;
 
 	return context;
+}
+
+LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME current)
+{
+	if (cookie->expires == 0) {
+		cookie_volatiledb_insertcookie(&db->vdb, cookie);
+	} if (cookie->expires < current) {
+		cookie_persistentdb_insertcookie(&db->pdb, cookie);
+	} else { /* cookie->expires >= current */
+		httpcookie_delete(cookie);
+	}
 }
 
 EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t *context)
@@ -638,23 +696,22 @@ EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t 
 			break;
 		}
 		httpcookie_QueRemove(cookie);
-		cookie_volatiledb_insertcookie(&db->vdb, cookie);
+		cookiedb_inserteachdb(db, cookie, context->current);
 	}
 	if (context->reading != NULL) {
 		httpcookie_QueRemove(context->reading);
-		cookie_volatiledb_insertcookie(&db->vdb, context->reading);
+		cookiedb_inserteachdb(db, context->reading, context->current);
 		context->reading = NULL;
 	}
 
 	cookiedb_readheadercontext_delete(context);
-	db->readcontext = NULL;
 }
 
 EXPORT W cookiedb_clearallcookie(cookiedb_t *db)
 {
 }
 
-LOCAL W cookiedb_initialize(cookiedb_t *db)
+LOCAL W cookiedb_initialize(cookiedb_t *db, LINK *db_lnk)
 {
 	W err;
 
@@ -662,13 +719,18 @@ LOCAL W cookiedb_initialize(cookiedb_t *db)
 	if (err < 0) {
 		return err;
 	}
-	db->readcontext = NULL;
+	err = cookie_persistentdb_initialize(&db->pdb, db_lnk);
+	if (err < 0) {
+		cookie_volatiledb_finalize(&db->vdb);
+		return err;
+	}
 
 	return 0;
 }
 
 LOCAL VOID cookiedb_finalize(cookiedb_t *db)
 {
+	cookie_persistentdb_finalize(&db->pdb);
 	cookie_volatiledb_finalize(&db->vdb);
 }
 
@@ -681,7 +743,7 @@ EXPORT cookiedb_t* cookiedb_new(LINK *db_lnk)
 	if (db == NULL) {
 		return NULL;
 	}
-	err = cookiedb_initialize(db);
+	err = cookiedb_initialize(db, db_lnk);
 	if (err < 0) {
 		free(db);
 		return NULL;
