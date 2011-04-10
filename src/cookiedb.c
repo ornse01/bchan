@@ -82,8 +82,9 @@ EXPORT VOID ascstr_finalize(ascstr_t *astr)
 
 struct httpcookie_t_ {
 	QUEUE que;
-	/* requested host */
-	ascstr_t host;
+	/* requested host and path */
+	ascstr_t origin_host;
+	ascstr_t origin_path;
 	/* Set-Cookie value */
 	ascstr_t attr; /* NAME string */
 	ascstr_t name; /* VALUE string */
@@ -124,16 +125,27 @@ LOCAL VOID httpcookie_QueRemove(httpcookie_t *cookie)
 	QueInit(&cookie->que);
 }
 
-LOCAL W httpcookie_initialize(httpcookie_t *cookie, UB *host, W host_len)
+LOCAL W httpcookie_initialize(httpcookie_t *cookie, UB *host, W host_len, UB *path, W path_len)
 {
 	W err;
 
 	QueInit(&cookie->que);
-	err = ascstr_initialize(&cookie->host);
+	err = ascstr_initialize(&cookie->origin_host);
 	if (err < 0) {
-		goto error_host;
+		goto error_originhost;
 	}
-	ascstr_appendstr(&cookie->host, host, host_len);
+	err = ascstr_appendstr(&cookie->origin_host, host, host_len);
+	if (err < 0) {
+		goto error_originhost_append;
+	}
+	err = ascstr_initialize(&cookie->origin_path);
+	if (err < 0) {
+		goto error_originpath;
+	}
+	err = ascstr_appendstr(&cookie->origin_path, path, path_len);
+	if (err < 0) {
+		goto error_originpath_append;
+	}
 	err = ascstr_initialize(&cookie->attr);
 	if (err < 0) {
 		goto error_attr;
@@ -177,8 +189,12 @@ error_comment:
 error_name:
 	ascstr_finalize(&cookie->attr);
 error_attr:
-	ascstr_finalize(&cookie->host);
-error_host:
+error_originpath_append:
+	ascstr_finalize(&cookie->origin_path);
+error_originpath:
+error_originhost_append:
+	ascstr_finalize(&cookie->origin_host);
+error_originhost:
 	return err;
 }
 
@@ -190,11 +206,12 @@ LOCAL VOID httpcookie_finalize(httpcookie_t *cookie)
 	ascstr_finalize(&cookie->comment);
 	ascstr_finalize(&cookie->name);
 	ascstr_finalize(&cookie->attr);
-	ascstr_finalize(&cookie->host);
+	ascstr_finalize(&cookie->origin_path);
+	ascstr_finalize(&cookie->origin_host);
 	QueRemove(&cookie->que);
 }
 
-LOCAL httpcookie_t* httpcookie_new(UB *host, W host_len)
+LOCAL httpcookie_t* httpcookie_new(UB *host, W host_len, UB *path, W path_len)
 {
 	httpcookie_t *cookie;
 	W err;
@@ -203,7 +220,7 @@ LOCAL httpcookie_t* httpcookie_new(UB *host, W host_len)
 	if (cookie == NULL) {
 		return NULL;
 	}
-	err = httpcookie_initialize(cookie, host, host_len);
+	err = httpcookie_initialize(cookie, host, host_len, path, path_len);
 	if (err < 0) {
 		free(cookie);
 		return NULL;
@@ -449,7 +466,7 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *i
 	if (cookie->domain.len != 0) {
 		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->domain);
 	} else {
-		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->host);
+		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->origin_host);
 	}
 	if (ok == False) {
 		return False;
@@ -457,7 +474,7 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *i
 	if (cookie->path.len != 0) {
 		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->path);
 	} else {
-		/* TODO */
+		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->origin_path);
 	}
 	if (ok == False) {
 		return False;
@@ -607,11 +624,12 @@ EXPORT Bool cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t
 		return True;
 	case COOKIEDB_WRITEITERATORCONTEXT_STATE_COLON:
 		*str = cookiedb_writeheader_context_colon;
-		*len = 2;
 		cont = cookiedb_writeiterator_next(&context->iter, &context->current);
 		if (cont == False) {
+			*len = 1;
 			context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF;
 		} else {
+			*len = 2;
 			context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME;
 		}
 		return True;
@@ -671,6 +689,7 @@ EXPORT VOID cookiedb_endheaderwrite(cookiedb_t *db, cookiedb_writeheadercontext_
 
 struct cookiedb_readheadercontext_t_ {
 	ascstr_t host;
+	ascstr_t path;
 	STIME current;
 	QUEUE sentinel;
 	enum {
@@ -693,7 +712,7 @@ EXPORT W cookiedb_readheadercontext_appendchar_attr(cookiedb_readheadercontext_t
 		if (context->reading != NULL) {
 			cookiedb_readheadercontext_insertcookie(context, context->reading);
 		}
-		context->reading = httpcookie_new(context->host.str, context->host.len);
+		context->reading = httpcookie_new(context->host.str, context->host.len, context->path.str, context->path.len);
 		if (context->reading == NULL) {
 			return -1; /* TODO: error value */
 		}
@@ -780,7 +799,7 @@ LOCAL httpcookie_t* cookiedb_readheadercontext_prevcookie(cookiedb_readheadercon
 	return (httpcookie_t*)context->sentinel.prev;
 }
 
-LOCAL cookiedb_readheadercontext_t* cookiedb_readheadercontext_new(UB *host, W host_len, STIME time)
+LOCAL cookiedb_readheadercontext_t* cookiedb_readheadercontext_new(UB *host, W host_len, UB *path, W path_len, STIME time)
 {
 	cookiedb_readheadercontext_t *context;
 	W err;
@@ -796,6 +815,19 @@ LOCAL cookiedb_readheadercontext_t* cookiedb_readheadercontext_new(UB *host, W h
 	}
 	err = ascstr_appendstr(&context->host, host, host_len);
 	if (err < 0) {
+		ascstr_finalize(&context->host);
+		free(context);
+		return NULL;
+	}
+	err = ascstr_initialize(&context->path);
+	if (err < 0) {
+		ascstr_finalize(&context->host);
+		free(context);
+		return NULL;
+	}
+	err = ascstr_appendstr(&context->path, path, path_len);
+	if (err < 0) {
+		ascstr_finalize(&context->path);
 		ascstr_finalize(&context->host);
 		free(context);
 		return NULL;
@@ -822,15 +854,16 @@ LOCAL VOID cookiedb_readheadercontext_delete(cookiedb_readheadercontext_t *conte
 		httpcookie_delete(context->reading);
 	}
 
+	ascstr_finalize(&context->path);
 	ascstr_finalize(&context->host);
 	free(context);
 }
 
-EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB *host, W host_len, STIME time)
+EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, STIME time)
 {
 	cookiedb_readheadercontext_t *context;
 
-	context = cookiedb_readheadercontext_new(host, host_len, time);
+	context = cookiedb_readheadercontext_new(host, host_len, path, path_len, time);
 	if (context == NULL) {
 		return NULL;
 	}

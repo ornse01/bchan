@@ -39,7 +39,7 @@ IMPORT VOID cookiedb_clearallcookie(cookiedb_t *db);
 IMPORT W cookiedb_writefile(cookiedb_t *db);
 IMPORT W cookiedb_readfile(cookiedb_t *db);
 
-IMPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB *host, W host_len, STIME time);
+IMPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB *host, W host_len, UB *path, W path_len, STIME time);
 IMPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t *context);
 IMPORT W cookiedb_readheadercontext_appendchar_attr(cookiedb_readheadercontext_t *context, UB ch);
 IMPORT W cookiedb_readheadercontext_appendchar_name(cookiedb_readheadercontext_t *context, UB ch);
