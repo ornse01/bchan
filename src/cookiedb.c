@@ -96,6 +96,17 @@ struct httpcookie_t_ {
 };
 typedef struct httpcookie_t_ httpcookie_t;
 
+LOCAL Bool httpcookie_isvalueset(httpcookie_t *cookie)
+{
+	if (cookie->attr.len == 0) {
+		return False;
+	}
+	if (cookie->name.len == 0) {
+		return False;
+	}
+	return True;
+}
+
 LOCAL httpcookie_t* httpcookie_nextnode(httpcookie_t *cookie)
 {
 	return (httpcookie_t*)cookie->que.next;
@@ -109,6 +120,7 @@ LOCAL VOID httpcookie_setexpires(httpcookie_t *cookie, STIME expires)
 LOCAL VOID httpcookie_QueRemove(httpcookie_t *cookie)
 {
 	QueRemove(&cookie->que);
+	QueInit(&cookie->que);
 }
 
 LOCAL W httpcookie_initialize(httpcookie_t *cookie, UB *host, W host_len)
@@ -343,7 +355,7 @@ typedef struct cookiedb_writeiterator_t_ cookiedb_writeiterator_t;
 
 LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
-	return False;
+	return True;
 }
 
 LOCAL Bool cookiedb_writeiterator_next(cookiedb_writeiterator_t *iter, httpcookie_t **cookie)
@@ -446,6 +458,7 @@ struct cookiedb_writeheadercontext_t_ {
 		COOKIEDB_WRITEITERATORCONTEXT_STATE_VALUE,
 		COOKIEDB_WRITEITERATORCONTEXT_STATE_COLON,
 		COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF,
+		COOKIEDB_WRITEITERATORCONTEXT_STATE_END,
 	} state;
 	httpcookie_t *current;
 };
@@ -467,6 +480,7 @@ EXPORT Bool cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t
 		}
 		*str = cookiedb_writeheader_context_headername;
 		*len = 8;
+		context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME;
 		return True;
 	case COOKIEDB_WRITEITERATORCONTEXT_STATE_NAME:
 		*str = context->current->attr.str;
@@ -496,6 +510,9 @@ EXPORT Bool cookiedb_writeheadercontext_makeheader(cookiedb_writeheadercontext_t
 	case COOKIEDB_WRITEITERATORCONTEXT_STATE_CRLF:
 		*str = cookiedb_writeheader_context_crlf;
 		*len = 2;
+		context->state = COOKIEDB_WRITEITERATORCONTEXT_STATE_END;
+		return True;
+	case COOKIEDB_WRITEITERATORCONTEXT_STATE_END:
 		return False;
 	}
 
@@ -675,14 +692,8 @@ LOCAL cookiedb_readheadercontext_t* cookiedb_readheadercontext_new(UB *host, W h
 		free(context);
 		return NULL;
 	}
-	context->reading = httpcookie_new(host, host_len);
-	if (context->reading == NULL) {
-		ascstr_finalize(&context->host);
-		free(context);
-		return NULL;
-	}
-	QueInit(&context->sentinel);
 	context->reading = NULL;
+	QueInit(&context->sentinel);
 	context->state = COOKIEDB_READHEADERCONTEXT_STATE_START;
 
 	return context;
@@ -699,7 +710,7 @@ LOCAL VOID cookiedb_readheadercontext_delete(cookiedb_readheadercontext_t *conte
 		}
 		httpcookie_delete(cookie);
 	}
-	if (context->reading == NULL) {
+	if (context->reading != NULL) {
 		httpcookie_delete(context->reading);
 	}
 
@@ -723,7 +734,7 @@ LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME cur
 {
 	if (cookie->expires == 0) {
 		cookie_volatiledb_insertcookie(&db->vdb, cookie);
-	} if (cookie->expires < current) {
+	} else if (cookie->expires < current) {
 		cookie_persistentdb_insertcookie(&db->pdb, cookie);
 	} else { /* cookie->expires >= current */
 		httpcookie_delete(cookie);
@@ -733,6 +744,7 @@ LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME cur
 EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t *context)
 {
 	httpcookie_t *cookie;
+	Bool ok;
 
 	for (;;) {
 		cookie = cookiedb_readheadercontext_prevcookie(context);
@@ -743,8 +755,13 @@ EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t 
 		cookiedb_inserteachdb(db, cookie, context->current);
 	}
 	if (context->reading != NULL) {
-		httpcookie_QueRemove(context->reading);
-		cookiedb_inserteachdb(db, context->reading, context->current);
+		ok = httpcookie_isvalueset(context->reading);
+		if (ok == True) {
+			httpcookie_QueRemove(context->reading);
+			cookiedb_inserteachdb(db, context->reading, context->current);
+		} else {
+			httpcookie_delete(context->reading);
+		}
 		context->reading = NULL;
 	}
 
