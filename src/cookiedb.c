@@ -30,6 +30,7 @@
 #include	<basic.h>
 #include	<bstdio.h>
 #include	<bstdlib.h>
+#include	<bstring.h>
 #include	<bsys/queue.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
@@ -353,8 +354,115 @@ struct cookiedb_writeiterator_t_ {
 };
 typedef struct cookiedb_writeiterator_t_ cookiedb_writeiterator_t;
 
+LOCAL W count_priod(ascstr_t *str)
+{
+	W i,count;
+
+	count = 0;
+	for (i = 0; i < str->len; i++) {
+		if (str->str[i] == '.') {
+			count++;
+		}
+	}
+
+	return count;
+}
+
+LOCAL Bool check_specified_TLD(ascstr_t *domain)
+{
+	if (strncmp(domain->str + domain->len - 4, ".net", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".com", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".edu", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".org", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".gov", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".mil", 4) == 0) {
+		return True;
+	}
+	if (strncmp(domain->str + domain->len - 4, ".int", 4) == 0) {
+		return True;
+	}
+	/* TODO: other TLDs. */
+	return False;
+}
+
+LOCAL Bool cookiedb_writeiterator_domaincheck(ascstr_t *send_host, ascstr_t *origin_host)
+{
+	W count;
+	Bool ok;
+
+	if (origin_host->len < send_host->len) {
+		return False;
+	}
+	if (strncmp(origin_host->str + origin_host->len - send_host->len, send_host->str, send_host->len) != 0) {
+		return False;
+	}
+	count = count_priod(send_host);
+	ok = check_specified_TLD(send_host);
+	if (ok == True) {
+		if (count < 2) {
+			return False;
+		}
+	} else {
+		if (count < 3) {
+			return False;
+		}
+	}
+
+	return True;
+}
+
+LOCAL Bool cookiedb_writeitereator_pathcheck(ascstr_t *send_path, ascstr_t *origin_path)
+{
+	if (origin_path->len < send_path->len) {
+		return False;
+	}
+	if (strncmp(origin_path->str, send_path->str, send_path->len) != 0) {
+		return False;
+	}
+	return True;
+}
+
 LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
+	Bool ok;
+
+	if (cookie->secure == True) {
+		if (iter->secure != True) {
+			return False;
+		}
+	}
+	if (cookie->persistent == True) {
+		if (cookie->expires < iter->time) {
+			return False;
+		}
+	}
+	if (cookie->domain.len != 0) {
+		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->domain);
+	} else {
+		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->host);
+	}
+	if (ok == False) {
+		return False;
+	}
+	if (cookie->path.len != 0) {
+		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->path);
+	} else {
+		/* TODO */
+	}
+	if (ok == False) {
+		return False;
+	}
+
 	return True;
 }
 
@@ -732,6 +840,7 @@ EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB
 
 LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME current)
 {
+	/* TODO: domain chack */
 	if (cookie->expires == 0) {
 		cookie_volatiledb_insertcookie(&db->vdb, cookie);
 	} else if (cookie->expires < current) {
