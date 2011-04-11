@@ -123,12 +123,10 @@ LOCAL Bool test_cookiedb_checkexist(UB *cookieheader, W len, testcookie_expected
 
 	p = strstr(cookieheader, expected->name);
 	if (p == NULL) {
-		printf("AAA\n");
 		return False;
 	}
 	p += strlen(expected->name);
 	if (*p != '=') {
-		printf("BBB\n");
 		return False;
 	}
 	p++;
