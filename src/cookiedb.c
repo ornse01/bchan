@@ -414,25 +414,11 @@ LOCAL Bool check_specified_TLD(ascstr_t *domain)
 
 LOCAL Bool cookiedb_writeiterator_domaincheck(ascstr_t *send_host, ascstr_t *origin_host)
 {
-	W count;
-	Bool ok;
-
 	if (origin_host->len < send_host->len) {
 		return False;
 	}
 	if (strncmp(origin_host->str + origin_host->len - send_host->len, send_host->str, send_host->len) != 0) {
 		return False;
-	}
-	count = count_priod(send_host);
-	ok = check_specified_TLD(send_host);
-	if (ok == True) {
-		if (count < 2) {
-			return False;
-		}
-	} else {
-		if (count < 3) {
-			return False;
-		}
 	}
 
 	return True;
@@ -452,6 +438,7 @@ LOCAL Bool cookiedb_writeitereator_pathcheck(ascstr_t *send_path, ascstr_t *orig
 LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
 	Bool ok;
+	W count;
 
 	if (cookie->secure == True) {
 		if (iter->secure != True) {
@@ -465,11 +452,25 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *i
 	}
 	if (cookie->domain.len != 0) {
 		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->domain);
+		if (ok == False) {
+			return False;
+		}
+		count = count_priod(&cookie->domain);
+		ok = check_specified_TLD(&cookie->domain);
+		if (ok == True) {
+			if (count < 2) {
+				return False;
+			}
+		} else {
+			if (count < 3) {
+				return False;
+			}
+		}
 	} else {
 		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->origin_host);
-	}
-	if (ok == False) {
-		return False;
+		if (ok == False) {
+			return False;
+		}
 	}
 	if (cookie->path.len != 0) {
 		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->path);
