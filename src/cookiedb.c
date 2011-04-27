@@ -234,127 +234,19 @@ LOCAL VOID httpcookie_delete(httpcookie_t *cookie)
 	free(cookie);
 }
 
-struct cookie_persistentdb_t_ {
+struct cookiedb_t_ {
 	QUEUE sentinel;
 	LINK *lnk;
 };
-typedef struct cookie_persistentdb_t_ cookie_persistentdb_t;
 
-struct cookie_volatiledb_t_ {
-	QUEUE sentinel;
-};
-typedef struct cookie_volatiledb_t_ cookie_volatiledb_t;
-
-struct cookiedb_t_ {
-	cookie_volatiledb_t vdb;
-	cookie_persistentdb_t pdb;
-};
-
-LOCAL W cookie_persistentdb_writefile(cookie_persistentdb_t *db)
-{
-	/* TODO */
-	return -1;
-}
-
-LOCAL W cookie_persistentdb_readfile(cookie_persistentdb_t *db)
-{
-	/* TODO */
-	return -1;
-}
-
-LOCAL VOID cookie_persistentdb_clear(cookie_persistentdb_t *db)
-{
-	httpcookie_t *cookie;
-	Bool empty;
-
-	for (;;) {
-		empty = isQueEmpty(&db->sentinel);
-		if (empty == True) {
-			break;
-		}
-		cookie = (httpcookie_t*)db->sentinel.prev;
-		httpcookie_delete(cookie);
-	}
-
-	/* TODO clear file */
-}
-
-LOCAL httpcookie_t* cookie_persistentdb_sentinelnode(cookie_persistentdb_t *db)
+LOCAL httpcookie_t* cookiedb_sentinelnode(cookiedb_t *db)
 {
 	return (httpcookie_t*)&db->sentinel;
 }
 
-LOCAL VOID cookie_persistentdb_insertcookie(cookie_persistentdb_t *db, httpcookie_t *cookie)
+LOCAL VOID cookiedb_insertcookie(cookiedb_t *db, httpcookie_t *cookie)
 {
 	QueInsert(&cookie->que, &db->sentinel);
-}
-
-LOCAL W cookie_persistentdb_initialize(cookie_persistentdb_t *db, LINK *db_lnk)
-{
-	QueInit(&db->sentinel);
-	db->lnk = db_lnk;
-	return 0;
-}
-
-LOCAL VOID cookie_persistentdb_finalize(cookie_persistentdb_t *db)
-{
-	httpcookie_t *cookie;
-	Bool empty;
-
-	for (;;) {
-		empty = isQueEmpty(&db->sentinel);
-		if (empty == True) {
-			break;
-		}
-		cookie = (httpcookie_t*)db->sentinel.prev;
-		httpcookie_delete(cookie);
-	}
-}
-
-LOCAL VOID cookie_volatiledb_clear(cookie_volatiledb_t *db)
-{
-	httpcookie_t *cookie;
-	Bool empty;
-
-	for (;;) {
-		empty = isQueEmpty(&db->sentinel);
-		if (empty == True) {
-			break;
-		}
-		cookie = (httpcookie_t*)db->sentinel.prev;
-		httpcookie_delete(cookie);
-	}
-}
-
-LOCAL httpcookie_t* cookie_volatiledb_sentinelnode(cookie_volatiledb_t *db)
-{
-	return (httpcookie_t*)&db->sentinel;
-}
-
-LOCAL VOID cookie_volatiledb_insertcookie(cookie_volatiledb_t *db, httpcookie_t *cookie)
-{
-	QueInsert(&cookie->que, &db->sentinel);
-}
-
-LOCAL W cookie_volatiledb_initialize(cookie_volatiledb_t *db)
-{
-	QueInit(&db->sentinel);
-	return 0;
-}
-
-LOCAL VOID cookie_volatiledb_finalize(cookie_volatiledb_t *db)
-{
-	httpcookie_t *cookie;
-	Bool empty;
-
-	for (;;) {
-		empty = isQueEmpty(&db->sentinel);
-		if (empty == True) {
-			break;
-		}
-		cookie = (httpcookie_t*)db->sentinel.prev;
-		httpcookie_delete(cookie);
-	}
 }
 
 struct cookiedb_writeiterator_t_ {
@@ -364,10 +256,6 @@ struct cookiedb_writeiterator_t_ {
 	Bool secure;
 	STIME time;
 	httpcookie_t *current;
-	enum {
-		COOKIEDB_WRITEITERATOR_STATE_VDB,
-		COOKIEDB_WRITEITERATOR_STATE_PDB,
-	} state;
 };
 typedef struct cookiedb_writeiterator_t_ cookiedb_writeiterator_t;
 
@@ -489,45 +377,21 @@ LOCAL Bool cookiedb_writeiterator_next(cookiedb_writeiterator_t *iter, httpcooki
 	httpcookie_t *senti;
 	Bool send;
 
-	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_VDB) {
-		senti = cookie_volatiledb_sentinelnode(&iter->origin->vdb);
-		for (;;) {
-			if (iter->current == senti) {
-				break;
-			}
-			send = cookiedb_writeiterator_checksendcondition(iter, iter->current);
-			if (send == True) {
-				break;
-			}
-			iter->current = httpcookie_nextnode(iter->current);
+	senti = cookiedb_sentinelnode(iter->origin);
+	for (;;) {
+		if (iter->current == senti) {
+			break;
 		}
-		if (iter->current != senti) {
-			*cookie = iter->current;
-			iter->current = httpcookie_nextnode(iter->current);
-			return True;
-		} else {
-			iter->state = COOKIEDB_WRITEITERATOR_STATE_PDB;
-			senti = cookie_persistentdb_sentinelnode(&iter->origin->pdb);
-			iter->current = httpcookie_nextnode(senti);
+		send = cookiedb_writeiterator_checksendcondition(iter, iter->current);
+		if (send == True) {
+			break;
 		}
+		iter->current = httpcookie_nextnode(iter->current);
 	}
-	if (iter->state == COOKIEDB_WRITEITERATOR_STATE_PDB) {
-		senti = cookie_persistentdb_sentinelnode(&iter->origin->pdb);
-		for (;;) {
-			if (iter->current == senti) {
-				break;
-			}
-			send = cookiedb_writeiterator_checksendcondition(iter, iter->current);
-			if (send == True) {
-				break;
-			}
-			iter->current = httpcookie_nextnode(iter->current);
-		}
-		if (iter->current != senti) {
-			*cookie = iter->current;
-			iter->current = httpcookie_nextnode(iter->current);
-			return True;
-		}
+	if (iter->current != senti) {
+		*cookie = iter->current;
+		iter->current = httpcookie_nextnode(iter->current);
+		return True;
 	}
 
 	return False;
@@ -562,8 +426,7 @@ LOCAL W cookiedb_writeiterator_initialize(cookiedb_writeiterator_t *iter, cookie
 	iter->origin = db;
 	iter->secure = secure;
 	iter->time = time;
-	iter->state = COOKIEDB_WRITEITERATOR_STATE_VDB;
-	senti = cookie_volatiledb_sentinelnode(&db->vdb);
+	senti = cookiedb_sentinelnode(db);
 	iter->current = httpcookie_nextnode(senti);
 
 	return 0;
@@ -872,14 +735,25 @@ EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB
 	return context;
 }
 
-LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME current)
+LOCAL Bool cookiedb_checkinsertioncondition(cookiedb_t *db, httpcookie_t *cookie, STIME current)
 {
 	/* TODO: domain chack */
 	if (cookie->expires == 0) {
-		cookie_volatiledb_insertcookie(&db->vdb, cookie);
-	} else if (cookie->expires < current) {
-		cookie_persistentdb_insertcookie(&db->pdb, cookie);
-	} else { /* cookie->expires >= current */
+		return True;
+	}
+	if (cookie->expires < current) {
+		return True;
+	}
+	return False;
+}
+
+LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME current)
+{
+	Bool save;
+	save = cookiedb_checkinsertioncondition(db, cookie, current);
+	if (save == True) {
+		cookiedb_insertcookie(db, cookie);
+	} else {
 		httpcookie_delete(cookie);
 	}
 }
@@ -913,41 +787,53 @@ EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t 
 
 EXPORT VOID cookiedb_clearallcookie(cookiedb_t *db)
 {
-	cookie_volatiledb_clear(&db->vdb);
-	cookie_persistentdb_clear(&db->pdb);
+	httpcookie_t *cookie;
+	Bool empty;
+
+	for (;;) {
+		empty = isQueEmpty(&db->sentinel);
+		if (empty == True) {
+			break;
+		}
+		cookie = (httpcookie_t*)db->sentinel.prev;
+		httpcookie_delete(cookie);
+	}
+
+	/* TODO clear file */
 }
 
 EXPORT W cookiedb_writefile(cookiedb_t *db)
 {
-	return cookie_persistentdb_writefile(&db->pdb);
+	/* TODO */
+	return -1;
 }
 
 EXPORT W cookiedb_readfile(cookiedb_t *db)
 {
-	return cookie_persistentdb_readfile(&db->pdb);
+	/* TODO */
+	return -1;
 }
 
 LOCAL W cookiedb_initialize(cookiedb_t *db, LINK *db_lnk)
 {
-	W err;
-
-	err = cookie_volatiledb_initialize(&db->vdb);
-	if (err < 0) {
-		return err;
-	}
-	err = cookie_persistentdb_initialize(&db->pdb, db_lnk);
-	if (err < 0) {
-		cookie_volatiledb_finalize(&db->vdb);
-		return err;
-	}
-
+	QueInit(&db->sentinel);
+	db->lnk = db_lnk;
 	return 0;
 }
 
 LOCAL VOID cookiedb_finalize(cookiedb_t *db)
 {
-	cookie_persistentdb_finalize(&db->pdb);
-	cookie_volatiledb_finalize(&db->vdb);
+	httpcookie_t *cookie;
+	Bool empty;
+
+	for (;;) {
+		empty = isQueEmpty(&db->sentinel);
+		if (empty == True) {
+			break;
+		}
+		cookie = (httpcookie_t*)db->sentinel.prev;
+		httpcookie_delete(cookie);
+	}
 }
 
 EXPORT cookiedb_t* cookiedb_new(LINK *db_lnk)
