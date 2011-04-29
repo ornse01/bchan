@@ -64,6 +64,28 @@ EXPORT W ascstr_appendstr(ascstr_t *astr, UB *apd, W apd_len)
 	return 0;
 }
 
+EXPORT W ascstr_cmp(ascstr_t *s1, ascstr_t *s2)
+{
+	W i,len;
+
+	len = s1->len > s2->len ? s2->len : s1->len;
+	for (i = 0; i < len; i++) {
+		if (s1->str[i] > s2->str[i]) {
+			return 1;
+		} else if (s1->str[i] < s2->str[i]) {
+			return -1;
+		}
+	}
+
+	/* check terminate char: '\0' */
+	if (s1->str[i] > s2->str[i]) {
+		return 1;
+	} else if (s1->str[i] < s2->str[i]) {
+		return -1;
+	}
+	return 0; /* same length */
+}
+
 EXPORT W ascstr_initialize(ascstr_t *astr)
 {
 	astr->str = malloc(sizeof(UB));
@@ -98,12 +120,47 @@ struct httpcookie_t_ {
 };
 typedef struct httpcookie_t_ httpcookie_t;
 
+LOCAL ascstr_t* httpcookie_getvaliddomain(httpcookie_t *cookie)
+{
+	if (cookie->domain.len != 0) {
+		return &cookie->domain;
+	}
+	return &cookie->origin_host;
+}
+
+LOCAL ascstr_t* httpcookie_getvalidpath(httpcookie_t *cookie)
+{
+	if (cookie->path.len != 0) {
+		return &cookie->path;
+	}
+	return &cookie->origin_path;
+}
+
 LOCAL Bool httpcookie_isvalueset(httpcookie_t *cookie)
 {
 	if (cookie->attr.len == 0) {
 		return False;
 	}
 	if (cookie->name.len == 0) {
+		return False;
+	}
+	return True;
+}
+
+/* check replace condition. */
+LOCAL Bool httpcookie_issamekey(httpcookie_t *cookie1, httpcookie_t *cookie2)
+{
+	W cmp;
+	ascstr_t *as1, *as2;
+
+	cmp = ascstr_cmp(&cookie1->attr, &cookie2->attr);
+	if (cmp != 0) {
+		return False;
+	}
+	as1 = httpcookie_getvaliddomain(cookie1);
+	as2 = httpcookie_getvaliddomain(cookie2);
+	cmp = ascstr_cmp(as1, as2);
+	if (cmp != 0) {
 		return False;
 	}
 	return True;
@@ -123,6 +180,11 @@ LOCAL VOID httpcookie_QueRemove(httpcookie_t *cookie)
 {
 	QueRemove(&cookie->que);
 	QueInit(&cookie->que);
+}
+
+LOCAL VOID httpcookie_QueInsert(httpcookie_t *entry, httpcookie_t *que)
+{
+	QueInsert(&entry->que, &que->que);
 }
 
 LOCAL W httpcookie_initialize(httpcookie_t *cookie, UB *host, W host_len, UB *path, W path_len)
@@ -242,11 +304,6 @@ struct cookiedb_t_ {
 LOCAL httpcookie_t* cookiedb_sentinelnode(cookiedb_t *db)
 {
 	return (httpcookie_t*)&db->sentinel;
-}
-
-LOCAL VOID cookiedb_insertcookie(cookiedb_t *db, httpcookie_t *cookie)
-{
-	QueInsert(&cookie->que, &db->sentinel);
 }
 
 struct cookiedb_writeiterator_t_ {
@@ -733,6 +790,38 @@ EXPORT cookiedb_readheadercontext_t* cookiedb_startheaderread(cookiedb_t *db, UB
 	}
 
 	return context;
+}
+
+LOCAL VOID cookiedb_insertcookie(cookiedb_t *db, httpcookie_t *cookie)
+{
+	httpcookie_t *senti, *node;
+	ascstr_t *as_a, *as_n;
+	W cmp;
+	Bool samekey;
+
+	senti = cookiedb_sentinelnode(db);
+	node = httpcookie_nextnode(senti);
+	for (;;) {
+		if (node == senti) {
+			httpcookie_QueInsert(cookie, senti);
+			break;
+		}
+		as_n = httpcookie_getvalidpath(node);
+		as_a = httpcookie_getvalidpath(cookie);
+		cmp = ascstr_cmp(as_n, as_a);
+		if (cmp == 0) {
+			samekey = httpcookie_issamekey(node, cookie);
+			if (samekey == True) {
+				httpcookie_QueInsert(cookie, node);
+				httpcookie_delete(node);
+				break;
+			}
+		} else if (cmp < 0) {
+			httpcookie_QueInsert(cookie, node);
+			break;
+		}
+		node = httpcookie_nextnode(node);
+	}
 }
 
 LOCAL Bool cookiedb_checkinsertioncondition(cookiedb_t *db, httpcookie_t *cookie, STIME current)
