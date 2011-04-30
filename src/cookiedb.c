@@ -86,6 +86,24 @@ EXPORT W ascstr_cmp(ascstr_t *s1, ascstr_t *s2)
 	return 0; /* same length */
 }
 
+/*
+ * match example
+ *  astr:    XXXXYYYYZZZZ
+ *  suffix:       YYYZZZZ
+ *
+ */
+EXPORT Bool ascstr_suffixcmp(ascstr_t *astr, ascstr_t *suffix)
+{
+	if (astr->len < suffix->len) {
+		return False;
+	}
+	if (strncmp(astr->str + astr->len - suffix->len, suffix->str, suffix->len) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
 EXPORT W ascstr_initialize(ascstr_t *astr)
 {
 	astr->str = malloc(sizeof(UB));
@@ -357,13 +375,32 @@ LOCAL Bool check_specified_TLD(ascstr_t *domain)
 	return False;
 }
 
-LOCAL Bool cookiedb_writeiterator_domaincheck(ascstr_t *send_host, ascstr_t *origin_host)
+LOCAL Bool cookiedb_writeiterator_checksendcondition_domaincheck(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
-	if (origin_host->len < send_host->len) {
-		return False;
-	}
-	if (strncmp(origin_host->str + origin_host->len - send_host->len, send_host->str, send_host->len) != 0) {
-		return False;
+	Bool ok;
+	W count;
+
+	if (cookie->domain.len != 0) {
+		ok = ascstr_suffixcmp(&iter->host, &cookie->domain);
+		if (ok == False) {
+			return False;
+		}
+		count = count_priod(&cookie->domain);
+		ok = check_specified_TLD(&cookie->domain);
+		if (ok == True) {
+			if (count < 2) {
+				return False;
+			}
+		} else {
+			if (count < 3) {
+				return False;
+			}
+		}
+	} else {
+		ok = ascstr_suffixcmp(&iter->host, &cookie->origin_host);
+		if (ok == False) {
+			return False;
+		}
 	}
 
 	return True;
@@ -383,7 +420,6 @@ LOCAL Bool cookiedb_writeitereator_pathcheck(ascstr_t *send_path, ascstr_t *orig
 LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
 	Bool ok;
-	W count;
 
 	if (cookie->secure == True) {
 		if (iter->secure != True) {
@@ -395,27 +431,9 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *i
 			return False;
 		}
 	}
-	if (cookie->domain.len != 0) {
-		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->domain);
-		if (ok == False) {
-			return False;
-		}
-		count = count_priod(&cookie->domain);
-		ok = check_specified_TLD(&cookie->domain);
-		if (ok == True) {
-			if (count < 2) {
-				return False;
-			}
-		} else {
-			if (count < 3) {
-				return False;
-			}
-		}
-	} else {
-		ok = cookiedb_writeiterator_domaincheck(&iter->host, &cookie->origin_host);
-		if (ok == False) {
-			return False;
-		}
+	ok = cookiedb_writeiterator_checksendcondition_domaincheck(iter, cookie);
+	if (ok == False) {
+		return False;
 	}
 	if (cookie->path.len != 0) {
 		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->path);
@@ -826,17 +844,55 @@ LOCAL VOID cookiedb_insertcookie(cookiedb_t *db, httpcookie_t *cookie)
 
 LOCAL Bool cookiedb_checkinsertioncondition(cookiedb_t *db, httpcookie_t *cookie, STIME current)
 {
-	/* TODO: domain chack */
+	W count;
+	Bool ok;
+
+	/* domain check */
+	if (cookie->domain.len != 0) {
+		if (cookie->domain.str[0] != '.') { /* is not error and add period? */
+			return False;
+		}
+		/* same as cookiedb_writeiterator_checksendcondition */
+		count = count_priod(&cookie->domain);
+		ok = check_specified_TLD(&cookie->domain);
+		if (ok == True) {
+			if (count < 2) {
+				return False;
+			}
+		} else {
+			if (count < 3) {
+				return False;
+			}
+		}
+		/* domain and request host check */
+		if (cookie->domain.len == (cookie->origin_host.len + 1)) {
+			/* for
+			 *  domain = .xxx.yyy.zzz
+			 *  origin =  xxx.yyy.zzz
+			 */
+			if (strncmp(cookie->domain.str + 1, cookie->origin_host.str, cookie->origin_host.len) != 0) {
+				return False;
+			}
+		} else {
+			ok = ascstr_suffixcmp(&cookie->origin_host, &cookie->domain);
+			if (ok == False) {
+				return False;
+			}
+		}
+	}
+
+	/* expire check */
 	if (cookie->expires == 0) {
 		return True;
 	}
 	if (cookie->expires < current) {
 		return True;
 	}
+
 	return False;
 }
 
-LOCAL VOID cookiedb_inserteachdb(cookiedb_t *db, httpcookie_t *cookie, STIME current)
+LOCAL VOID cookiedb_insertwithcheck(cookiedb_t *db, httpcookie_t *cookie, STIME current)
 {
 	Bool save;
 	save = cookiedb_checkinsertioncondition(db, cookie, current);
@@ -858,13 +914,13 @@ EXPORT VOID cookiedb_endheaderread(cookiedb_t *db, cookiedb_readheadercontext_t 
 			break;
 		}
 		httpcookie_QueRemove(cookie);
-		cookiedb_inserteachdb(db, cookie, context->current);
+		cookiedb_insertwithcheck(db, cookie, context->current);
 	}
 	if (context->reading != NULL) {
 		ok = httpcookie_isvalueset(context->reading);
 		if (ok == True) {
 			httpcookie_QueRemove(context->reading);
-			cookiedb_inserteachdb(db, context->reading, context->current);
+			cookiedb_insertwithcheck(db, context->reading, context->current);
 		} else {
 			httpcookie_delete(context->reading);
 		}
