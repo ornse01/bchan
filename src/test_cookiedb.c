@@ -693,7 +693,7 @@ LOCAL TEST_RESULT test_cookiedb_9()
 		}
 	};
 
-	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 2);
+	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/aaa/bbb/index.html", False, 0x1eec16c0, expected, 2);
 }
 
 LOCAL TEST_RESULT test_cookiedb_10()
@@ -731,7 +731,7 @@ LOCAL TEST_RESULT test_cookiedb_10()
 		}
 	};
 
-	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 2);
+	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/aaa/bbb/index.html", False, 0x1eec16c0, expected, 2);
 }
 
 LOCAL TEST_RESULT test_cookiedb_11()
@@ -769,7 +769,7 @@ LOCAL TEST_RESULT test_cookiedb_11()
 		}
 	};
 
-	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 2);
+	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/aaa/bbb/index.html", False, 0x1eec16c0, expected, 2);
 }
 
 LOCAL TEST_RESULT test_cookiedb_12()
@@ -807,7 +807,7 @@ LOCAL TEST_RESULT test_cookiedb_12()
 		}
 	};
 
-	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 2);
+	return test_cookiedb_testingseparateinput_order(data, 2, 0x1eec16c0, "2ch.net", "/aaa/bbb/index.html", False, 0x1eec16c0, expected, 2);
 }
 
 /* check domain condition. */
