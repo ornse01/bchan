@@ -104,6 +104,24 @@ EXPORT Bool ascstr_suffixcmp(ascstr_t *astr, ascstr_t *suffix)
 	return True;
 }
 
+/*
+ * match example
+ *  astr:    XXXXYYYYZZZZ
+ *  prefix:  XXXXYY
+ *
+ */
+EXPORT Bool ascstr_prefixcmp(ascstr_t *astr, ascstr_t *prefix)
+{
+	if (astr->len < prefix->len) {
+		return False;
+	}
+	if (strncmp(astr->str, prefix->str, prefix->len) != 0) {
+		return False;
+	}
+
+	return True;
+}
+
 EXPORT W ascstr_initialize(ascstr_t *astr)
 {
 	astr->str = malloc(sizeof(UB));
@@ -406,13 +424,13 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition_domaincheck(cookiedb_writei
 	return True;
 }
 
-LOCAL Bool cookiedb_writeitereator_pathcheck(ascstr_t *send_path, ascstr_t *origin_path)
+LOCAL Bool cookiedb_writeitereator_pathcheck(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
-	if (origin_path->len < send_path->len) {
-		return False;
-	}
-	if (strncmp(origin_path->str, send_path->str, send_path->len) != 0) {
-		return False;
+	Bool ok;
+	if (cookie->path.len != 0) {
+		ok = ascstr_prefixcmp(&iter->path, &cookie->path);
+	} else {
+		ok = ascstr_prefixcmp(&iter->path, &cookie->origin_path);
 	}
 	return True;
 }
@@ -435,11 +453,7 @@ LOCAL Bool cookiedb_writeiterator_checksendcondition(cookiedb_writeiterator_t *i
 	if (ok == False) {
 		return False;
 	}
-	if (cookie->path.len != 0) {
-		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->path);
-	} else {
-		ok = cookiedb_writeitereator_pathcheck(&iter->path, &cookie->origin_path);
-	}
+	ok = cookiedb_writeitereator_pathcheck(iter, cookie);
 	if (ok == False) {
 		return False;
 	}
