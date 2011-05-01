@@ -59,6 +59,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_httpheaderlexer_main();
 	test_setcookieheader_main();
 	test_httpdateparser_main();
+	test_cookiedb_main();
 
 	return 0;
 }

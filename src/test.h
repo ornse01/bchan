@@ -82,4 +82,7 @@ IMPORT VOID test_setcookieheader_main();
 /* test_httpdateparser.c */
 IMPORT VOID test_httpdateparser_main();
 
+/* test_cookiedb.c */
+IMPORT VOID test_cookiedb_main();
+
 #endif
