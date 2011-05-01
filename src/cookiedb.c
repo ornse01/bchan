@@ -209,6 +209,7 @@ LOCAL httpcookie_t* httpcookie_nextnode(httpcookie_t *cookie)
 
 LOCAL VOID httpcookie_setexpires(httpcookie_t *cookie, STIME expires)
 {
+	cookie->persistent = True;
 	cookie->expires = expires;
 }
 
@@ -788,6 +789,7 @@ LOCAL cookiedb_readheadercontext_t* cookiedb_readheadercontext_new(UB *host, W h
 	context->reading = NULL;
 	QueInit(&context->sentinel);
 	context->state = COOKIEDB_READHEADERCONTEXT_STATE_START;
+	context->current = time;
 
 	return context;
 }
@@ -899,7 +901,7 @@ LOCAL Bool cookiedb_checkinsertioncondition(cookiedb_t *db, httpcookie_t *cookie
 	if (cookie->expires == 0) {
 		return True;
 	}
-	if (cookie->expires < current) {
+	if (cookie->expires >= current) {
 		return True;
 	}
 
