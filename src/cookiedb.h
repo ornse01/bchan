@@ -33,7 +33,7 @@ typedef struct cookiedb_t_ cookiedb_t;
 typedef struct cookiedb_readheadercontext_t_ cookiedb_readheadercontext_t;
 typedef struct cookiedb_writeheadercontext_t_ cookiedb_writeheadercontext_t;
 
-IMPORT cookiedb_t* cookiedb_new(LINK *db_lnk);
+IMPORT cookiedb_t* cookiedb_new(LINK *db_lnk, W rectype, UH subtype);
 IMPORT VOID cookiedb_delete(cookiedb_t *db);
 IMPORT VOID cookiedb_clearallcookie(cookiedb_t *db);
 IMPORT W cookiedb_writefile(cookiedb_t *db);

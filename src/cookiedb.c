@@ -26,11 +26,16 @@
 
 #include    "cookiedb.h"
 #include    "httpdateparser.h"
+#include    "psvlexer.h"
+#include    "parselib.h"
 
 #include	<basic.h>
 #include	<bstdio.h>
 #include	<bstdlib.h>
 #include	<bstring.h>
+#include	<bctype.h>
+#include	<errcode.h>
+#include	<btron/btron.h>
 #include	<bsys/queue.h>
 
 #ifdef BCHAN_CONFIG_DEBUG
@@ -336,6 +341,8 @@ LOCAL VOID httpcookie_delete(httpcookie_t *cookie)
 struct cookiedb_t_ {
 	QUEUE sentinel;
 	LINK *lnk;
+	W rectype;
+	UH subtype;
 };
 
 LOCAL httpcookie_t* cookiedb_sentinelnode(cookiedb_t *db)
@@ -962,22 +969,570 @@ EXPORT VOID cookiedb_clearallcookie(cookiedb_t *db)
 	/* TODO clear file */
 }
 
+LOCAL W cookiedb_append_astr_recode(W fd, ascstr_t *astr)
+{
+	return wri_rec(fd, -1, astr->str, astr->len, NULL, NULL, 0);
+}
+
+/* tmp */
+LOCAL UB dec[] = "0123456789";
+LOCAL W UW_to_str(UW n, UB *str)
+{
+	W i = 0,digit,draw = 0;
+
+	digit = n / 1000000000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 100000000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 10000000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 1000000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 100000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 10000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 1000 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 100 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n / 10 % 10;
+	if ((digit != 0)||(draw != 0)) {
+		str[i++] = dec[digit];
+		draw = 1;
+	}
+	digit = n % 10;
+	str[i++] = dec[digit];
+
+	return i;
+}
+
+LOCAL W cookiedb_append_STIME_recode(W fd, STIME time)
+{
+	UB str[10];
+	W len;
+
+	len = UW_to_str(time, str);
+	return wri_rec(fd, -1, str, len, NULL, NULL, 0);
+}
+
+LOCAL W cookiedb_writecookietorecord(httpcookie_t *cookie, W fd)
+{
+	W err;
+	UB paren[2] = "<>";
+	UB secure[6] = "secure";
+	UB nl[1] = "\n";
+	ascstr_t a_paren = {paren, 2};
+	ascstr_t a_secure = {secure, 6};
+	ascstr_t a_nl = {nl, 1};
+
+	err = cookiedb_append_astr_recode(fd, &cookie->origin_host);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->origin_path);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->attr);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->name);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->comment);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->domain);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_STIME_recode(fd, cookie->expires);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->path);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &cookie->version);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	if (cookie->secure == True) {
+		err = cookiedb_append_astr_recode(fd, &a_secure);
+		if (err < 0) {
+			return err;
+		}
+	}
+	err = cookiedb_append_astr_recode(fd, &a_paren);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_append_astr_recode(fd, &a_nl);
+	if (err < 0) {
+		return err;
+	}
+
+	return 0;
+}
+
+LOCAL W cookiedb_writecookiestorecord(cookiedb_t *db, W fd)
+{
+	httpcookie_t *senti, *node;
+	W err;
+
+	senti = cookiedb_sentinelnode(db);
+	node = httpcookie_nextnode(senti);
+	for (; node != senti; node = httpcookie_nextnode(node)) {
+		if (node->persistent == False) {
+			continue;
+		}
+		err = cookiedb_writecookietorecord(node, fd);
+		if (err < 0) {
+			return err;
+		}
+	}
+	return 0;
+}
+
 EXPORT W cookiedb_writefile(cookiedb_t *db)
 {
-	/* TODO */
-	return -1;
+	W fd, err = 0;
+
+	fd = opn_fil(db->lnk, F_UPDATE, NULL);
+	if (fd < 0) {
+		return fd;
+	}
+	err = fnd_rec(fd, F_TOPEND, 1 << db->rectype, db->subtype, NULL);
+	if (err == ER_REC) {
+		err = ins_rec(fd, NULL, 0, db->rectype, db->subtype, 0);
+		if (err < 0) {
+			return -1;
+		}
+		err = see_rec(fd, -1, 0, NULL);
+		if (err < 0) {
+			return -1;
+		}
+	} else if (err < 0) {
+		cls_fil(fd);
+		return err;
+	}
+	err = loc_rec(fd, F_LOCK);
+	if (err < 0) {
+		cls_fil(fd);
+		return err;
+	}
+	trc_rec(fd, 0);
+	err = cookiedb_writecookiestorecord(db, fd);
+	if (err < 0) {
+		printf("cookiedb_writecookiestorecord error\n");
+		trc_rec(fd, 0);
+	}
+	err = loc_rec(fd, F_UNLOCK);
+	cls_fil(fd);
+	return err;
+}
+
+struct cookiedb_readfilecontext_t_ {
+	enum {
+		COOKIEDB_READFILECONTEXT_STATE_ORIGIN_HOST,
+		COOKIEDB_READFILECONTEXT_STATE_ORIGIN_PATH,
+		COOKIEDB_READFILECONTEXT_STATE_ATTR,
+		COOKIEDB_READFILECONTEXT_STATE_NAME,
+		COOKIEDB_READFILECONTEXT_STATE_COMMENT,
+		COOKIEDB_READFILECONTEXT_STATE_DOMAIN,
+		COOKIEDB_READFILECONTEXT_STATE_EXPIRES,
+		COOKIEDB_READFILECONTEXT_STATE_EXPIRES_ERROR,
+		COOKIEDB_READFILECONTEXT_STATE_PATH,
+		COOKIEDB_READFILECONTEXT_STATE_VERSION,
+		COOKIEDB_READFILECONTEXT_STATE_SECURE,
+		COOKIEDB_READFILECONTEXT_STATE_OTHER,
+	} state;
+	cookiedb_t *db;
+	httpcookie_t *buf;
+	UW time;
+	tokenchecker_t securecheck;
+};
+typedef struct cookiedb_readfilecontext_t_ cookiedb_readfilecontext_t;
+
+LOCAL Bool cookiedb_readfilecontext_cookiecheck(httpcookie_t *cookie)
+{
+	if (cookie->origin_host.len == 0) {
+		return False;
+	}
+	if (cookie->origin_path.len == 0) {
+		return False;
+	}
+	if (cookie->attr.len == 0) {
+		return False;
+	}
+	if (cookie->name.len == 0) {
+		return False;
+	}
+	if (cookie->persistent == False) {
+		return False;
+	}
+	return True;
+}
+
+LOCAL W cookiedb_readfilecontext_inputcommand(cookiedb_readfilecontext_t *ctx, psvlexer_result_t *cmd)
+{
+	W i,err,val,ret;
+	UB c;
+	Bool ok;
+
+	if (cmd->type == PSVLEXER_RESULT_FIELDEND) {
+		ok = cookiedb_readfilecontext_cookiecheck(ctx->buf);
+		if (ok == False) {
+			httpcookie_delete(ctx->buf);
+		} else {
+			cookiedb_insertcookie(ctx->db, ctx->buf);
+		}
+		ctx->buf = httpcookie_new(NULL, 0, NULL, 0);
+		if (ctx->buf == NULL) {
+			return -1; /* TODO */
+		}
+		ctx->state = COOKIEDB_READFILECONTEXT_STATE_ORIGIN_HOST;
+	}
+
+	switch (ctx->state) {
+	case COOKIEDB_READFILECONTEXT_STATE_ORIGIN_HOST:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_ORIGIN_PATH;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->origin_host, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_ORIGIN_PATH:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_ATTR;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->origin_path, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_ATTR:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_NAME;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->attr, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_NAME:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_COMMENT;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->name, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_COMMENT:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_DOMAIN;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->comment, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_DOMAIN:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_EXPIRES;
+			ctx->time = 0;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->domain, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_EXPIRES:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_PATH;
+			httpcookie_setexpires(ctx->buf, ctx->time);
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			for (i = 0; i < cmd->len; i++) {
+				c = cmd->str[i];
+				if (isdigit(c)) {
+					ctx->time = ctx->time * 10 + c - '0';
+				} else {
+					ctx->state = COOKIEDB_READFILECONTEXT_STATE_EXPIRES_ERROR;
+					break;
+				}
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_EXPIRES_ERROR:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_PATH;
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_PATH:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_VERSION;
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->path, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_VERSION:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_SECURE;
+			tokenchecker_clear(&ctx->securecheck);
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			err = ascstr_appendstr(&ctx->buf->version, cmd->str, cmd->len);
+			if (err < 0) {
+				return err;
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_SECURE:
+		if (cmd->type == PSVLEXER_RESULT_SEPARATION) {
+			ctx->state = COOKIEDB_READFILECONTEXT_STATE_OTHER;
+			ret = tokenchecker_endinput(&ctx->securecheck, &val);
+			if (ret == TOKENCHECKER_DETERMINE) {
+				ctx->buf->secure = True;
+			}
+		} else if (cmd->type == PSVLEXER_RESULT_VALUE) {
+			for (i = 0; i < cmd->len; i++) {
+				tokenchecker_inputchar(&ctx->securecheck, cmd->str[i], &val);
+			}
+		}
+		break;
+	case COOKIEDB_READFILECONTEXT_STATE_OTHER:
+		break;
+	}
+
+	return 0;
+}
+
+LOCAL tokenchecker_valuetuple_t nList_secure[] = {
+	{"secure", 1}
+};
+LOCAL B eToken_secure[] = "<";
+
+LOCAL W cookiedb_readfilecontext_initialize(cookiedb_readfilecontext_t *ctx, cookiedb_t *db)
+{
+	ctx->buf = httpcookie_new(NULL, 0, NULL, 0);
+	if (ctx->buf == NULL) {
+		return -1; /* TODO */
+	}
+	ctx->db = db;
+	ctx->state = COOKIEDB_READFILECONTEXT_STATE_ORIGIN_HOST;
+	tokenchecker_initialize(&ctx->securecheck, nList_secure, 1, eToken_secure);
+	return 0;
+}
+
+LOCAL VOID cookiedb_readfilecontext_finalize(cookiedb_readfilecontext_t *ctx)
+{
+	tokenchecker_finalize(&ctx->securecheck);
+	if (ctx->buf != NULL) {
+		httpcookie_delete(ctx->buf);
+	}
+}
+
+LOCAL W cookiedb_readcookiesfrommemory(cookiedb_t *db, UB *data, W len)
+{
+	psvlexer_t lexer;
+	psvlexer_result_t *result;
+	cookiedb_readfilecontext_t context;
+	W i,j,err,result_len;
+
+	err = psvlexer_initialize(&lexer);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_readfilecontext_initialize(&context, db);
+	if (err < 0) {
+		psvlexer_finalize(&lexer);
+		return err;
+	}
+	for (i = 0; i < len; i++) {
+		psvlexer_inputchar(&lexer, data + i, 1, &result, &result_len);
+		err = 0;
+		for (j = 0; j < result_len; j++) {
+			err = cookiedb_readfilecontext_inputcommand(&context, result + j);
+			if (err < 0) {
+				break;
+			}
+		}
+		if (err < 0) {
+			break;
+		}
+	}
+	cookiedb_readfilecontext_finalize(&context);
+	psvlexer_finalize(&lexer);
+
+	return 0;
+}
+
+LOCAL W cookiedb_readcookiesfromrecord(cookiedb_t *db, W fd)
+{
+	W err, r_len;
+	UB *r_data;
+
+	err = rea_rec(fd, 0, NULL, 0, &r_len, NULL);
+	if (err < 0) {
+		return err;
+	}
+	r_data = malloc(r_len);
+	if (r_data == NULL) {
+		return err;
+	}
+	err = rea_rec(fd, 0, r_data, r_len, NULL, NULL);
+	if (err < 0) {
+		free(r_data);
+		return err;
+	}
+
+/*
+	{
+		W i;
+		printf("r_len = %d\n", r_len);
+		for (i = 0; i < r_len; i++) {
+			printf("%c", r_data[i]);
+		}
+	}
+*/
+
+	err = cookiedb_readcookiesfrommemory(db, r_data, r_len);
+
+	free(r_data);
+
+	return err;
+}
+
+LOCAL VOID cookiedb_clearpersistentcookie(cookiedb_t *db)
+{
+	httpcookie_t *senti, *node, *node2;
+
+	senti = cookiedb_sentinelnode(db);
+	node = httpcookie_nextnode(senti);
+	for (; node != senti;) {
+		if (node->persistent == True) {
+			node2 = httpcookie_nextnode(node);
+			httpcookie_delete(node);
+			node = node2;
+		} else {
+			node = httpcookie_nextnode(node);
+		}
+	}
 }
 
 EXPORT W cookiedb_readfile(cookiedb_t *db)
 {
-	/* TODO */
-	return -1;
+	W fd, err = 0;
+
+	fd = opn_fil(db->lnk, F_UPDATE, NULL);
+	if (fd < 0) {
+		return fd;
+	}
+	err = fnd_rec(fd, F_TOPEND, 1 << db->rectype, db->subtype, NULL);
+	if (err == ER_REC) {
+		cls_fil(fd);
+		return 0;
+	} else if (err < 0) {
+		cls_fil(fd);
+		return err;
+	}
+	err = loc_rec(fd, F_LOCK);
+	if (err < 0) {
+		cls_fil(fd);
+		return err;
+	}
+	cookiedb_clearpersistentcookie(db);
+	err = cookiedb_readcookiesfromrecord(db, fd);
+	if (err < 0) {
+		trc_rec(fd, 0);
+	}
+	err = loc_rec(fd, F_UNLOCK);
+	cls_fil(fd);
+	return err;
 }
 
-LOCAL W cookiedb_initialize(cookiedb_t *db, LINK *db_lnk)
+LOCAL W cookiedb_initialize(cookiedb_t *db, LINK *db_lnk, W rectype, UH subtype)
 {
 	QueInit(&db->sentinel);
 	db->lnk = db_lnk;
+	db->rectype = rectype;
+	db->subtype = subtype;
 	return 0;
 }
 
@@ -996,7 +1551,7 @@ LOCAL VOID cookiedb_finalize(cookiedb_t *db)
 	}
 }
 
-EXPORT cookiedb_t* cookiedb_new(LINK *db_lnk)
+EXPORT cookiedb_t* cookiedb_new(LINK *db_lnk, W rectype, UH subtype)
 {
 	cookiedb_t *db;
 	W err;
@@ -1005,7 +1560,7 @@ EXPORT cookiedb_t* cookiedb_new(LINK *db_lnk)
 	if (db == NULL) {
 		return NULL;
 	}
-	err = cookiedb_initialize(db, db_lnk);
+	err = cookiedb_initialize(db, db_lnk, rectype, subtype);
 	if (err < 0) {
 		free(db);
 		return NULL;
