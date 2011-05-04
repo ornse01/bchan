@@ -397,24 +397,23 @@ LOCAL Bool check_specified_TLD(ascstr_t *domain)
 LOCAL Bool cookiedb_writeiterator_checksendcondition_domaincheck(cookiedb_writeiterator_t *iter, httpcookie_t *cookie)
 {
 	Bool ok;
-	W count;
 
 	if (cookie->domain.len != 0) {
-		ok = ascstr_suffixcmp(&iter->host, &cookie->domain);
-		if (ok == False) {
-			return False;
-		}
-		count = count_priod(&cookie->domain);
-		ok = check_specified_TLD(&cookie->domain);
-		if (ok == True) {
-			if (count < 2) {
+		if (cookie->domain.len == (iter->host.len + 1)) {
+			/* for
+			 *  domain = .xxx.yyy.zzz
+			 *  origin =  xxx.yyy.zzz
+			 */
+			if (strncmp(cookie->domain.str + 1, iter->host.str, iter->host.len) != 0) {
 				return False;
 			}
 		} else {
-			if (count < 3) {
+			ok = ascstr_suffixcmp(&iter->host, &cookie->domain);
+			if (ok == False) {
 				return False;
 			}
 		}
+		/* count period number is not need for counting in insertion to queue. */
 	} else {
 		ok = ascstr_suffixcmp(&iter->host, &cookie->origin_host);
 		if (ok == False) {

@@ -1011,6 +1011,190 @@ LOCAL TEST_RESULT test_cookiedb_17()
 			"/", /* origin_path */
 			"AAA", /* name */
 			"BBB", /* value */
+			".xxx.www.2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"CCC", /* name */
+			"DDD", /* value */
+			".www.2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"EEE", /* name */
+			"FFF", /* value */
+			".2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	testcookie_expected_t expected[] = {
+		{
+			"CCC", /* name */
+			"DDD", /* value */
+		},
+		{
+			"EEE", /* name */
+			"FFF", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "www.2ch.net", "/", False, 0x1eec16c0, expected, 2);
+}
+
+LOCAL TEST_RESULT test_cookiedb_18()
+{
+	testcookie_input_t data[] = {
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"AAA", /* name */
+			"BBB", /* value */
+			".xxx.www.xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"CCC", /* name */
+			"DDD", /* value */
+			".www.xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"EEE", /* name */
+			"FFF", /* value */
+			".xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	testcookie_expected_t expected[] = {
+		{
+			"CCC", /* name */
+			"DDD", /* value */
+		},
+		{
+			"EEE", /* name */
+			"FFF", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "www.xxx.xx.jp", "/", False, 0x1eec16c0, expected, 2);
+}
+
+LOCAL TEST_RESULT test_cookiedb_19()
+{
+	testcookie_input_t data[] = {
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"AAA", /* name */
+			"BBB", /* value */
+			".xxx.www.2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"CCC", /* name */
+			"DDD", /* value */
+			".www.2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"EEE", /* name */
+			"FFF", /* value */
+			".2ch.net", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	testcookie_expected_t expected[] = {
+		{
+			"EEE", /* name */
+			"FFF", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 1);
+}
+
+LOCAL TEST_RESULT test_cookiedb_20()
+{
+	testcookie_input_t data[] = {
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"AAA", /* name */
+			"BBB", /* value */
+			".xxx.www.xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"CCC", /* name */
+			"DDD", /* value */
+			".www.xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"www.xxx.xx.jp", /* origin_host */
+			"/", /* origin_path */
+			"EEE", /* name */
+			"FFF", /* value */
+			".xxx.xx.jp", /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	testcookie_expected_t expected[] = {
+		{
+			"EEE", /* name */
+			"FFF", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "xxx.xx.jp", "/", False, 0x1eec16c0, expected, 1);
+}
+
+LOCAL TEST_RESULT test_cookiedb_21()
+{
+	testcookie_input_t data[] = {
+		{
+			"www.2ch.net", /* origin_host */
+			"/", /* origin_path */
+			"AAA", /* name */
+			"BBB", /* value */
 			NULL, /* domain */
 			NULL, /* path */
 			False, /* secure */
@@ -1043,7 +1227,7 @@ LOCAL TEST_RESULT test_cookiedb_17()
 	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "yyy.zzz.xxx.xx.jp", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_18()
+LOCAL TEST_RESULT test_cookiedb_22()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1083,7 +1267,7 @@ LOCAL TEST_RESULT test_cookiedb_18()
 	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "xxx.yyy.2ch.net", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_19()
+LOCAL TEST_RESULT test_cookiedb_23()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1123,7 +1307,7 @@ LOCAL TEST_RESULT test_cookiedb_19()
 	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "xxx.www.xxx.xx.jp", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_20()
+LOCAL TEST_RESULT test_cookiedb_24()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1163,7 +1347,7 @@ LOCAL TEST_RESULT test_cookiedb_20()
 	return test_cookiedb_testingseparateinput(data, 3, 0x1eec16c0, "xxx.www.2ch.net", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_21()
+LOCAL TEST_RESULT test_cookiedb_25()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1183,7 +1367,7 @@ LOCAL TEST_RESULT test_cookiedb_21()
 	return test_cookiedb_testingseparateinput(data, 1, 0x1eec16c0, "www.xxx.xx.jp", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_22()
+LOCAL TEST_RESULT test_cookiedb_26()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1203,7 +1387,7 @@ LOCAL TEST_RESULT test_cookiedb_22()
 	return test_cookiedb_testingseparateinput(data, 1, 0x1eec16c0, "yyy.xxx.www.2ch.net", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_23()
+LOCAL TEST_RESULT test_cookiedb_27()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1223,7 +1407,7 @@ LOCAL TEST_RESULT test_cookiedb_23()
 	return test_cookiedb_testingseparateinput(data, 1, 0x1eec16c0, "xxx.www.2ch.net", "/", False, 0x1eec16c0, expected, 0);
 }
 
-LOCAL TEST_RESULT test_cookiedb_24()
+LOCAL TEST_RESULT test_cookiedb_28()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1245,7 +1429,7 @@ LOCAL TEST_RESULT test_cookiedb_24()
 
 /* expires test */
 
-LOCAL TEST_RESULT test_cookiedb_25()
+LOCAL TEST_RESULT test_cookiedb_29()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1311,7 +1495,7 @@ LOCAL TEST_RESULT test_cookiedb_25()
 	return test_cookiedb_testingseparateinput(data, 4, 0x0eec16c0, "2ch.net", "/", False, 0x0eec16c0, expected, 4);
 }
 
-LOCAL TEST_RESULT test_cookiedb_26()
+LOCAL TEST_RESULT test_cookiedb_30()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1373,7 +1557,7 @@ LOCAL TEST_RESULT test_cookiedb_26()
 	return test_cookiedb_testingseparateinput(data, 4, 0x1eec16c0, "2ch.net", "/", False, 0x1eec16c0, expected, 3);
 }
 
-LOCAL TEST_RESULT test_cookiedb_27()
+LOCAL TEST_RESULT test_cookiedb_31()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1431,7 +1615,7 @@ LOCAL TEST_RESULT test_cookiedb_27()
 	return test_cookiedb_testingseparateinput(data, 4, 0x1eec16c0, "2ch.net", "/", False, 0x2eec16c0, expected, 2);
 }
 
-LOCAL TEST_RESULT test_cookiedb_28()
+LOCAL TEST_RESULT test_cookiedb_32()
 {
 	testcookie_input_t data[] = {
 		{
@@ -1530,4 +1714,8 @@ EXPORT VOID test_cookiedb_main()
 	test_cookiedb_printresult(test_cookiedb_26, "test_cookiedb_26");
 	test_cookiedb_printresult(test_cookiedb_27, "test_cookiedb_27");
 	test_cookiedb_printresult(test_cookiedb_28, "test_cookiedb_28");
+	test_cookiedb_printresult(test_cookiedb_29, "test_cookiedb_29");
+	test_cookiedb_printresult(test_cookiedb_30, "test_cookiedb_30");
+	test_cookiedb_printresult(test_cookiedb_31, "test_cookiedb_31");
+	test_cookiedb_printresult(test_cookiedb_32, "test_cookiedb_32");
 }
