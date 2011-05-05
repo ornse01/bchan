@@ -1,7 +1,7 @@
 /*
  * submit.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -27,6 +27,7 @@
 #include	<basic.h>
 #include	"cache.h"
 #include	"postres.h"
+#include	"cookiedb.h"
 
 #ifndef __SUBMIT_H__
 #define __SUBMIT_H__
@@ -35,7 +36,7 @@ typedef struct ressubmit_t_ ressubmit_t;
 
 IMPORT ressubmit_t* ressubmit_new(datcache_t *cache);
 IMPORT VOID ressubmit_delete(ressubmit_t *submit);
-IMPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed_msg, W *denyed_msg_len);
+IMPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, cookiedb_t *cookiedb, TC **denyed_msg, W *denyed_msg_len);
 
 #define RESSUBMIT_RESPOST_ERROR_CLIENT -1
 #define RESSUBMIT_RESPOST_ERROR_STATUS -2

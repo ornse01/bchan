@@ -107,31 +107,60 @@ LOCAL W ressubmit_simplerequest(ressubmit_t *submit, UB *header, W header_len, U
 	return 0;
 }
 
-LOCAL W ressubmit_makeheader(ressubmit_t *submit, W body_len, UB **header, W *header_len)
+LOCAL W ressubmit_makeheader(ressubmit_t *submit, cookiedb_t *cookiedb, STIME time, W body_len, UB **header, W *header_len)
 {
 	UB *host, *board, *thread;
-	W host_len, board_len, thread_len;
+	W host_len, board_len, thread_len, err;
+
+	err = cookiedb_readfile(cookiedb);
+	if (err < 0) {
+		return err;
+	}
 
 	datcache_gethost(submit->cache, &host, &host_len);
 	datcache_getborad(submit->cache, &board, &board_len);
 	datcache_getthread(submit->cache, &thread, &thread_len);
 
-	return submitutil_makeheaderstring(host, host_len, board, board_len, thread, thread_len, body_len, header, header_len);
+	return submitutil_makeheaderstring2(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
 }
 
-LOCAL W ressubmit_makenextheader(ressubmit_t *submit, W body_len, UB *prev_header, W prev_header_len, UB **header, W *header_len)
+LOCAL W ressubmit_makenextheader(ressubmit_t *submit, cookiedb_t *cookiedb, STIME time, W body_len, UB **header, W *header_len)
 {
 	UB *host, *board, *thread;
-	W host_len, board_len, thread_len;
+	W host_len, board_len, thread_len, err;
+
+	err = cookiedb_readfile(cookiedb);
+	if (err < 0) {
+		return err;
+	}
 
 	datcache_gethost(submit->cache, &host, &host_len);
 	datcache_getborad(submit->cache, &board, &board_len);
 	datcache_getthread(submit->cache, &thread, &thread_len);
 
-	return submitutil_makenextheader(host, host_len, board, board_len, thread, thread_len, body_len, prev_header, prev_header_len, header, header_len);
+	return submitutil_makeheaderstring2(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
 }
 
-EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed_msg, W *denyed_msg_len)
+LOCAL W ressubmit_updatecookiedb(ressubmit_t *submit, cookiedb_t *cookiedb, UB *header, W header_len, STIME time)
+{
+	UB *host;
+	W host_len, err;
+
+	datcache_gethost(submit->cache, &host, &host_len);
+
+	err = submitutil_updatecookiedb(cookiedb, header, header_len, host, host_len, time);
+	if (err < 0) {
+		return err;
+	}
+	err = cookiedb_writefile(cookiedb);
+	if (err < 0) {
+		return err;
+	}
+
+	return 0;
+}
+
+EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, cookiedb_t *cookiedb, TC **denyed_msg, W *denyed_msg_len)
 {
 	UB *body, *header, *response_header, *responsebody;
 	W body_len, header_len, err, response_header_len, responsebody_len;
@@ -152,7 +181,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed
 	if (err < 0) {
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
-	err = ressubmit_makeheader(submit, body_len, &header, &header_len);
+	err = ressubmit_makeheader(submit, cookiedb, time, body_len, &header, &header_len);
 	if (err < 0) {
 		free(body);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
@@ -180,6 +209,12 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed
 
 	if (http_getstatus(submit->http) != 200) {
 		return RESSUBMIT_RESPOST_ERROR_STATUS;
+	}
+
+	err = ressubmit_updatecookiedb(submit, cookiedb, response_header, response_header_len, time);
+	if (err < 0) {
+		free(responsebody);
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
 	bodystatus = submitutil_checkresponse(responsebody, responsebody_len);
@@ -219,7 +254,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed
 		DP_ER("submitutil_makenextrequestbody error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
-	err = ressubmit_makenextheader(submit, next_body_len, response_header, response_header_len, &next_header, &next_header_len);
+	err = ressubmit_makenextheader(submit, cookiedb, time, body_len, &next_header, &next_header_len);
 	if (err < 0) {
 		free(next_body);
 		DP_ER("ressubmit_makenextheader error:", err);
@@ -271,6 +306,11 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, TC **denyed
 	default:
 		ret = RESSUBMIT_RESPOST_ERROR_CLIENT;
 		break;
+	}
+
+	err = ressubmit_updatecookiedb(submit, cookiedb, http_getheader(submit->http), http_getheaderlength(submit->http), time);
+	if (err < 0) {
+		ret = RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
 
 	free(next_header);

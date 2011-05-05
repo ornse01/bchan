@@ -997,7 +997,7 @@ LOCAL VOID bchan_recieveclose(bchan_t *bchan, Bool send)
 	DP(("bchan_recieveclose = %d\n", send));
 	if (send == True) {
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_BUSY);
-		err = ressubmit_respost(bchan->submit, bchan->resdata, &dmsg, &dmsg_len);
+		err = ressubmit_respost(bchan->submit, bchan->resdata, bchan->cookiedb, &dmsg, &dmsg_len);
 		bchan_hmistate_updateptrstyle(&bchan->hmistate, PS_SELECT);
 		switch (err) {
 		case RESSUBMIT_RESPOST_SUCCEED:
