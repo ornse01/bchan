@@ -293,10 +293,29 @@ LOCAL W test_cookiedb_count_headerstring_cookies(UB *header, W header_len)
 {
 	W i, c;
 
-	c = 0;
 	for (i = 0; i < header_len; i++) {
-		if (header[i] == ';') {
-			c++;
+		if (header[i] == ':') {
+			break;
+		}
+	}
+	if (i == header_len) {
+		return 0;
+	}
+	c = 0;
+	for (; i < header_len; i++) {
+		for (; i < header_len; i++) {
+			if (header[i] == '\r') {
+				break;
+			}
+			if (header[i] != ' ') {
+				c++;
+				break;
+			}
+		}
+		for (; i < header_len; i++) {
+			if (header[i] == ';') {
+				break;
+			}
 		}
 	}
 
