@@ -956,6 +956,7 @@ EXPORT VOID cookiedb_clearallcookie(cookiedb_t *db)
 {
 	httpcookie_t *cookie;
 	Bool empty;
+	W fd, err = 0;
 
 	for (;;) {
 		empty = isQueEmpty(&db->sentinel);
@@ -966,7 +967,24 @@ EXPORT VOID cookiedb_clearallcookie(cookiedb_t *db)
 		httpcookie_delete(cookie);
 	}
 
-	/* TODO clear file */
+	/* clear file */
+	fd = opn_fil(db->lnk, F_UPDATE, NULL);
+	if (fd < 0) {
+		return;
+	}
+	err = fnd_rec(fd, F_TOPEND, 1 << db->rectype, db->subtype, NULL);
+	if (err < 0) {
+		cls_fil(fd);
+		return;
+	}
+	err = loc_rec(fd, F_LOCK);
+	if (err < 0) {
+		cls_fil(fd);
+		return;
+	}
+	trc_rec(fd, 0);
+	err = loc_rec(fd, F_UNLOCK);
+	cls_fil(fd);
 }
 
 LOCAL W cookiedb_append_astr_recode(W fd, ascstr_t *astr)
@@ -1506,6 +1524,7 @@ EXPORT W cookiedb_readfile(cookiedb_t *db)
 	}
 	err = fnd_rec(fd, F_TOPEND, 1 << db->rectype, db->subtype, NULL);
 	if (err == ER_REC) {
+		cookiedb_clearpersistentcookie(db);
 		cls_fil(fd);
 		return 0;
 	} else if (err < 0) {
