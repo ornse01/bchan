@@ -55,6 +55,7 @@
 #include	"tadsearch.h"
 #include	"tadurl.h"
 #include	"sjisstring.h"
+#include	"cookiedb.h"
 #include	"bchan_vobj.h"
 #include	"bchan_panels.h"
 #include	"bchan_menus.h"
@@ -92,6 +93,9 @@
 #define BCHAN_DBX_MS_NGWORD_DELETE 50
 #define BCHAN_DBX_TB_NGWORD_APPEND 51
 #define BCHAN_DBX_MS_NGWORD_APPEND 52
+
+#define BCHAN_COMMONSTORAGE_COOKIEDB_RECTYPE 30
+#define BCHAN_COMMONSTORAGE_COOKIEDB_SUBTYPE 1
 
 typedef struct bchan_hmistate_t_ bchan_hmistate_t;
 struct bchan_hmistate_t_ {
@@ -169,6 +173,7 @@ struct bchan_t_ {
 	ressubmit_t *submit;
 	cfrmwindow_t *confirm;
 	ngwordwindow_t *ngword;
+	cookiedb_t *cookiedb;
 
 	postresdata_t *resdata;
 };
@@ -1067,7 +1072,7 @@ LOCAL VOID bchan_hmistate_initialize(bchan_hmistate_t *hmistate)
 	}
 }
 
-LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, dathmi_t *hmi, datwindow_t *datwindow, cfrmwindow_t *cfrmwindow, ngwordwindow_t *ngwordwindow)
+LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, dathmi_t *hmi, datwindow_t *datwindow, cfrmwindow_t *cfrmwindow, ngwordwindow_t *ngwordwindow, LINK *storage)
 {
 	GID gid;
 	datcache_t *cache;
@@ -1078,6 +1083,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	dattraydata_t *traydata;
 	datretriever_t *retriever;
 	ressubmit_t *submit;
+	cookiedb_t *cookiedb;
 	RECT w_work;
 	W err;
 
@@ -1123,6 +1129,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	if (submit == NULL) {
 		DP_ER("ressubmit_new error", 0);
 		goto error_submit;
+	}
+	cookiedb = cookiedb_new(storage, BCHAN_COMMONSTORAGE_COOKIEDB_RECTYPE, BCHAN_COMMONSTORAGE_COOKIEDB_SUBTYPE);
+	if (cookiedb == NULL) {
+		DP_ER("cookiedb_new error", 0);
+		goto error_cookiedb;
 	}
 	err = bchan_mainmenu_initialize(&bchan->mainmenu, BCHAN_DBX_MENU_TEST);
 	if (err < 0) {
@@ -1170,6 +1181,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	bchan->confirm = cfrmwindow;
 	bchan->resdata = NULL;
 	bchan->ngword = ngwordwindow;
+	bchan->cookiedb = cookiedb;
 
 	return 0;
 
@@ -1178,6 +1190,8 @@ error_residmenu_initialize:
 error_resnumbermenu_initialize:
 	bchan_mainmenu_finalize(&bchan->mainmenu);
 error_mainmenu_initialize:
+	cookiedb_delete(cookiedb);
+error_cookiedb:
 	ressubmit_delete(submit);
 error_submit:
 	datretriever_delete(retriever);
@@ -1921,7 +1935,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	}};
 	W	err, size;
 	VID vid;
-	LINK lnk, dbx;
+	LINK lnk, dbx, storage;
 	CLI_arg arg;
 	bchan_t bchan;
 	dathmi_t *hmi;
@@ -1948,7 +1962,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		}
 		err = get_lnk(arg.argv[1], &lnk, F_NORM);
 		if (err < 0) {
-			DP_ER("get_lnk error", err);
+			DP_ER("get_lnk:dat error", err);
 			ext_prc(0);
 		}
 		vid = oreg_vob((VLINK*)&lnk, (VP)&vseg, -1, V_NODISP);
@@ -1958,7 +1972,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		}
 		err = get_lnk((TC[]){TK_b, TK_c, TK_h, TK_a, TK_n, TK_PROD, TK_d, TK_b, TK_x,TNULL}, &dbx, F_NORM);
 		if (err < 0) {
-			DP_ER("get_lnk error", err);
+			DP_ER("get_lnk:test databox error", err);
 			ext_prc(0);
 		}
 		err = dopn_dat(&dbx);
@@ -1967,6 +1981,11 @@ EXPORT	W	MAIN(MESSAGE *msg)
 			ext_prc(0);
 		}
 		fil_sts(&lnk, tit0, NULL, NULL);
+		err = get_lnk((TC[]){TK_c, TK_o, TK_m, TK_m, TK_o, TK_n, TK_s, TK_t, TK_o, TK_r, TK_a, TK_g, TK_e,TNULL}, &storage, F_NORM);
+		if (err < 0) {
+			DP_ER("get_lnk;commonstorage error", err);
+			ext_prc(0);
+		}
 		break;
 	case DISPREQ:
 		oend_req(((M_DISPREQ*)msg)->vid, -1);
@@ -2018,7 +2037,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		ext_prc(0);
 	}
 	
-	err = bchan_initialize(&bchan, vid, datwindow_getWID(window), msg->msg_type, hmi, window, cfrmwindow, ngwordwindow);
+	err = bchan_initialize(&bchan, vid, datwindow_getWID(window), msg->msg_type, hmi, window, cfrmwindow, ngwordwindow, &storage);
 	if (err < 0) {
 		DP_ER("bchan_initialize error", err);
 		ext_prc(0);
