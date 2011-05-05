@@ -1,7 +1,7 @@
 /*
  * test_submitutil.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -28,10 +28,36 @@
 #include    <bstdio.h>
 #include    <bstring.h>
 #include    <bstdlib.h>
+#include    <tcode.h>
 
 #include    "test.h"
 
 #include    "submitutil.h"
+
+#define TEST_SUBMITUTIL_SAMPLE_RECTYPE 30
+#define TEST_SUBMITUTIL_SAMPLE_SUBTYPE 1
+
+/* TODO: share with test_cookiedb.c */
+LOCAL W test_util_gen_file(LINK *lnk)
+{
+	LINK lnk0;
+	W fd, err;
+	TC name[] = {TK_t, TNULL};
+
+	err = get_lnk(NULL, &lnk0, F_NORM);
+	if (err < 0) {
+		return err;
+	}
+	err = cre_fil(&lnk0, name, NULL, 0, F_FLOAT);
+	if (err < 0) {
+		return err;
+	}
+	fd = err;
+
+	*lnk = lnk0;
+
+	return fd;
+}
 
 /* with <!-- 2ch_X:true --> */
 LOCAL UB test_checkresponse_true_01[] = {
@@ -1339,6 +1365,74 @@ LOCAL TEST_RESULT test_makenextrequestheader_1()
 	return TEST_RESULT_PASS;
 }
 
+LOCAL TEST_RESULT test_makenextrequestheader_2()
+{
+	UB expected_cookie[] = "Cookie: PON=xxxxx.yyyy.zzzz.ad.jp; HAP=XYZABCD;";
+	UB host[] = "dummy.test.net";
+	UB board[] = "dummyborad";
+	UB thread[] = "0123456789";
+	W content_length = 227;
+	UB *next = NULL;
+	W next_len;
+	W err, fd;
+	UB *found;
+	cookiedb_t *db;
+	LINK test_lnk;
+
+	fd = test_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
+	if (db == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = submitutil_updatecookiedb(db, test_makenextrequestheader_01, strlen(test_makenextrequestheader_01), host, strlen(host), 0x3a000000);
+	if (err < 0) {
+		cookiedb_delete(db);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = submitutil_makeheaderstring2(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
+
+	cookiedb_delete(db);
+	del_fil(NULL, &test_lnk, 0);
+
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	if (next == NULL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	found = strstr(next, expected_cookie);
+	if (found == NULL) {
+		free(next);
+		return TEST_RESULT_FAIL;
+	}
+	if (found[-2] != '\r') {
+		free(next);
+		return TEST_RESULT_FAIL;
+	}
+	if (found[-1] != '\n') {
+		free(next);
+		return TEST_RESULT_FAIL;
+	}
+	if (found[strlen(expected_cookie)] != '\r') {
+		free(next);
+		return TEST_RESULT_FAIL;
+	}
+	if (found[strlen(expected_cookie)+1] != '\n') {
+		free(next);
+		return TEST_RESULT_FAIL;
+	}
+	free(next);
+	return TEST_RESULT_PASS;
+}
+
 /* error message */
 
 /* ERROR:このスレッドには書き込めません。 */
@@ -1719,6 +1813,7 @@ EXPORT VOID test_submitutil_main()
 	test_submituril_printresult(test_checkresponse_6, "test_checkresponse_6");
 	test_submituril_printresult(test_makenextrequestbody_1, "test_makenextrequestbody_1");
 	test_submituril_printresult(test_makenextrequestheader_1, "test_makenextrequestheader_1");
+	test_submituril_printresult(test_makenextrequestheader_2, "test_makenextrequestheader_2");
 	test_submituril_printresult(test_makeerrormessage_1, "test_makeerrormessage_1");
 	test_submituril_printresult(test_makeerrormessage_2, "test_makeerrormessage_2");
 	test_submituril_printresult(test_makeerrormessage_3, "test_makeerrormessage_3");

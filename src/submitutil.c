@@ -1,7 +1,7 @@
 /*
  * submitutil.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -32,6 +32,8 @@
 #include    "submitutil.h"
 #include    "sjisstring.h"
 #include    "parselib.h"
+#include    "cookiedb.h"
+#include    "setcookieheader.h"
 
 #define MAKEHEADER_ERR_LEN(dest, dest_len, src, len) \
    err = sjstring_appendasciistring(dest, dest_len, src, len); \
@@ -427,6 +429,217 @@ EXPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len,
 
 	return 0;
 }
+
+LOCAL W submitutil_setcookie_inputparserresult(cookiedb_readheadercontext_t *ctx, setcookieparser_result_t *result)
+{
+	W err, i;
+	W (*proc)(cookiedb_readheadercontext_t *context, UB ch);
+
+	err = 0;
+	switch (result->type) {
+	case SETCOOKIEPARSER_RESULT_TYPE_NAMEATTR:
+		for (i = 0; i < result->val.name.len; i++) {
+			err = cookiedb_readheadercontext_appendchar_attr(ctx, result->val.name.str[i]);
+			if (err < 0) {
+				break;
+			}
+		}
+		break;
+	case SETCOOKIEPARSER_RESULT_TYPE_VALUE:
+		switch (result->val.value.attr) {
+		case SETCOOKIEPARSER_ATTR_COMMENT:
+			proc = cookiedb_readheadercontext_appendchar_comment;
+			break;
+		case SETCOOKIEPARSER_ATTR_DOMAIN:
+			proc = cookiedb_readheadercontext_appendchar_domain;
+			break;
+		case SETCOOKIEPARSER_ATTR_PATH:
+			proc = cookiedb_readheadercontext_appendchar_path;
+			break;
+		case SETCOOKIEPARSER_ATTR_VERSION:
+			proc = cookiedb_readheadercontext_appendchar_version;
+			break;
+		case SETCOOKIEPARSER_ATTR_NAME:
+			proc = cookiedb_readheadercontext_appendchar_name;
+			break;
+		case SETCOOKIEPARSER_ATTR_EXPIRES:
+		case SETCOOKIEPARSER_ATTR_MAX_AGE:
+		case SETCOOKIEPARSER_ATTR_SECURE:
+		default:
+			proc = NULL;
+			break;
+		}
+		if (proc != NULL) {
+			for (i = 0; i < result->val.value.len; i++) {
+				err = (*proc)(ctx, result->val.value.str[i]);
+				if (err < 0) {
+					break;
+				}
+			}
+		}
+		break;
+	case SETCOOKIEPARSER_RESULT_TYPE_SECUREATTR:
+		err = cookiedb_readheadercontext_setsecure(ctx);
+		break;
+	case SETCOOKIEPARSER_RESULT_TYPE_EXPIRESATTR:
+		err = cookiedb_readheadercontext_setexpires(ctx, result->val.expires.time);
+		break;
+	}
+
+	return err;
+}
+
+LOCAL W submitutil_setcookie(setcookieparser_t *parser, cookiedb_t *db, UB *str, W len, UB *host, W host_len, UB *path, W path_len, STIME time)
+{
+	cookiedb_readheadercontext_t *ctx;
+	setcookieparser_result_t *result;
+	W i, j, err, ret, result_len;
+
+	ctx = cookiedb_startheaderread(db, host, host_len, path, path_len, time);
+	if (ctx == NULL) {
+		return -1; /* TODO */
+	}
+
+	err = 0;
+	for (i = 0; i < len; i++) {
+		if (str[i] == '\r') {
+			break;
+		}
+		ret = setcookieparser_inputchar(parser, str[i], &result, &result_len);
+		if (ret != SETCOOKIEPARSER_CONTINUE) {
+			break;
+		}
+		err = 0;
+		for (j = 0; j < result_len; j++) {
+			err = submitutil_setcookie_inputparserresult(ctx, result + j);
+			if (err < 0) {
+				break;
+			}
+		}
+		if (err < 0) {
+			break;
+		}
+	}
+	if (err == 0) {
+		ret = setcookieparser_endinput(parser, &result, &result_len);
+		if (ret == SETCOOKIEPARSER_CONTINUE) {
+			for (j = 0; j < result_len; j++) {
+				err = submitutil_setcookie_inputparserresult(ctx, result + j);
+			}
+		}
+	}
+
+	cookiedb_endheaderread(db, ctx);
+
+	return err;
+}
+
+EXPORT W submitutil_updatecookiedb(cookiedb_t *db, UB *prev_header, W prev_header_len, UB *host, W host_len, STIME time)
+{
+	UB *ptr, *start;
+	W err;
+	setcookieparser_t parser;
+	UB *path = "/test/bbs.cgi";
+	W path_len = strlen(path);
+
+	for (ptr = prev_header; ptr < prev_header + prev_header_len;) {
+		ptr = strstr(ptr, "Set-Cookie:");
+		if (ptr == NULL) {
+			break;
+		}
+		ptr += 11;
+		for (;ptr < prev_header + prev_header_len; ptr++) {
+			if (*ptr != ' ') {
+				break;
+			}
+		}
+		start = ptr;
+		for (;ptr < prev_header + prev_header_len; ptr++) {
+			if (*ptr == '\r') {
+				ptr++;
+				if (*ptr == '\n') {
+					ptr++;
+					break;
+				}
+			}
+		}
+		err = setcookieparser_initialize(&parser);
+		if (err < 0) {
+			return err;
+		}
+		err = submitutil_setcookie(&parser, db, start, ptr - start, host, host_len, path, path_len, time);
+		setcookieparser_finalize(&parser);
+		if (err < 0) {
+			return err;
+		}
+	}
+
+	return 0;
+}
+
+LOCAL W submitutil_makecookieheader2(UB **str, W *len, cookiedb_t *cdb, UB *host, W host_len, UB *path, W path_len, STIME time)
+{
+	cookiedb_writeheadercontext_t *ctx;
+	Bool cont;
+	UB *cstr;
+	W cstr_len, err;
+
+	ctx = cookiedb_startheaderwrite(cdb, host, host_len, path, path_len, False, time);
+	if (ctx == NULL) {
+		return -1; /* TODO */
+	}
+
+	err = 0;
+	for (;;) {
+		cont = cookiedb_writeheadercontext_makeheader(ctx, &cstr, &cstr_len);
+		if (cont == False) {
+			break;
+		}
+
+		err = sjstring_appendasciistring(str, len, cstr, cstr_len);
+		if (err < 0) {
+			break;
+		}
+	}
+	cookiedb_endheaderwrite(cdb, ctx);
+
+	return err;
+}
+
+EXPORT W submitutil_makeheaderstring2(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len)
+{
+	UB *str = NULL;
+	W len = 0;
+	W err;
+
+	MAKEHEADER_ERR(&str, &len, "POST /test/bbs.cgi HTTP/1.1\r\n");
+	MAKEHEADER_ERR(&str, &len, "Host: ");
+	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
+	MAKEHEADER_ERR(&str, &len, "\r\n");
+	MAKEHEADER_ERR(&str, &len, "Accept: */*\r\n");
+	MAKEHEADER_ERR(&str, &len, "Referer: http://");
+	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
+	MAKEHEADER_ERR(&str, &len, "/test/read.cgi/");
+	MAKEHEADER_ERR_LEN(&str, &len, board, board_len);
+	MAKEHEADER_ERR(&str, &len, "/");
+	MAKEHEADER_ERR_LEN(&str, &len, thread, thread_len);
+	MAKEHEADER_ERR(&str, &len, "/\r\n");
+	MAKEHEADER_ERR(&str, &len, "Content-Length: ");
+	MAKEHEADER_NUM_ERR(&str, &len, content_length);
+	MAKEHEADER_ERR(&str, &len, "\r\n");
+	err = submitutil_makecookieheader2(&str, &len, cdb, host, host_len, "/test/bbs.cgi", strlen("/test/bbs.cgi"), time);
+	if (err < 0) {
+		return err;
+	}
+	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
+	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.201)\r\nConnection: close\r\n\r\n");
+
+	*header = str;
+	*header_len = len;
+
+	return 0;
+}
+
 
 LOCAL UB* submitutil_makeerrormessage_search_b_elm(UB *body, W body_len)
 {

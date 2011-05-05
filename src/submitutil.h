@@ -1,7 +1,7 @@
 /*
  * submitutil.h
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -26,6 +26,8 @@
 
 #include	<basic.h>
 
+#include    "cookiedb.h"
+
 #ifndef __SUBMITUTIL_H__
 #define __SUBMITUTIL_H__
 
@@ -42,6 +44,8 @@ IMPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_le
 IMPORT submitutil_poststatus_t submitutil_checkresponse(UB *body, W len);
 IMPORT W submitutil_makenextrequestbody(UB *prev_body, W prev_body_len, UB **next_body, W *next_len);
 IMPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB *prev_header, W prev_header_len, UB **header, W *header_len);
+IMPORT W submitutil_updatecookiedb(cookiedb_t *db, UB *prev_header, W prev_header_len, UB *host, W host_len, STIME time);
+IMPORT W submitutil_makeheaderstring2(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len);
 IMPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len);
 
 #ifdef BCHAN_CONFIG_DEBUG
