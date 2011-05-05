@@ -1207,7 +1207,7 @@ EXPORT W cookiedb_writefile(cookiedb_t *db)
 	trc_rec(fd, 0);
 	err = cookiedb_writecookiestorecord(db, fd);
 	if (err < 0) {
-		printf("cookiedb_writecookiestorecord error\n");
+		DP_ER("cookiedb_writecookiestorecord error\n", err);
 		trc_rec(fd, 0);
 	}
 	err = loc_rec(fd, F_UNLOCK);
