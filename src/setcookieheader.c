@@ -134,9 +134,6 @@ LOCAL VOID httpcookiegeneral_finalize(httpcookiegeneral_t *lexer)
 {
 }
 
-#define SETCOOKIEPARSER_CONTINUE 0
-#define SETCOOKIEPARSER_ERROR -1
-
 LOCAL VOID setcookieparser_inputchar_resultNAME_ch(setcookieparser_t *parser, UB ch, setcookieparser_result_t *result)
 {
 	parser->buf_str[0] = ch;

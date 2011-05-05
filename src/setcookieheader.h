@@ -105,6 +105,8 @@ typedef struct setcookieparser_t_ setcookieparser_t;
 
 IMPORT W setcookieparser_initialize(setcookieparser_t *parser);
 IMPORT VOID setcookieparser_finalize(setcookieparser_t *parser);
+#define SETCOOKIEPARSER_CONTINUE 0
+#define SETCOOKIEPARSER_ERROR -1
 IMPORT W setcookieparser_inputchar(setcookieparser_t *parser, UB ch, setcookieparser_result_t **result, W *result_len);
 IMPORT W setcookieparser_endinput(setcookieparser_t *parser, setcookieparser_result_t **result, W *result_len);
 
