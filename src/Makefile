@@ -74,6 +74,7 @@ clean:
 	$(RM) $(OBJ)
 	$(RM) $(WC_SRC:%.C=%.c) $(DBSRC)
 	$(RM) $(INST) $(NOINST) *.lst $(DEPS)
+	$(RM) $(TARGET).btf _VerUpCmd.btf _t
 
 install: $(INST:%=$(EXE_INSTALLDIR)/%)
 
@@ -82,13 +83,23 @@ $(EXE_INSTALLDIR)/$(TARGET).out: $(EXE_INSTALLDIR)/%: %
 
 # 圧縮アーカイブ
 
-$(TARGET).bz: $(NOINST)
+$(TARGET).bz: $(TARGET).btf _VerUpCmd.btf
+	$(MKBTF) -o$@ -c -tbchan \
+		@0.0.0.0.0._VerUpCmd.btf \
+		@0.0.0.0.0.$(TARGET).btf
+
+$(TARGET).btf: $(NOINST)
 	$(CP) $(TARGET).out _t
 	$(STRIP) _t
-	$(MKBTF) -o$@ -a0x8002 -c -tbchan \
+	$(MKBTF) -o$@ -a0x8002 -tbchan \
 		9.0x163._t \
 		10.0.$(TARGET).dbx \
 		7.$(version).$(TARGET).fsn
+	$(RM) _t
+
+_VerUpCmd.btf: _VerUpCmd
+	$(CP) $(S)/_VerUpCmd _t
+	$(MKBTF) -o_VerUpCmd.btf -t_VerUpCmd 31.0._t
 	$(RM) _t
 
 # ソースの依存関係
