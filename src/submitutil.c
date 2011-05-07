@@ -577,6 +577,62 @@ EXPORT W submitutil_updatecookiedb(cookiedb_t *db, UB *prev_header, W prev_heade
 	return 0;
 }
 
+LOCAL W submitutil_setvolatilecookie(cookiedb_t *db, UB *host, W host_len, STIME time, UB *attr, W attr_len, UB *name, W name_len)
+{
+	cookiedb_readheadercontext_t *ctx;
+	W i, err;
+
+	ctx = cookiedb_startheaderread(db, host, host_len, "/", 1, time);
+	if (ctx == NULL) {
+		return -1; /* TODO */
+	}
+
+	for (i = 0; i < attr_len; i++) {
+		err = cookiedb_readheadercontext_appendchar_attr(ctx, attr[i]);
+		if (err < 0) {
+			cookiedb_endheaderread(db, ctx);
+			return err;
+		}
+	}
+	err = cookiedb_readheadercontext_appendchar_name(ctx, '"');
+	if (err < 0) {
+		cookiedb_endheaderread(db, ctx);
+		return err;
+	}
+	for (i = 0; i < name_len; i++) {
+		err = cookiedb_readheadercontext_appendchar_name(ctx, name[i]);
+		if (err < 0) {
+			cookiedb_endheaderread(db, ctx);
+			return err;
+		}
+	}
+	err = cookiedb_readheadercontext_appendchar_name(ctx, '"');
+	if (err < 0) {
+		cookiedb_endheaderread(db, ctx);
+		return err;
+	}
+
+	cookiedb_endheaderread(db, ctx);
+
+	return 0;
+}
+
+EXPORT W submitutil_setnamemailcookie(cookiedb_t *db, UB *host, W host_len, STIME time, UB *name, W name_len, UB *mail, W mail_len)
+{
+	W err;
+
+	err = submitutil_setvolatilecookie(db, host, host_len, time, "NAME", 4, name, name_len);
+	if (err < 0) {
+		return err;
+	}
+	err = submitutil_setvolatilecookie(db, host, host_len, time, "MAIL", 4, mail, mail_len);
+	if (err < 0) {
+		return err;
+	}
+
+	return 0;
+}
+
 LOCAL W submitutil_makecookieheader2(UB **str, W *len, cookiedb_t *cdb, UB *host, W host_len, UB *path, W path_len, STIME time)
 {
 	cookiedb_writeheadercontext_t *ctx;

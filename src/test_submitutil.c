@@ -1365,6 +1365,28 @@ LOCAL TEST_RESULT test_makenextrequestheader_1()
 	return TEST_RESULT_PASS;
 }
 
+LOCAL Bool test_submitutil_cookiecheck(UB *header, UB *expected_cookie)
+{
+	UB *found;
+	found = strstr(header, expected_cookie);
+	if (found == NULL) {
+		return False;
+	}
+	if (found[-2] != '\r') {
+		return False;
+	}
+	if (found[-1] != '\n') {
+		return False;
+	}
+	if (found[strlen(expected_cookie)] != '\r') {
+		return False;
+	}
+	if (found[strlen(expected_cookie)+1] != '\n') {
+		return False;
+	}
+	return True;
+}
+
 LOCAL TEST_RESULT test_makenextrequestheader_2()
 {
 	UB expected_cookie[] = "Cookie: PON=xxxxx.yyyy.zzzz.ad.jp; HAP=XYZABCD;";
@@ -1375,9 +1397,9 @@ LOCAL TEST_RESULT test_makenextrequestheader_2()
 	UB *next = NULL;
 	W next_len;
 	W err, fd;
-	UB *found;
 	cookiedb_t *db;
 	LINK test_lnk;
+	Bool ok;
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
@@ -1408,24 +1430,218 @@ LOCAL TEST_RESULT test_makenextrequestheader_2()
 		return TEST_RESULT_FAIL;
 	}
 
-	found = strstr(next, expected_cookie);
-	if (found == NULL) {
+	ok = test_submitutil_cookiecheck(next, expected_cookie);
+	if (ok == False) {
 		free(next);
 		return TEST_RESULT_FAIL;
 	}
-	if (found[-2] != '\r') {
+	free(next);
+	return TEST_RESULT_PASS;
+}
+
+/* submitutil_setnamemailcookie */
+
+LOCAL TEST_RESULT test_setnamemailcookie_1()
+{
+	UB expected_cookie[] = "Cookie: NAME=\"nameA\"; MAIL=\"mailB\";";
+	UB host[] = "dummy.test.net";
+	UB board[] = "dummyborad";
+	UB thread[] = "0123456789";
+	W content_length = 227;
+	W next_len;
+	UB *next = NULL;
+	W err, fd;
+	cookiedb_t *db;
+	LINK test_lnk;
+	Bool ok;
+
+	fd = test_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
+	if (db == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "nameA", 5, "mailB", 5);
+	if (err < 0) {
+		cookiedb_delete(db);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = submitutil_makeheaderstring2(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
+
+	cookiedb_delete(db);
+	del_fil(NULL, &test_lnk, 0);
+
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	if (next == NULL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ok = test_submitutil_cookiecheck(next, expected_cookie);
+	if (ok == False) {
 		free(next);
 		return TEST_RESULT_FAIL;
 	}
-	if (found[-1] != '\n') {
+	free(next);
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_setnamemailcookie_2()
+{
+	UB expected_cookie[] = "Cookie: NAME=\"nameA\"; MAIL=\"\";";
+	UB host[] = "dummy.test.net";
+	UB board[] = "dummyborad";
+	UB thread[] = "0123456789";
+	W content_length = 227;
+	W next_len;
+	UB *next = NULL;
+	W err, fd;
+	cookiedb_t *db;
+	LINK test_lnk;
+	Bool ok;
+
+	fd = test_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
+	if (db == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "nameA", 5, "", 0);
+	if (err < 0) {
+		cookiedb_delete(db);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = submitutil_makeheaderstring2(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
+
+	cookiedb_delete(db);
+	del_fil(NULL, &test_lnk, 0);
+
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	if (next == NULL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ok = test_submitutil_cookiecheck(next, expected_cookie);
+	if (ok == False) {
 		free(next);
 		return TEST_RESULT_FAIL;
 	}
-	if (found[strlen(expected_cookie)] != '\r') {
+	free(next);
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_setnamemailcookie_3()
+{
+	UB expected_cookie[] = "Cookie: NAME=\"\"; MAIL=\"mailB\";";
+	UB host[] = "dummy.test.net";
+	UB board[] = "dummyborad";
+	UB thread[] = "0123456789";
+	W content_length = 227;
+	W next_len;
+	UB *next = NULL;
+	W err, fd;
+	cookiedb_t *db;
+	LINK test_lnk;
+	Bool ok;
+
+	fd = test_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
+	if (db == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "", 0, "mailB", 5);
+	if (err < 0) {
+		cookiedb_delete(db);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = submitutil_makeheaderstring2(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
+
+	cookiedb_delete(db);
+	del_fil(NULL, &test_lnk, 0);
+
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	if (next == NULL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ok = test_submitutil_cookiecheck(next, expected_cookie);
+	if (ok == False) {
 		free(next);
 		return TEST_RESULT_FAIL;
 	}
-	if (found[strlen(expected_cookie)+1] != '\n') {
+	free(next);
+	return TEST_RESULT_PASS;
+}
+
+LOCAL TEST_RESULT test_setnamemailcookie_4()
+{
+	UB expected_cookie[] = "Cookie: NAME=\"\"; MAIL=\"\";";
+	UB host[] = "dummy.test.net";
+	UB board[] = "dummyborad";
+	UB thread[] = "0123456789";
+	W content_length = 227;
+	W next_len;
+	UB *next = NULL;
+	W err, fd;
+	cookiedb_t *db;
+	LINK test_lnk;
+	Bool ok;
+
+	fd = test_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
+	if (db == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+
+	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "", 0, "", 0);
+	if (err < 0) {
+		cookiedb_delete(db);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = submitutil_makeheaderstring2(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
+
+	cookiedb_delete(db);
+	del_fil(NULL, &test_lnk, 0);
+
+	if (err < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	if (next == NULL) {
+		return TEST_RESULT_FAIL;
+	}
+
+	ok = test_submitutil_cookiecheck(next, expected_cookie);
+	if (ok == False) {
 		free(next);
 		return TEST_RESULT_FAIL;
 	}
@@ -1814,6 +2030,10 @@ EXPORT VOID test_submitutil_main()
 	test_submituril_printresult(test_makenextrequestbody_1, "test_makenextrequestbody_1");
 	test_submituril_printresult(test_makenextrequestheader_1, "test_makenextrequestheader_1");
 	test_submituril_printresult(test_makenextrequestheader_2, "test_makenextrequestheader_2");
+	test_submituril_printresult(test_setnamemailcookie_1, "test_setnamemailcookie_1");
+	test_submituril_printresult(test_setnamemailcookie_2, "test_setnamemailcookie_2");
+	test_submituril_printresult(test_setnamemailcookie_3, "test_setnamemailcookie_3");
+	test_submituril_printresult(test_setnamemailcookie_4, "test_setnamemailcookie_4");
 	test_submituril_printresult(test_makeerrormessage_1, "test_makeerrormessage_1");
 	test_submituril_printresult(test_makeerrormessage_2, "test_makeerrormessage_2");
 	test_submituril_printresult(test_makeerrormessage_3, "test_makeerrormessage_3");
