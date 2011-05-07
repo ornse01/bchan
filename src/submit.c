@@ -160,6 +160,29 @@ LOCAL W ressubmit_updatecookiedb(ressubmit_t *submit, cookiedb_t *cookiedb, UB *
 	return 0;
 }
 
+/* some compatible bbs need this cookie.
+LOCAL W ressubmit_setnamemailcookie(ressubmit_t *submit, postresdata_t *post, cookiedb_t *cookiedb, STIME time)
+{
+	W err, host_len, name_len, mail_len;
+	UB *host, *name, *mail;
+
+	datcache_gethost(submit->cache, &host, &host_len);
+
+	err = postresdata_gennamemail(post, &name, &name_len, &mail, &mail_len);
+	if (err < 0) {
+		return err;
+	}
+	err = submitutil_setnamemailcookie(cookiedb, host, host_len, time, name, name_len, mail, mail_len);
+
+	free(mail);
+	free(name);
+
+	return err;
+}
+*/
+
+#define RESSUBMIT_FORM_TIME_DIFF 10000000
+
 EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, cookiedb_t *cookiedb, TC **denyed_msg, W *denyed_msg_len)
 {
 	UB *body, *header, *response_header, *responsebody;
@@ -177,7 +200,15 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, cookiedb_t 
 	datcache_getthread(submit->cache, &thread, &thread_len);
 
 	get_tim(&time, NULL);
-	err = postresdata_genrequestbody(post, board, board_len, thread, thread_len, time, &body, &body_len);
+
+/*
+	err = ressubmit_setnamemailcookie(submit, post, cookiedb, time);
+	if (err < 0) {
+		return RESSUBMIT_RESPOST_ERROR_CLIENT;
+	}
+*/
+
+	err = postresdata_genrequestbody(post, board, board_len, thread, thread_len, time - RESSUBMIT_FORM_TIME_DIFF, &body, &body_len);
 	if (err < 0) {
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
