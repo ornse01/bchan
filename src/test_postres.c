@@ -1,7 +1,7 @@
 /*
  * test_postres.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -394,6 +394,135 @@ LOCAL TEST_RESULT test_genrequestbody_5()
 	return test_genrequestbody_checkdata(testdata, testdata_len, board, strlen(board), thread, strlen(thread), time, expected, strlen(expected));
 }
 
+LOCAL TEST_RESULT test_gennamemail_checkdata(UB *testdata, W testdata_len, UB *expected_name, W expected_name_len, UB *expected_mail, W expected_mail_len)
+{
+	LINK test_lnk;
+	W fd, err;
+	postresdata_t *postres;
+	UB *name = NULL, *mail = NULL;
+	W name_len = 0, mail_len = 0;
+	TEST_RESULT result;
+
+	fd = test_postres_util_gen_file(&test_lnk);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, testdata, testdata_len, RT_TADDATA, 0, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	postres = postresdata_new();
+	if (postres == NULL) {
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = postresdata_readfile(postres, (VLINK *)&test_lnk);
+	if (err < 0) {
+		postresdata_delete(postres);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = postresdata_gennamemail(postres, &name, &name_len, &mail, &mail_len);
+	if (err < 0) {
+		postresdata_delete(postres);
+		del_fil(NULL, &test_lnk, 0);
+		return TEST_RESULT_FAIL;
+	}
+	postresdata_delete(postres);
+
+	if (name_len != expected_name_len) {
+		printf("name length different\n");
+		result = TEST_RESULT_FAIL;
+	} else {
+		if (strncmp(name, expected_name, expected_name_len) != 0) {
+			printf("name string different\n");
+			result = TEST_RESULT_FAIL;
+		} else {
+			result = TEST_RESULT_PASS;
+		}
+	}
+	if (mail_len != expected_mail_len) {
+		printf("mail length different\n");
+		result = TEST_RESULT_FAIL;
+	} else {
+		if (strncmp(mail, expected_mail, expected_mail_len) != 0) {
+			printf("mail string different\n");
+			result = TEST_RESULT_FAIL;
+		} else {
+			result = TEST_RESULT_PASS;
+		}
+	}
+	if (result != TEST_RESULT_PASS) {
+		printf("length: generated = %d, expected = %d\n", name_len, expected_name_len);
+		printf("string\n");
+		printf("  generated name:  ");
+		SJSTRING_DP(name, name_len);
+		printf("\n");
+		printf("  expected name:   ");
+		SJSTRING_DP(expected_name, expected_name_len);
+		printf("\n");
+		printf("length: generated = %d, expected = %d\n", mail_len, expected_mail_len);
+		printf("string\n");
+		printf("  generated mail:  ");
+		SJSTRING_DP(mail, mail_len);
+		printf("\n");
+		printf("  expected mail:   ");
+		SJSTRING_DP(expected_mail, expected_mail_len);
+		printf("\n");
+	}
+
+	free(mail);
+	free(name);
+
+	del_fil(NULL, &test_lnk, 0);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_gennamemail_1()
+{
+	UB *testdata = test_genrequestbody_testdata01;
+	W testdata_len = sizeof(test_genrequestbody_testdata01);
+	UB expected_name[] = "%82%8E%82%81%82%8D%82%85";
+	UB expected_mail[] = "%82%8D%82%81%82%89%82%8C";
+
+	return test_gennamemail_checkdata(testdata, testdata_len, expected_name, strlen(expected_name), expected_mail, strlen(expected_mail));
+}
+
+LOCAL TEST_RESULT test_gennamemail_2()
+{
+	UB *testdata = test_genrequestbody_testdata02;
+	W testdata_len = sizeof(test_genrequestbody_testdata02);
+	UB expected_name[] = "";
+	UB expected_mail[] = "%82%8D%82%81%82%89%82%8C";
+
+	return test_gennamemail_checkdata(testdata, testdata_len, expected_name, strlen(expected_name), expected_mail, strlen(expected_mail));
+}
+
+LOCAL TEST_RESULT test_gennamemail_3()
+{
+	UB *testdata = test_genrequestbody_testdata03;
+	W testdata_len = sizeof(test_genrequestbody_testdata03);
+	UB expected_name[] = "%82%8E%82%81%82%8D%82%85";
+	UB expected_mail[] = "";
+
+	return test_gennamemail_checkdata(testdata, testdata_len, expected_name, strlen(expected_name), expected_mail, strlen(expected_mail));
+}
+
+LOCAL TEST_RESULT test_gennamemail_4()
+{
+	UB *testdata = test_genrequestbody_testdata04;
+	W testdata_len = sizeof(test_genrequestbody_testdata04);
+	UB expected_name[] = "";
+	UB expected_mail[] = "";
+
+	return test_gennamemail_checkdata(testdata, testdata_len, expected_name, strlen(expected_name), expected_mail, strlen(expected_mail));
+}
+
 LOCAL VOID test_postres_printresult(TEST_RESULT (*proc)(), B *test_name)
 {
 	TEST_RESULT result;
@@ -416,4 +545,8 @@ EXPORT VOID test_postres_main()
 	test_postres_printresult(test_genrequestbody_3, "test_genrequestbody_3");
 	test_postres_printresult(test_genrequestbody_4, "test_genrequestbody_4");
 	test_postres_printresult(test_genrequestbody_5, "test_genrequestbody_5");
+	test_postres_printresult(test_gennamemail_1, "test_gennamemail_1");
+	test_postres_printresult(test_gennamemail_2, "test_gennamemail_2");
+	test_postres_printresult(test_gennamemail_3, "test_gennamemail_3");
+	test_postres_printresult(test_gennamemail_4, "test_gennamemail_4");
 }

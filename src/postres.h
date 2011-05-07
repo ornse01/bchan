@@ -1,7 +1,7 @@
 /*
  * postres.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -36,6 +36,7 @@ IMPORT postresdata_t* postresdata_new();
 IMPORT VOID postresdata_delete(postresdata_t *post);
 IMPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk);
 IMPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB **body, W *body_len);
+IMPORT W postresdata_gennamemail(postresdata_t *post, UB **name, W *name_len, UB **mail, W *mail_len);
 IMPORT TC* postresdata_getfromstring(postresdata_t *post);
 IMPORT W postresdata_getfromstringlen(postresdata_t *post);
 IMPORT TC* postresdata_getmailstring(postresdata_t *post);

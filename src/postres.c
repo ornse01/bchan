@@ -1,7 +1,7 @@
 /*
  * postres.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -351,6 +351,74 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 
 	*body = buf_ret;
 	*body_len = buf_ret_len;
+
+	return 0;
+}
+
+EXPORT W postresdata_gennamemail(postresdata_t *post, UB **name, W *name_len, UB **mail, W *mail_len)
+{
+	TF_CTX ctx;
+	UB *buf_name = NULL, *buf_mail = NULL;
+	W err, ctx_id, buf_name_len = 0, buf_mail_len = 0;
+	TC *from_tc, *mail_tc;
+	W from_tc_len, mail_tc_len;
+
+	from_tc = tcstrbuffer_getbuffer(&post->from);
+	from_tc_len = tcstrbuffer_getstrlen(&post->from);
+	mail_tc = tcstrbuffer_getbuffer(&post->mail);
+	mail_tc_len = tcstrbuffer_getstrlen(&post->mail);
+
+	/* tmp: should share postresdata_genrequestbody() */
+	err = tf_open_ctx(&ctx);
+	if (err < 0) {
+		return err;
+	}
+	ctx_id = tf_to_id(TF_ID_PROFSET_CONVERTTO, "Shift_JIS");
+	if (ctx_id < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+	err = tf_set_profile(ctx, ctx_id);
+	if (err < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+
+	buf_name = malloc(sizeof(UB));
+	if (buf_name == NULL) {
+		tf_close_ctx(ctx);
+		return -1;
+	}
+	buf_name[0] = '\0';
+	buf_mail = malloc(sizeof(UB));
+	if (buf_mail == NULL) {
+		free(buf_name);
+		tf_close_ctx(ctx);
+		return -1;
+	}
+	buf_mail[0] = '\0';
+
+	err = postesdata_appendconvertedstring(&ctx, &buf_name, &buf_name_len, from_tc, from_tc_len);
+	if (err < 0) {
+		free(buf_mail);
+		free(buf_name);
+		tf_close_ctx(ctx);
+		return err;
+	}
+	err = postesdata_appendconvertedstring(&ctx, &buf_mail, &buf_mail_len, mail_tc, mail_tc_len);
+	if (err < 0) {
+		free(buf_mail);
+		free(buf_name);
+		tf_close_ctx(ctx);
+		return err;
+	}
+
+	tf_close_ctx(ctx);
+
+	*name = buf_name;
+	*name_len = buf_name_len;
+	*mail = buf_mail;
+	*mail_len = buf_mail_len;
 
 	return 0;
 }
