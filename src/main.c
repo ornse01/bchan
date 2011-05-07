@@ -1868,6 +1868,77 @@ LOCAL VOID bchan_eventdispatch(bchan_t *bchan, dathmi_t *hmi)
 	}
 }
 
+LOCAL TC filename_dbg_databox[] = (TC[]){TK_b, TK_c, TK_h, TK_a, TK_n, TK_PROD, TK_d, TK_b, TK_x, TNULL};
+LOCAL TC filename_storage[] = (TC[]){TK_c, TK_o, TK_m, TK_m, TK_o, TK_n, TK_s, TK_t, TK_o, TK_r, TK_a, TK_g, TK_e, TNULL};
+
+LOCAL W main_CLI_args(TC *fname, TC *title, VID *vid, LINK *storage)
+{
+	W err;
+	LINK lnk, dbx;
+	VID vid0;
+	VOBJSEG vseg = {
+		{{0,0,100,20}},
+		16, 16,
+		0x10000000, 0x10000000, 0x10FFFFFF, 0x10FFFFFF,
+		0
+	};
+
+	err = get_lnk(fname, &lnk, F_NORM);
+	if (err < 0) {
+		DP_ER("get_lnk:dat error", err);
+		return err;
+	}
+	vid0 = oreg_vob((VLINK*)&lnk, (VP)&vseg, -1, V_NODISP);
+	if (vid0 < 0) {
+		DP_ER("error oreq_vob", vid0);
+		return err;;
+	}
+	*vid = vid0;
+	err = get_lnk(filename_dbg_databox, &dbx, F_NORM);
+	if (err < 0) {
+		DP_ER("get_lnk:test databox error", err);
+		return err;
+	}
+	err = dopn_dat(&dbx);
+	if (err < 0) {
+		DP_ER("dopn_dat error", err);
+		return err;
+	}
+	fil_sts(&lnk, title, NULL, NULL);
+	err = get_lnk(filename_storage, storage, F_NORM);
+	if (err < 0) {
+		DP_ER("get_lnk;commonstorage error", err);
+		return err;
+	}
+
+	return 0;
+}
+
+LOCAL W main_EXECREC_args(M_EXECREQ *msg, TC *title, VID *vid, LINK *storage)
+{
+	W err;
+	LINK lnk;
+
+	err = dopn_dat(&msg->self);
+	if (err < 0) {
+		DP_ER("dopn_dat", err);
+		return err;
+	}
+
+	lnk = msg->self;
+	err = get_lnk(filename_storage, &lnk, F_BASED);
+	if (err < 0) {
+		DP_ER("get_lnk;commonstorage error", err);
+		return err;
+	}
+	*storage = lnk;
+
+	fil_sts(&msg->lnk, title, NULL, NULL);
+	*vid = msg->vid;
+
+	return 0;
+}
+
 typedef struct _arg {
 	W ac;
 	TC **argv;
@@ -1935,19 +2006,13 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	}};
 	W	err, size;
 	VID vid;
-	LINK lnk, dbx, storage;
+	LINK storage;
 	CLI_arg arg;
 	bchan_t bchan;
 	dathmi_t *hmi;
 	datwindow_t *window;
 	cfrmwindow_t *cfrmwindow;
 	ngwordwindow_t *ngwordwindow;
-	VOBJSEG vseg = {
-		{{0,0,100,20}},
-		16, 16,
-		0x10000000, 0x10000000, 0x10FFFFFF, 0x10FFFFFF,
-		0
-	};
 
 	err = dopn_dat(NULL);
 	if (err < 0) {
@@ -1960,30 +2025,8 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		if (arg.ac <= 1) {
 			ext_prc(0);
 		}
-		err = get_lnk(arg.argv[1], &lnk, F_NORM);
+		err = main_CLI_args(arg.argv[1], tit0, &vid, &storage);
 		if (err < 0) {
-			DP_ER("get_lnk:dat error", err);
-			ext_prc(0);
-		}
-		vid = oreg_vob((VLINK*)&lnk, (VP)&vseg, -1, V_NODISP);
-		if (vid < 0) {
-			DP_ER("error oreq_vob", vid);
-			ext_prc(0);
-		}
-		err = get_lnk((TC[]){TK_b, TK_c, TK_h, TK_a, TK_n, TK_PROD, TK_d, TK_b, TK_x,TNULL}, &dbx, F_NORM);
-		if (err < 0) {
-			DP_ER("get_lnk:test databox error", err);
-			ext_prc(0);
-		}
-		err = dopn_dat(&dbx);
-		if (err < 0) {
-			DP_ER("dopn_dat error", err);
-			ext_prc(0);
-		}
-		fil_sts(&lnk, tit0, NULL, NULL);
-		err = get_lnk((TC[]){TK_c, TK_o, TK_m, TK_m, TK_o, TK_n, TK_s, TK_t, TK_o, TK_r, TK_a, TK_g, TK_e,TNULL}, &storage, F_NORM);
-		if (err < 0) {
-			DP_ER("get_lnk;commonstorage error", err);
 			ext_prc(0);
 		}
 		break;
@@ -1999,12 +2042,10 @@ EXPORT	W	MAIN(MESSAGE *msg)
 		if ((((M_EXECREQ*)msg)->mode & 2) != 0) {
 			ext_prc(0);
 		}
-		err = dopn_dat(&((M_EXECREQ*)msg)->self);
+		err = main_EXECREC_args((M_EXECREQ*)msg, tit0, &vid, &storage);
 		if (err < 0) {
 			ext_prc(0);
 		}
-		fil_sts(&((M_EXECREQ*)msg)->lnk, tit0, NULL, NULL);
-		vid = ((M_EXECREQ*)msg)->vid;
 		break;
 	default:
 		ext_prc(0);
