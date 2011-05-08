@@ -297,94 +297,167 @@ LOCAL W postresdata_appendasciistring(UB **dest, W *dest_len, UB *str, W len)
 	return sjstring_appendasciistring(dest, dest_len, str, len);
 }
 
-LOCAL W postesdata_appendUWstring(UB **dest, W *dlen, UW n)
+struct postresdata_genbodycontext_t_ {
+	postresdata_t *post;
+	UB *board;
+	W board_len;
+	UB *thread;
+	W thread_len;
+	STIME time;
+	enum {
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS,
+		POSTRESDATA_GENBODYCONTEXT_STATE_BOARD,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY,
+		POSTRESDATA_GENBODYCONTEXT_STATE_THREAD,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME,
+		POSTRESDATA_GENBODYCONTEXT_STATE_TIME,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM,
+		POSTRESDATA_GENBODYCONTEXT_STATE_FROM,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL,
+		POSTRESDATA_GENBODYCONTEXT_STATE_MAIL,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE,
+		POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE,
+		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT,
+		POSTRESDATA_GENBODYCONTEXT_STATE_END
+	} state;
+	UB timebuf[10];
+} ;
+typedef struct postresdata_genbodycontext_t_ postresdata_genbodycontext_t;
+
+LOCAL UB name_bbs[] = "bbs=";
+LOCAL UB name_key[] = "&key=";
+LOCAL UB name_time[] = "&time=";
+LOCAL UB name_FROM[] = "&FROM=";
+LOCAL UB name_mail[] = "&mail=";
+LOCAL UB name_MESSAGE[] = "&MESSAGE=";
+LOCAL UB name_submit[] = "&submit=%8F%91%82%AB%8D%9E%82%DE";
+
+LOCAL Bool postresdata_genbodycontext_next(postresdata_genbodycontext_t *ctx, UB **str, W *len)
 {
-	return sjstring_appendUWstring(dest, dlen, n);
+	switch (ctx->state) {
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS:
+		*str = name_bbs;
+		*len = strlen(name_bbs);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_BOARD;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_BOARD:
+		*str = ctx->board;
+		*len = ctx->board_len;
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY:
+		*str = name_key;
+		*len = strlen(name_key);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_THREAD;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_THREAD:
+		*str = ctx->thread;
+		*len = ctx->thread_len;
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME:
+		*str = name_time;
+		*len = strlen(name_time);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_TIME;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_TIME:
+		*str = ctx->timebuf;
+		*len = sjstring_writeUWstring(ctx->timebuf, ctx->time + 473385600);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM:
+		*str = name_FROM;
+		*len = strlen(name_FROM);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_FROM;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_FROM:
+		*str = ctx->post->asc_from;
+		*len = ctx->post->asc_from_len;
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL:
+		*str = name_mail;
+		*len = strlen(name_mail);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_MAIL;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_MAIL:
+		*str = ctx->post->asc_mail;
+		*len = ctx->post->asc_mail_len;
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE:
+		*str = name_MESSAGE;
+		*len = strlen(name_MESSAGE);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE:
+		*str = ctx->post->asc_message;
+		*len = ctx->post->asc_message_len;
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT:
+		*str = name_submit;
+		*len = strlen(name_submit);
+		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_END;
+		return True;
+	case POSTRESDATA_GENBODYCONTEXT_STATE_END:
+	default:
+	}
+	*str = NULL;
+	*len = 0;
+	return False;
+}
+
+LOCAL VOID postresdata_genbodycontext_initialize(postresdata_genbodycontext_t *ctx, postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time)
+{
+	ctx->post = post;
+	ctx->board = board;
+	ctx->board_len = board_len;
+	ctx->thread = thread;
+	ctx->thread_len = thread_len;
+	ctx->time = time;
+	ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS;
+}
+
+LOCAL VOID postresdata_genbodycontext_finalize(postresdata_genbodycontext_t *ctx)
+{
 }
 
 EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB **body, W *body_len)
 {
-	UB *buf_ret = NULL;
-	W err, buf_ret_len = 0;
-	UB name_bbs[] = "bbs=";
-	UB name_key[] = "&key=";
-	UB name_time[] = "&time=";
-	UB name_FROM[] = "&FROM=";
-	UB name_mail[] = "&mail=";
-	UB name_MESSAGE[] = "&MESSAGE=";
-	UB name_submit[] = "&submit=%8F%91%82%AB%8D%9E%82%DE";
+	postresdata_genbodycontext_t ctx;
+	UB *str, *buf_ret;
+	W len, buf_ret_len, buf_written;
+	Bool cont;
 
-	buf_ret = malloc(sizeof(UB));
+	postresdata_genbodycontext_initialize(&ctx, post, board, board_len, thread, thread_len, time);
+	buf_ret_len = 0;
+	for (;;) {
+		cont = postresdata_genbodycontext_next(&ctx, &str, &len);
+		if (cont == False) {
+			break;
+		}
+		buf_ret_len += len;
+	}
+	postresdata_genbodycontext_finalize(&ctx);
+
+	buf_ret = malloc((buf_ret_len + 1) * sizeof(UB));
 	if (buf_ret == NULL) {
 		return -1; /* TODO */
 	}
-	buf_ret[0] = '\0';
 
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_bbs, strlen(name_bbs));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
+	postresdata_genbodycontext_initialize(&ctx, post, board, board_len, thread, thread_len, time);
+	buf_written = 0;
+	for (;;) {
+		cont = postresdata_genbodycontext_next(&ctx, &str, &len);
+		if (cont == False) {
+			break;
+		}
+		memcpy(buf_ret + buf_written, str, len);
+		buf_written += len;
 	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, board, board_len);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_key, strlen(name_key));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, thread, thread_len);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_time, strlen(name_time));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postesdata_appendUWstring(&buf_ret, &buf_ret_len, time + 473385600);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_FROM, strlen(name_FROM));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_from, post->asc_from_len);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_mail, strlen(name_mail));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_mail, post->asc_mail_len);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_MESSAGE, strlen(name_MESSAGE));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_message, post->asc_message_len);
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_submit, strlen(name_submit));
-	if (err < 0) {
-		free(buf_ret);
-		return err;
-	}
+	postresdata_genbodycontext_finalize(&ctx);
+	buf_ret[buf_ret_len] = '\0';
 
 	*body = buf_ret;
 	*body_len = buf_ret_len;
