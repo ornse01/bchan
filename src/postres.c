@@ -88,6 +88,12 @@ struct postresdata_t_ {
 	tcstrbuffer_t from;
 	tcstrbuffer_t mail;
 	tcstrbuffer_t message;
+	UB *asc_from;
+	W asc_from_len;
+	UB *asc_mail;
+	W asc_mail_len;
+	UB *asc_message;
+	W asc_message_len;
 };
 
 EXPORT TC* postresdata_getfromstring(postresdata_t *post)
@@ -167,6 +173,82 @@ LOCAL W postresdata_readtad(postresdata_t *post, TC *str, W len)
 	return err;
 }
 
+LOCAL W postresdata_tctosjis(TF_CTX *ctx, tcstrbuffer_t *src_tc, UB **dest, W *dlen)
+{
+	UB *buf;
+	W slen, buf_len, err;
+	TC *src;
+
+	src = tcstrbuffer_getbuffer(src_tc);
+	slen = tcstrbuffer_getstrlen(src_tc);
+
+	if (slen == 0) {
+		*dest = malloc(sizeof(UB));
+		(*dest)[0] = '\0';
+		*dlen = 0;
+		return 0;
+	}
+
+	err = tf_tcstostr(*ctx, src, slen, 0, TF_ATTR_START, NULL, &buf_len);
+	if (err < 0) {
+		return err;
+	}
+	buf = malloc(buf_len + sizeof(UB));
+	if (buf == NULL) {
+		return -1; /* TODO */
+	}
+	err = tf_tcstostr(*ctx, src, slen, 0, TF_ATTR_START, buf, &buf_len);
+	if (err < 0) {
+		return err;
+	}
+
+	err = sjstring_appendurlencodestring(dest, dlen, buf, buf_len);
+	free(buf);
+
+	return err;
+}
+
+LOCAL W postresdata_convertdata(postresdata_t *post)
+{
+	TF_CTX ctx;
+	W err, ctx_id;
+
+	err = tf_open_ctx(&ctx);
+	if (err < 0) {
+		return err;
+	}
+	ctx_id = tf_to_id(TF_ID_PROFSET_CONVERTTO, "Shift_JIS");
+	if (ctx_id < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+	err = tf_set_profile(ctx, ctx_id);
+	if (err < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+
+	err = postresdata_tctosjis(&ctx, &post->from, &post->asc_from, &post->asc_from_len);
+	if (err < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+	err = postresdata_tctosjis(&ctx, &post->mail, &post->asc_mail, &post->asc_mail_len);
+	if (err < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+	err = postresdata_tctosjis(&ctx, &post->message, &post->asc_message, &post->asc_message_len);
+	if (err < 0) {
+		tf_close_ctx(ctx);
+		return err;
+	}
+
+	tf_close_ctx(ctx);
+
+	return 0;
+}
+
 EXPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk)
 {
 	W fd, err, size;
@@ -200,8 +282,12 @@ EXPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk)
 	cls_fil(fd);
 
 	err =  postresdata_readtad(post, (TC *)buf, size/sizeof(TC));
-
 	free(buf);
+	if (err < 0) {
+		return err;
+	}
+
+	err = postresdata_convertdata(post);
 
 	return err;
 }
@@ -211,34 +297,6 @@ LOCAL W postresdata_appendasciistring(UB **dest, W *dest_len, UB *str, W len)
 	return sjstring_appendasciistring(dest, dest_len, str, len);
 }
 
-LOCAL W postesdata_appendconvertedstring(TF_CTX *ctx, UB **dest, W *dlen, TC *src, W slen)
-{
-	UB *buf;
-	W buf_len, err;
-
-	if (slen == 0) {
-		return 0;
-	}
-
-	err = tf_tcstostr(*ctx, src, slen, 0, TF_ATTR_START, NULL, &buf_len);
-	if (err < 0) {
-		return err;
-	}
-	buf = malloc(buf_len);
-	if (buf == NULL) {
-		return -1; /* TODO */
-	}
-	err = tf_tcstostr(*ctx, src, slen, 0, TF_ATTR_START, buf, &buf_len);
-	if (err < 0) {
-		return err;
-	}
-
-	err = sjstring_appendurlencodestring(dest, dlen, buf, buf_len);
-	free(buf);
-
-	return err;
-}
-
 LOCAL W postesdata_appendUWstring(UB **dest, W *dlen, UW n)
 {
 	return sjstring_appendUWstring(dest, dlen, n);
@@ -246,9 +304,8 @@ LOCAL W postesdata_appendUWstring(UB **dest, W *dlen, UW n)
 
 EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB **body, W *body_len)
 {
-	TF_CTX ctx;
 	UB *buf_ret = NULL;
-	W err, ctx_id, buf_ret_len = 0;
+	W err, buf_ret_len = 0;
 	UB name_bbs[] = "bbs=";
 	UB name_key[] = "&key=";
 	UB name_time[] = "&time=";
@@ -256,30 +313,6 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 	UB name_mail[] = "&mail=";
 	UB name_MESSAGE[] = "&MESSAGE=";
 	UB name_submit[] = "&submit=%8F%91%82%AB%8D%9E%82%DE";
-	TC *from, *mail, *message;
-	W from_len, mail_len, message_len;
-
-	from = tcstrbuffer_getbuffer(&post->from);
-	from_len = tcstrbuffer_getstrlen(&post->from);
-	mail = tcstrbuffer_getbuffer(&post->mail);
-	mail_len = tcstrbuffer_getstrlen(&post->mail);
-	message = tcstrbuffer_getbuffer(&post->message);
-	message_len = tcstrbuffer_getstrlen(&post->message);
-
-	err = tf_open_ctx(&ctx);
-	if (err < 0) {
-		return err;
-	}
-	ctx_id = tf_to_id(TF_ID_PROFSET_CONVERTTO, "Shift_JIS");
-	if (ctx_id < 0) {
-		tf_close_ctx(ctx);
-		return err;
-	}
-	err = tf_set_profile(ctx, ctx_id);
-	if (err < 0) {
-		tf_close_ctx(ctx);
-		return err;
-	}
 
 	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_bbs, strlen(name_bbs));
 	if (err < 0) {
@@ -316,7 +349,7 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 		free(buf_ret);
 		return err;
 	}
-	err = postesdata_appendconvertedstring(&ctx, &buf_ret, &buf_ret_len, from, from_len);
+	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_from, post->asc_from_len);
 	if (err < 0) {
 		free(buf_ret);
 		return err;
@@ -326,7 +359,7 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 		free(buf_ret);
 		return err;
 	}
-	err = postesdata_appendconvertedstring(&ctx, &buf_ret, &buf_ret_len, mail, mail_len);
+	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_mail, post->asc_mail_len);
 	if (err < 0) {
 		free(buf_ret);
 		return err;
@@ -336,7 +369,7 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 		free(buf_ret);
 		return err;
 	}
-	err = postesdata_appendconvertedstring(&ctx, &buf_ret, &buf_ret_len, message, message_len);
+	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, post->asc_message, post->asc_message_len);
 	if (err < 0) {
 		free(buf_ret);
 		return err;
@@ -347,8 +380,6 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 		return err;
 	}
 
-	tf_close_ctx(ctx);
-
 	*body = buf_ret;
 	*body_len = buf_ret_len;
 
@@ -357,63 +388,33 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 
 EXPORT W postresdata_gennamemail(postresdata_t *post, UB **name, W *name_len, UB **mail, W *mail_len)
 {
-	TF_CTX ctx;
 	UB *buf_name = NULL, *buf_mail = NULL;
-	W err, ctx_id, buf_name_len = 0, buf_mail_len = 0;
-	TC *from_tc, *mail_tc;
-	W from_tc_len, mail_tc_len;
-
-	from_tc = tcstrbuffer_getbuffer(&post->from);
-	from_tc_len = tcstrbuffer_getstrlen(&post->from);
-	mail_tc = tcstrbuffer_getbuffer(&post->mail);
-	mail_tc_len = tcstrbuffer_getstrlen(&post->mail);
-
-	/* tmp: should share postresdata_genrequestbody() */
-	err = tf_open_ctx(&ctx);
-	if (err < 0) {
-		return err;
-	}
-	ctx_id = tf_to_id(TF_ID_PROFSET_CONVERTTO, "Shift_JIS");
-	if (ctx_id < 0) {
-		tf_close_ctx(ctx);
-		return err;
-	}
-	err = tf_set_profile(ctx, ctx_id);
-	if (err < 0) {
-		tf_close_ctx(ctx);
-		return err;
-	}
+	W err, buf_name_len = 0, buf_mail_len = 0;
 
 	buf_name = malloc(sizeof(UB));
 	if (buf_name == NULL) {
-		tf_close_ctx(ctx);
 		return -1;
 	}
 	buf_name[0] = '\0';
 	buf_mail = malloc(sizeof(UB));
 	if (buf_mail == NULL) {
 		free(buf_name);
-		tf_close_ctx(ctx);
 		return -1;
 	}
 	buf_mail[0] = '\0';
 
-	err = postesdata_appendconvertedstring(&ctx, &buf_name, &buf_name_len, from_tc, from_tc_len);
+	err = postresdata_appendasciistring(&buf_name, &buf_name_len, post->asc_from, post->asc_from_len);
 	if (err < 0) {
 		free(buf_mail);
 		free(buf_name);
-		tf_close_ctx(ctx);
 		return err;
 	}
-	err = postesdata_appendconvertedstring(&ctx, &buf_mail, &buf_mail_len, mail_tc, mail_tc_len);
+	err = postresdata_appendasciistring(&buf_mail, &buf_mail_len, post->asc_mail, post->asc_mail_len);
 	if (err < 0) {
 		free(buf_mail);
 		free(buf_name);
-		tf_close_ctx(ctx);
 		return err;
 	}
-
-	tf_close_ctx(ctx);
 
 	*name = buf_name;
 	*name_len = buf_name_len;
@@ -434,12 +435,27 @@ EXPORT postresdata_t* postresdata_new()
 	tcstrbuffer_initialize(&post->from);
 	tcstrbuffer_initialize(&post->mail);
 	tcstrbuffer_initialize(&post->message);
+	post->asc_from = NULL;
+	post->asc_from_len = 0;
+	post->asc_mail = NULL;
+	post->asc_mail_len = 0;
+	post->asc_message = NULL;
+	post->asc_message_len = 0;
 
 	return post;
 }
 
 EXPORT VOID postresdata_delete(postresdata_t *post)
 {
+	if (post->asc_message != NULL) {
+		free(post->asc_message);
+	}
+	if (post->asc_mail != NULL) {
+		free(post->asc_mail);
+	}
+	if (post->asc_from != NULL) {
+		free(post->asc_from);
+	}
 	tcstrbuffer_finalize(&post->message);
 	tcstrbuffer_finalize(&post->mail);
 	tcstrbuffer_finalize(&post->from);
