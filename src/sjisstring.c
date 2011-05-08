@@ -1,7 +1,7 @@
 /*
  * sjisstring.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -53,10 +53,9 @@ EXPORT W sjstring_appendasciistring(UB **dest, W *dest_len, UB *str, W len)
 
 LOCAL UB dec[] = "0123456789";
 
-EXPORT W sjstring_appendUWstring(UB **dest, W *dlen, UW n)
+EXPORT W sjstring_writeUWstring(UB *str, UW n)
 {
 	W i = 0,digit,draw = 0;
-	UB str[10];
 
 	digit = n / 1000000000 % 10;
 	if ((digit != 0)||(draw != 0)) {
@@ -105,6 +104,16 @@ EXPORT W sjstring_appendUWstring(UB **dest, W *dlen, UW n)
 	}
 	digit = n % 10;
 	str[i++] = dec[digit];
+
+	return i;
+}
+
+EXPORT W sjstring_appendUWstring(UB **dest, W *dlen, UW n)
+{
+	W i;
+	UB str[10];
+
+	i = sjstring_writeUWstring(str, n);
 
 	return sjstring_appendasciistring(dest, dlen, str, i);
 }

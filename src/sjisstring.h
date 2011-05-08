@@ -1,7 +1,7 @@
 /*
  * sjisstring.h
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -30,6 +30,7 @@
 #define __SJISSTRING_H__
 
 IMPORT W sjstring_appendasciistring(UB **dest, W *dest_len, UB *str, W len);
+IMPORT W sjstring_writeUWstring(UB *str, UW n);
 IMPORT W sjstring_appendUWstring(UB **dest, W *dlen, UW n);
 IMPORT W sjstring_appendurlencodestring(UB **dest, W *dest_len, UB *str, W len);
 IMPORT W sjstring_appendconvartingTCstring(UB **dest, W *dest_len, TC *str, W len);
