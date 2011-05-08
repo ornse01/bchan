@@ -49,36 +49,6 @@
      return err; \
    }
 
-EXPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB **header, W *header_len)
-{
-	UB *str = NULL;
-	W len = 0;
-	W err;
-
-	MAKEHEADER_ERR(&str, &len, "POST /test/bbs.cgi HTTP/1.1\r\n");
-	MAKEHEADER_ERR(&str, &len, "Host: ");
-	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
-	MAKEHEADER_ERR(&str, &len, "\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept: */*\r\n");
-	MAKEHEADER_ERR(&str, &len, "Referer: http://");
-	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
-	MAKEHEADER_ERR(&str, &len, "/test/read.cgi/");
-	MAKEHEADER_ERR_LEN(&str, &len, board, board_len);
-	MAKEHEADER_ERR(&str, &len, "/");
-	MAKEHEADER_ERR_LEN(&str, &len, thread, thread_len);
-	MAKEHEADER_ERR(&str, &len, "/\r\n");
-	MAKEHEADER_ERR(&str, &len, "Content-Length: ");
-	MAKEHEADER_NUM_ERR(&str, &len, content_length);
-	MAKEHEADER_ERR(&str, &len, "\r\n");
-	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.201)\r\nConnection: close\r\n\r\n");
-
-	*header = str;
-	*header_len = len;
-
-	return 0;
-}
-
 EXPORT submitutil_poststatus_t submitutil_checkresponse(UB *body, W len)
 {
 	W cmp;
@@ -356,80 +326,6 @@ EXPORT W submitutil_makenextrequestbody(UB *prev_body, W prev_body_len, UB **nex
 	return 0;
 }
 
-LOCAL W submitutil_makecookieheader(UB **str, W *len, UB *prev_header, W prev_header_len)
-{
-	UB *ptr, *start;
-	W cookie_len, err;
-	Bool first = True;
-
-	for (ptr = prev_header; ptr < prev_header + prev_header_len;) {
-		ptr = strstr(ptr, "Set-Cookie:");
-		if (ptr == NULL) {
-			break;
-		}
-		ptr += 11;
-		for (;ptr < prev_header + prev_header_len; ptr++) {
-			if (*ptr != ' ') {
-				break;
-			}
-		}
-		start = ptr;
-		for (;ptr < prev_header + prev_header_len; ptr++) {
-			if (*ptr == ';') {
-				break;
-			}
-		}
-		cookie_len = ptr + 1 - start;
-		if (first == True) {
-			MAKEHEADER_ERR(str, len, "Cookie: ");
-			first = False;
-		} else {
-			MAKEHEADER_ERR(str, len, " ");
-		}
-		MAKEHEADER_ERR_LEN(str, len, start, cookie_len);
-	}
-
-	if (first == False) {
-		MAKEHEADER_ERR(str, len, "\r\n");
-	}
-
-	return 0;
-}
-
-EXPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB *prev_header, W prev_header_len, UB **header, W *header_len)
-{
-	UB *str = NULL;
-	W len = 0;
-	W err;
-
-	MAKEHEADER_ERR(&str, &len, "POST /test/bbs.cgi HTTP/1.1\r\n");
-	MAKEHEADER_ERR(&str, &len, "Host: ");
-	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
-	MAKEHEADER_ERR(&str, &len, "\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept: */*\r\n");
-	MAKEHEADER_ERR(&str, &len, "Referer: http://");
-	MAKEHEADER_ERR_LEN(&str, &len, host, host_len);
-	MAKEHEADER_ERR(&str, &len, "/test/read.cgi/");
-	MAKEHEADER_ERR_LEN(&str, &len, board, board_len);
-	MAKEHEADER_ERR(&str, &len, "/");
-	MAKEHEADER_ERR_LEN(&str, &len, thread, thread_len);
-	MAKEHEADER_ERR(&str, &len, "/\r\n");
-	MAKEHEADER_ERR(&str, &len, "Content-Length: ");
-	MAKEHEADER_NUM_ERR(&str, &len, content_length);
-	MAKEHEADER_ERR(&str, &len, "\r\n");
-	err = submitutil_makecookieheader(&str, &len, prev_header, prev_header_len);
-	if (err < 0) {
-		return err;
-	}
-	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.201)\r\nConnection: close\r\n\r\n");
-
-	*header = str;
-	*header_len = len;
-
-	return 0;
-}
-
 LOCAL W submitutil_setcookie_inputparserresult(cookiedb_readheadercontext_t *ctx, setcookieparser_result_t *result)
 {
 	W err, i;
@@ -633,7 +529,7 @@ EXPORT W submitutil_setnamemailcookie(cookiedb_t *db, UB *host, W host_len, STIM
 	return 0;
 }
 
-LOCAL W submitutil_makecookieheader2(UB **str, W *len, cookiedb_t *cdb, UB *host, W host_len, UB *path, W path_len, STIME time)
+LOCAL W submitutil_makecookieheader(UB **str, W *len, cookiedb_t *cdb, UB *host, W host_len, UB *path, W path_len, STIME time)
 {
 	cookiedb_writeheadercontext_t *ctx;
 	Bool cont;
@@ -662,7 +558,7 @@ LOCAL W submitutil_makecookieheader2(UB **str, W *len, cookiedb_t *cdb, UB *host
 	return err;
 }
 
-EXPORT W submitutil_makeheaderstring2(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len)
+EXPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len)
 {
 	UB *str = NULL;
 	W len = 0;
@@ -683,7 +579,7 @@ EXPORT W submitutil_makeheaderstring2(UB *host, W host_len, UB *board, W board_l
 	MAKEHEADER_ERR(&str, &len, "Content-Length: ");
 	MAKEHEADER_NUM_ERR(&str, &len, content_length);
 	MAKEHEADER_ERR(&str, &len, "\r\n");
-	err = submitutil_makecookieheader2(&str, &len, cdb, host, host_len, "/test/bbs.cgi", strlen("/test/bbs.cgi"), time);
+	err = submitutil_makecookieheader(&str, &len, cdb, host, host_len, "/test/bbs.cgi", strlen("/test/bbs.cgi"), time);
 	if (err < 0) {
 		return err;
 	}

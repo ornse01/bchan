@@ -40,13 +40,11 @@ typedef enum {
 	submitutil_poststatus_cookie
 } submitutil_poststatus_t;
 
-IMPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB **header, W *header_len);
 IMPORT submitutil_poststatus_t submitutil_checkresponse(UB *body, W len);
 IMPORT W submitutil_makenextrequestbody(UB *prev_body, W prev_body_len, UB **next_body, W *next_len);
-IMPORT W submitutil_makenextheader(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, UB *prev_header, W prev_header_len, UB **header, W *header_len);
 IMPORT W submitutil_updatecookiedb(cookiedb_t *db, UB *prev_header, W prev_header_len, UB *host, W host_len, STIME time);
 IMPORT W submitutil_setnamemailcookie(cookiedb_t *db, UB *host, W host_len, STIME time, UB *name, W name_len, UB *mail, W mail_len);
-IMPORT W submitutil_makeheaderstring2(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len);
+IMPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_len, UB *thread, W thread_len, W content_length, STIME time, cookiedb_t *cdb, UB **header, W *header_len);
 IMPORT W submitutil_makeerrormessage(UB *body, W body_len, TC **msg, W *msg_len);
 
 #ifdef BCHAN_CONFIG_DEBUG

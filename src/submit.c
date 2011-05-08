@@ -121,7 +121,7 @@ LOCAL W ressubmit_makeheader(ressubmit_t *submit, cookiedb_t *cookiedb, STIME ti
 	datcache_getborad(submit->cache, &board, &board_len);
 	datcache_getthread(submit->cache, &thread, &thread_len);
 
-	return submitutil_makeheaderstring2(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
+	return submitutil_makeheaderstring(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
 }
 
 LOCAL W ressubmit_makenextheader(ressubmit_t *submit, cookiedb_t *cookiedb, STIME time, W body_len, UB **header, W *header_len)
@@ -138,7 +138,7 @@ LOCAL W ressubmit_makenextheader(ressubmit_t *submit, cookiedb_t *cookiedb, STIM
 	datcache_getborad(submit->cache, &board, &board_len);
 	datcache_getthread(submit->cache, &thread, &thread_len);
 
-	return submitutil_makeheaderstring2(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
+	return submitutil_makeheaderstring(host, host_len, board, board_len, thread, thread_len, body_len, time, cookiedb, header, header_len);
 }
 
 LOCAL W ressubmit_updatecookiedb(ressubmit_t *submit, cookiedb_t *cookiedb, UB *header, W header_len, STIME time)
