@@ -314,6 +314,12 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 	UB name_MESSAGE[] = "&MESSAGE=";
 	UB name_submit[] = "&submit=%8F%91%82%AB%8D%9E%82%DE";
 
+	buf_ret = malloc(sizeof(UB));
+	if (buf_ret == NULL) {
+		return -1; /* TODO */
+	}
+	buf_ret[0] = '\0';
+
 	err = postresdata_appendasciistring(&buf_ret, &buf_ret_len, name_bbs, strlen(name_bbs));
 	if (err < 0) {
 		free(buf_ret);
