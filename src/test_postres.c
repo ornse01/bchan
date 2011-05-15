@@ -394,6 +394,114 @@ LOCAL TEST_RESULT test_genrequestbody_5()
 	return test_genrequestbody_checkdata(testdata, testdata_len, board, strlen(board), thread, strlen(thread), time, expected, strlen(expected));
 }
 
+LOCAL TEST_RESULT test_genrequestbody_checkdata_update(UB *testdata1, W testdata1_len, UB *testdata2, W testdata2_len, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB *expected, W expected_len)
+{
+	LINK test_lnk1, test_lnk2;
+	W fd, err;
+	postresdata_t *postres;
+	UB *body = NULL;
+	W body_len = 0;
+	TEST_RESULT result;
+
+	fd = test_postres_util_gen_file(&test_lnk1);
+	if (fd < 0) {
+		return TEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, testdata1, testdata1_len, RT_TADDATA, 0, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	fd = test_postres_util_gen_file(&test_lnk2);
+	if (fd < 0) {
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, testdata2, testdata2_len, RT_TADDATA, 0, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk2, 0);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	postres = postresdata_new();
+	if (postres == NULL) {
+		del_fil(NULL, &test_lnk2, 0);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = postresdata_readfile(postres, (VLINK *)&test_lnk1);
+	if (err < 0) {
+		postresdata_delete(postres);
+		del_fil(NULL, &test_lnk2, 0);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = postresdata_readfile(postres, (VLINK *)&test_lnk2);
+	if (err < 0) {
+		postresdata_delete(postres);
+		del_fil(NULL, &test_lnk2, 0);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	err = postresdata_genrequestbody(postres, board, board_len, thread, thread_len, time, &body, &body_len);
+	if (err < 0) {
+		postresdata_delete(postres);
+		del_fil(NULL, &test_lnk2, 0);
+		del_fil(NULL, &test_lnk1, 0);
+		return TEST_RESULT_FAIL;
+	}
+	postresdata_delete(postres);
+
+	if (body_len != expected_len) {
+		printf("length different\n");
+		result = TEST_RESULT_FAIL;
+	} else {
+		if (strncmp(body, expected, expected_len) != 0) {
+			printf("string different\n");
+			result = TEST_RESULT_FAIL;
+		} else {
+			result = TEST_RESULT_PASS;
+		}
+	}
+	if (result != TEST_RESULT_PASS) {
+		printf("length: generated = %d, expected = %d\n", body_len, expected_len);
+		printf("string\n");
+		printf("  generated:  ");
+		SJSTRING_DP(body, body_len);
+		printf("\n");
+		printf("  expected:   ");
+		SJSTRING_DP(expected, expected_len);
+		printf("\n");
+	}
+
+	free(body);
+
+	del_fil(NULL, &test_lnk2, 0);
+	del_fil(NULL, &test_lnk1, 0);
+
+	return result;
+}
+
+LOCAL TEST_RESULT test_genrequestbody_6()
+{
+	UB *testdata1 = test_genrequestbody_testdata01;
+	W testdata1_len = sizeof(test_genrequestbody_testdata01);
+	UB *testdata2 = test_genrequestbody_testdata04;
+	W testdata2_len = sizeof(test_genrequestbody_testdata04);
+	UB board[] = "test";
+	UB thread[] = "000000000";
+	STIME time = 1234567890;
+	UB expected[] = "bbs=test&key=000000000&time=1707953490&FROM=&mail=&MESSAGE=%82%82%82%8F%82%84%82%99&submit=%8F%91%82%AB%8D%9E%82%DE";
+
+	return test_genrequestbody_checkdata_update(testdata1, testdata1_len, testdata2, testdata2_len, board, strlen(board), thread, strlen(thread), time, expected, strlen(expected));
+}
+
 LOCAL TEST_RESULT test_gennamemail_checkdata(UB *testdata, W testdata_len, UB *expected_name, W expected_name_len, UB *expected_mail, W expected_mail_len)
 {
 	LINK test_lnk;
@@ -545,6 +653,7 @@ EXPORT VOID test_postres_main()
 	test_postres_printresult(test_genrequestbody_3, "test_genrequestbody_3");
 	test_postres_printresult(test_genrequestbody_4, "test_genrequestbody_4");
 	test_postres_printresult(test_genrequestbody_5, "test_genrequestbody_5");
+	test_postres_printresult(test_genrequestbody_6, "test_genrequestbody_6");
 	test_postres_printresult(test_gennamemail_1, "test_gennamemail_1");
 	test_postres_printresult(test_gennamemail_2, "test_gennamemail_2");
 	test_postres_printresult(test_gennamemail_3, "test_gennamemail_3");

@@ -69,6 +69,15 @@ LOCAL W tcstrbuffer_appendstring(tcstrbuffer_t *tcstr, TC *str, W len)
 	return 0;
 }
 
+LOCAL VOID tcstrbuffer_clear(tcstrbuffer_t *tcstr)
+{
+	if (tcstr->buffer != NULL) {
+		free(tcstr->buffer);
+		tcstr->buffer = NULL;
+		tcstr->strlen = 0;
+	}
+}
+
 LOCAL W tcstrbuffer_initialize(tcstrbuffer_t *tcstr)
 {
 	tcstr->buffer = NULL;
@@ -249,6 +258,28 @@ LOCAL W postresdata_convertdata(postresdata_t *post)
 	return 0;
 }
 
+LOCAL VOID postresdata_cleardata(postresdata_t *post)
+{
+	tcstrbuffer_clear(&post->from);
+	tcstrbuffer_clear(&post->mail);
+	tcstrbuffer_clear(&post->message);
+	if (post->asc_from != NULL) {
+		free(post->asc_from);
+		post->asc_from = NULL;
+		post->asc_from_len = 0;
+	}
+	if (post->asc_mail != NULL) {
+		free(post->asc_mail);
+		post->asc_mail = NULL;
+		post->asc_mail_len = 0;
+	}
+	if (post->asc_message != NULL) {
+		free(post->asc_message);
+		post->asc_message = NULL;
+		post->asc_message_len = 0;
+	}
+}
+
 EXPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk)
 {
 	W fd, err, size;
@@ -280,6 +311,8 @@ EXPORT W postresdata_readfile(postresdata_t *post, VLINK *vlnk)
 		return err;
 	}
 	cls_fil(fd);
+
+	postresdata_cleardata(post);
 
 	err =  postresdata_readtad(post, (TC *)buf, size/sizeof(TC));
 	free(buf);
