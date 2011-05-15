@@ -1,7 +1,7 @@
 /*
  * poptray.c
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -45,12 +45,11 @@
 # define DP_ER(msg, err) /**/
 #endif
 
-EXPORT W poptray_gettraydata(postresdata_t **post)
+EXPORT W poptray_gettraydata(postresdata_t *post)
 {
 	TRAYREC *data;
 	TR_VOBJREC *vobjrec = NULL;
-	postresdata_t *ret;
-	W i, size, recs, err;
+	W i, size, recs, err, ret = 0;
 
 	err = tget_dat(NULL, 0, &size, -1);
 	if (err < 0) {
@@ -79,17 +78,12 @@ EXPORT W poptray_gettraydata(postresdata_t **post)
 	}
 
 	if (vobjrec != NULL) {
-		ret = postresdata_new();
-		if (ret == NULL) {
-			free(data);
-			return 0;
-		}
-		postresdata_readfile(ret, &(vobjrec->vlnk));
-		*post = ret;
+		postresdata_readfile(post, &(vobjrec->vlnk));
+		ret = 1;
 	}
 
 	tset_dat(NULL, 0);
 	free(data);
 
-	return 0;
+	return ret;
 }

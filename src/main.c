@@ -967,9 +967,8 @@ LOCAL VOID bchan_paste(bchan_t *bchan)
 {
 	W err;
 	PNT p;
-	postresdata_t *post = NULL;
 
-	err = poptray_gettraydata(&post);
+	err = poptray_gettraydata(bchan->resdata);
 	if (err < 0) {
 		datwindow_responsepasterequest(bchan->window, /* NACK */ 1, NULL);
 		return;
@@ -979,12 +978,8 @@ LOCAL VOID bchan_paste(bchan_t *bchan)
 	p.y = 0x8000;
 	datwindow_responsepasterequest(bchan->window, /* ACK */ 0, &p);
 
-	if (post != NULL) {
-		if (bchan->resdata != NULL) {
-			postresdata_delete(bchan->resdata);
-		}
-		bchan->resdata = post;
-		cfrmwindow_setpostresdata(bchan->confirm, post);
+	if (err > 0) {
+		cfrmwindow_setpostresdata(bchan->confirm, bchan->resdata);
 		bchan->request_confirm_open = True;
 	}
 }
@@ -1082,6 +1077,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	datrender_t *render;
 	dattraydata_t *traydata;
 	datretriever_t *retriever;
+	postresdata_t *resdata;
 	ressubmit_t *submit;
 	cookiedb_t *cookiedb;
 	RECT w_work;
@@ -1124,6 +1120,11 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	if (retriever == NULL) {
 		DP_ER("datretriever_new error", 0);
 		goto error_retriever;
+	}
+	resdata = postresdata_new();
+	if (resdata == NULL) {
+		DP_ER("postresdata_new error", 0);
+		goto error_resdata;
 	}
 	submit = ressubmit_new(cache);
 	if (submit == NULL) {
@@ -1179,7 +1180,7 @@ LOCAL W bchan_initialize(bchan_t *bchan, VID vid, WID wid/*tmp*/, W exectype, da
 	bchan->retriever = retriever;
 	bchan->submit = submit;
 	bchan->confirm = cfrmwindow;
-	bchan->resdata = NULL;
+	bchan->resdata = resdata;
 	bchan->ngword = ngwordwindow;
 	bchan->cookiedb = cookiedb;
 
@@ -1194,6 +1195,8 @@ error_mainmenu_initialize:
 error_cookiedb:
 	ressubmit_delete(submit);
 error_submit:
+	postresdata_delete(resdata);
+error_resdata:
 	datretriever_delete(retriever);
 error_retriever:
 	dattraydata_delete(traydata);

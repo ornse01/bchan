@@ -1,7 +1,7 @@
 /*
  * poptray.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2011 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -30,6 +30,6 @@
 #ifndef __POPTRAY_H__
 #define __POPTRAY_H__
 
-IMPORT W poptray_gettraydata(postresdata_t **post);
+IMPORT W poptray_gettraydata(postresdata_t *post);
 
 #endif
