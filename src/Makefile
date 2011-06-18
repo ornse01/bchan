@@ -23,6 +23,9 @@ mode =
 DEPS = Dependencies
 DEPENDENCIES_OUTPUT := $(DEPS)
 
+# マルチタスク対応ライブラリを使用する
+USE_MT = 1
+
 # アプリケーション標準ルール
 include ../../etc/makerules
 
