@@ -144,7 +144,7 @@
 	MC_STR "編集"
 	MC_STR "スレタイをトレーに複写"
 	MC_STR "スレッドＵＲＬをトレーに複写"
-	MC_STR "ＮＧワード設定\0"
+	MC_IND "ＮＧワード設定\0"
 
 	{# MSGTEXT_RETRIEVING 0 0}	-- data number
 	"スレッド取得中\0"

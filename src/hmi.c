@@ -848,7 +848,7 @@ EXPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len)
 	return 0;
 }
 
-LOCAL Bool ngwordwindow_isopen(ngwordwindow_t *window)
+EXPORT Bool ngwordwindow_isopen(ngwordwindow_t *window)
 {
 	if (window->wid < 0) {
 		return False;
@@ -965,10 +965,14 @@ LOCAL VOID cfrmwindow_close(cfrmwindow_t *window, dathmievent_t *evt)
 	evt->data.confirm_close.send = False;
 }
 
-LOCAL VOID ngwordwindow_close(ngwordwindow_t *window)
+EXPORT VOID ngwordwindow_close(ngwordwindow_t *window)
 {
 	WDSTAT stat;
 	W err;
+
+	if (window->wid < 0) {
+		return;
+	}
 
 	stat.attr = WA_STD;
 	err = wget_sts(window->wid, &stat, NULL);

@@ -61,6 +61,8 @@ IMPORT VOID cfrmwindow_setpostresdata(cfrmwindow_t *window, postresdata_t *post)
 typedef struct ngwordwindow_t_ ngwordwindow_t;
 
 IMPORT W ngwordwindow_open(ngwordwindow_t *window);
+IMPORT VOID ngwordwindow_close(ngwordwindow_t *window);
+IMPORT Bool ngwordwindow_isopen(ngwordwindow_t *window);
 IMPORT W ngwordwindow_appendword(ngwordwindow_t *window, TC *str, W len);
 IMPORT W ngwordwindow_removeword(ngwordwindow_t *window, TC *str, W len);
 IMPORT W ngwordwindow_starttextboxaction(ngwordwindow_t *window);

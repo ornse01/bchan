@@ -38,7 +38,7 @@ typedef struct bchan_mainmenu_t_ bchan_mainmenu_t;
 
 IMPORT W bchan_mainmenu_initialize(bchan_mainmenu_t *mainmenu, W dnum);
 IMPORT VOID bchan_mainmenu_finalize(bchan_mainmenu_t *mainmenu);
-IMPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable);
+IMPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable, Bool ngwindowenable);
 #define BCHAN_MAINMENU_SELECT_NOSELECT 0
 #define BCHAN_MAINMENU_SELECT_CLOSE 1
 #define BCHAN_MAINMENU_SELECT_REDISPLAY 2

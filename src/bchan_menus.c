@@ -43,7 +43,7 @@
 #define BCHAN_MAINMENU_ITEMNUM_WINDOW 4
 #define BCHAN_MAINMENU_ITEMNUM_GADGET (BCHAN_MAINMENU_ITEMNUM_WINDOW + 1)
 
-EXPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable)
+EXPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool networkenable, Bool ngwindowenable)
 {
 	/* [操作] -> [スレタイをトレーに複写] */
 	if (titleenable == False) {
@@ -63,6 +63,13 @@ EXPORT W bchan_mainmenu_setup(bchan_mainmenu_t *mainmenu, Bool titleenable, Bool
 		mchg_atr(mainmenu->mnid, (1 << 8)|2, M_ACT);
 		mchg_atr(mainmenu->mnid, (2 << 8)|2, M_ACT);
 		mchg_atr(mainmenu->mnid, (3 << 8)|1, M_ACT);
+	}
+
+	/* [編集] -> [ＮＧワード設定] */
+	if (ngwindowenable == False) {
+		mchg_atr(mainmenu->mnid, (2 << 8)|3, M_NOSEL);
+	} else {
+		mchg_atr(mainmenu->mnid, (2 << 8)|3, M_SEL);
 	}
 
 	wget_dmn(&(mainmenu->mnitem[BCHAN_MAINMENU_ITEMNUM_WINDOW].ptr));

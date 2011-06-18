@@ -1631,7 +1631,7 @@ LOCAL VOID keydwn(bchan_t *bchan, UH keycode, TC ch, UW stat)
 LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 {
 	TC *str;
-	Bool titleenable, networkenable;
+	Bool titleenable, networkenable, ngwordwindowopen;
 
 	str = datlayout_gettitle(bchan->layout);
 	if (str == NULL) {
@@ -1642,13 +1642,16 @@ LOCAL VOID bchan_setupmenu(bchan_t *bchan)
 
 	networkenable = datretriever_isenablenetwork(bchan->retriever);
 
-	bchan_mainmenu_setup(&bchan->mainmenu, titleenable, networkenable);
+	ngwordwindowopen = ngwordwindow_isopen(bchan->ngword);
+
+	bchan_mainmenu_setup(&bchan->mainmenu, titleenable, networkenable, ngwordwindowopen);
 }
 
 LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 {
 	UB *host, *board, *thread;
 	W host_len, board_len, thread_len;
+	Bool open;
 
 	switch (sel) {
 	case BCHAN_MAINMENU_SELECT_CLOSE: /* [終了] */
@@ -1670,7 +1673,12 @@ LOCAL VOID bchan_selectmenu(bchan_t *bchan, W sel)
 		bchan_pushthreadurl(bchan);
 		break;
 	case BCHAN_MAINMENU_SELECT_NGWORD: /* [ＮＧワード設定] */
-		ngwordwindow_open(bchan->ngword);
+		open = ngwordwindow_isopen(bchan->ngword);
+		if (open == False) {
+			ngwordwindow_open(bchan->ngword);
+		} else {
+			ngwordwindow_close(bchan->ngword);
+		}
 		break;
 	case BCHAN_MAINMENU_SELECT_THREADFETCH:	/* [スレッド取得] */
 		bchan_networkrequest(bchan);
