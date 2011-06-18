@@ -235,13 +235,18 @@ typedef struct {
 LOCAL W http_chunkediterator_start(http_chunkediterator_t *iterator, http_t *http)
 {
 	iterator->http = http;
-	iterator->buffer_len = 1024;
+	iterator->buffer_rcv_len = http->header_buffer_rcv_len - (http->header_len + 4);
+
+	if (iterator->buffer_rcv_len < 1024) {
+		iterator->buffer_len = 1024;
+	} else {
+		iterator->buffer_len = iterator->buffer_rcv_len;
+	}
 	iterator->buffer = malloc(iterator->buffer_len);
 	if (iterator->buffer == NULL) {
 		return -1;
 	}
 
-	iterator->buffer_rcv_len = http->header_buffer_rcv_len - (http->header_len + 4);
 	if (iterator->buffer_rcv_len > 0) {
 		memcpy(iterator->buffer, http->header_buffer + http->header_len + 4, iterator->buffer_rcv_len);
 	}
@@ -409,13 +414,18 @@ LOCAL W http_identityiterator_start(http_identityiterator_t *iterator, http_t *h
 {
 	iterator->http = http;
 	iterator->content_length = http_checkheader_content_length(http);
-	iterator->buffer_len = 1024;
+	iterator->buffer_rcv_len = http->header_buffer_rcv_len - (http->header_len + 4);
+
+	if (iterator->buffer_rcv_len < 1024) {
+		iterator->buffer_len = 1024;
+	} else {
+		iterator->buffer_len = iterator->buffer_rcv_len;
+	}
 	iterator->buffer = malloc(iterator->buffer_len);
 	if (iterator->buffer == NULL) {
 		return -1;
 	}
 
-	iterator->buffer_rcv_len = http->header_buffer_rcv_len - (http->header_len + 4);
 	if (iterator->buffer_rcv_len > 0) {
 		memcpy(iterator->buffer, http->header_buffer + http->header_len + 4, iterator->buffer_rcv_len);
 	}
