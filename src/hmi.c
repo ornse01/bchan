@@ -775,7 +775,6 @@ EXPORT W ngwordwindow_open(ngwordwindow_t *window)
 {
 	TC test[] = {TK_N, TK_G, 0x256F, 0x213C, 0x2549, 0x306C, 0x4D77,TNULL};
 	WID wid;
-	PNT pos;
 
 	if (window->wid > 0) {
 		return 0;
@@ -789,27 +788,19 @@ EXPORT W ngwordwindow_open(ngwordwindow_t *window)
 	window->wid = wid;
 	window->gid = wget_gid(wid);
 
-	pos.x = 0;
-	pos.y = 0;
-	window->ss_list_id = copn_par(wid, window->dnum_list, &pos);
+	window->ss_list_id = copn_par(wid, window->dnum_list, NULL);
 	if (window->ss_list_id < 0) {
 		DP_ER("copn_par list error:", window->ss_list_id);
 	}
-	pos.x = 0;
-	pos.y = 100;
-	window->ms_delete_id = copn_par(wid, window->dnum_delete, &pos);
+	window->ms_delete_id = copn_par(wid, window->dnum_delete, NULL);
 	if (window->ms_delete_id < 0) {
 		DP_ER("copn_par delete error:", window->ms_delete_id);
 	}
-	pos.x = 0;
-	pos.y = 130;
-	window->tb_input_id = copn_par(wid, window->dnum_input, &pos);
+	window->tb_input_id = copn_par(wid, window->dnum_input, NULL);
 	if (window->tb_input_id < 0) {
 		DP_ER("copn_par input error:", window->tb_input_id);
 	}
-	pos.x = 0;
-	pos.y = 160;
-	window->ms_append_id = copn_par(wid, window->dnum_append, &pos);
+	window->ms_append_id = copn_par(wid, window->dnum_append, NULL);
 	if (window->ms_append_id < 0) {
 		DP_ER("copn_par append error:", window->ms_append_id);
 	}
@@ -1667,8 +1658,8 @@ LOCAL ngwordwindow_t* ngwordwindow_new(PNT *p, WID parent, W dnum_list, W dnum_d
 	window->gid = -1;
 	window->parent = parent;
 	window->r.p.lefttop = *p;
-	window->r.p.rightbot.x = p->x + 300 + 7;
-	window->r.p.rightbot.y = p->y + 200 + 30;
+	window->r.p.rightbot.x = p->x + 8+360+8+80+8 + 7;
+	window->r.p.rightbot.y = p->y + 8+24+16+144+8 + 30;
 	err = wget_inf(WI_PANELBACK, &window->bgpat, sizeof(PAT));
 	if (err != sizeof(PAT)) {
 		DP_ER("wget_inf error:", err);
