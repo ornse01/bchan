@@ -38,7 +38,7 @@ VPATH = $(S)
 HEADER := $(S) $(HEADER)
 
 # ソースファイル
-SRC =	test_main.c cache.c test_cache.c parser.c test_parser.c layout.c test_layout.c retriever.c tadlib.c parselib.c test_parselib.c http.c submitutil.c test_submitutil.c sjisstring.c test_sjisstring.c residhash.c test_residhash.c resindexhash.c test_resindexhash.c postres.c test_postres.c tadimf.c test_tadimf.c array.c test_array.c layoutarray.c test_layoutarray.c layoutstyle.c wordlist.c test_wordlist.c tadsearch.c test_tadsearch.c httpheaderlexer.c test_httpheaderlexer.c setcookieheader.c test_setcookieheader.c httpdateparser.c test_httpdateparser.c cookiedb.c test_cookiedb.c psvlexer.c test_psvlexer.c
+SRC =	test_main.c cache.c test_cache.c parser.c test_parser.c layout.c test_layout.c retriever.c tadlib.c parselib.c test_parselib.c http.c submitutil.c test_submitutil.c sjisstring.c test_sjisstring.c residhash.c test_residhash.c resindexhash.c test_resindexhash.c postres.c test_postres.c tadimf.c test_tadimf.c array.c test_array.c layoutarray.c test_layoutarray.c layoutstyle.c wordlist.c test_wordlist.c tadsearch.c test_tadsearch.c httpheaderlexer.c test_httpheaderlexer.c setcookieheader.c test_setcookieheader.c httpdateparser.c test_httpdateparser.c cookiedb.c test_cookiedb.c psvlexer.c test_psvlexer.c base64encode.c test_base64encode.c
 
 # データボックスソースファイル
 DBSRC =

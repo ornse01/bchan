@@ -61,6 +61,7 @@ EXPORT	W	MAIN(MESSAGE *msg)
 	test_httpdateparser_main();
 	test_cookiedb_main();
 	test_psvlexer_main();
+	test_base64encode_main();
 
 	return 0;
 }

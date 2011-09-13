@@ -88,4 +88,7 @@ IMPORT VOID test_cookiedb_main();
 /* test_psvlexer.c */
 IMPORT VOID test_psvlexer_main();
 
+/* test_base64encode.c */
+IMPORT VOID test_base64encode_main();
+
 #endif
