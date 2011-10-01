@@ -44,5 +44,6 @@ IMPORT W base64encode_initialize(base64encode_t *encode);
 IMPORT VOID base64encode_finalize(base64encode_t *encode);
 IMPORT VOID base64encode_inputchar(base64encode_t *encode, UB ch, UB **result, W *result_len);
 IMPORT VOID base64encode_endinput(base64encode_t *encode, UB **result, W *result_len);
+IMPORT VOID base64encode_clear(base64encode_t *encode);
 
 #endif

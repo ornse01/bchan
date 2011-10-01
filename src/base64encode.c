@@ -89,6 +89,11 @@ EXPORT VOID base64encode_endinput(base64encode_t *encode, UB **result, W *result
 	}
 }
 
+EXPORT VOID base64encode_clear(base64encode_t *encode)
+{
+	encode->state = BASE64ENCODE_STATE_FIRSTBYTE;
+}
+
 EXPORT W base64encode_initialize(base64encode_t *encode)
 {
 	encode->state = BASE64ENCODE_STATE_FIRSTBYTE;
