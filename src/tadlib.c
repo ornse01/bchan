@@ -319,7 +319,7 @@ LOCAL W tadlib_calcdrawsize_br(VP arg)
 {
 	tadlib_calcdrawsize_t *ctx;
 	ctx = (tadlib_calcdrawsize_t*)arg;
-	ctx->sz.v += 16;
+	ctx->sz.v += 18;
 	if (ctx->ln_width > ctx->sz.h) {
 		ctx->sz.h = ctx->ln_width;
 	}
@@ -470,7 +470,7 @@ LOCAL W tadlib_drawtext_br(VP arg)
 	ctx = (tadlib_drawtext_t*)arg;
 
 	gget_chp(ctx->gid, &x, &y);
-	gset_chp(ctx->gid, - ctx->dh, y+16, 1);
+	gset_chp(ctx->gid, - ctx->dh, y+18, 1);
 
 	return 0;
 }
