@@ -30,8 +30,8 @@
 #include	<btron/dp.h>
 
 //#define datlayout_fontconfig_class FTC_MINCHO
-//#define datlayout_fontconfig_class 0x000000c0 /* gothic */
-#define datlayout_fontconfig_class FTC_DEFAULT
+#define datlayout_fontconfig_class 0x000000c0 /* gothic */
+//#define datlayout_fontconfig_class FTC_DEFAULT
 
 EXPORT W layoutstyle_resetgenvfont(GID target)
 {
