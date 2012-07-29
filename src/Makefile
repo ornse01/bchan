@@ -38,7 +38,7 @@ S = ../src
 VPATH = $(S)
 
 # ヘッダファイルのディレクトリ追加
-HEADER := $(S) $(HEADER)
+HEADER := $(S) $(HEADER) ../src/bchanf/src
 
 # ソースファイル
 SRC =	main.c cache.c parser.c layout.c retriever.c tadlib.c poptray.c postres.c http.c submit.c sjisstring.c parselib.c submitutil.c bchan_vobj.c tadurl.c bchan_panels.c bchan_menus.c residhash.c resindexhash.c tadimf.c layoutarray.c array.c render.c layoutstyle.c traydata.c hmi.c wordlist.c tadsearch.c httpdateparser.c setcookieheader.c psvlexer.c cookiedb.c
@@ -68,12 +68,16 @@ LOADLIBES += -limg
 INST = $(addprefix $(TARGET), .bz .map)
 NOINST = $(addprefix $(TARGET), .out .fsn .dbx)
 
-all: $(INST)
+all: library $(INST)
 
-$(TARGET).out: $(OBJ)
+library:
+	@$(MAKE) -f Makefile.lib -C ./bchanf
+
+$(TARGET).out: $(OBJ) bchanf/libbchanf.a
 	$(LINK.o) $(LDOBJS) $^ $(LOADLIBES) $(LDLIBS) $(OUTPUT_OPTION)
 
 clean:
+	@$(MAKE) clean -f Makefile.lib -C ./bchanf
 	$(RM) $(OBJ)
 	$(RM) $(WC_SRC:%.C=%.c) $(DBSRC)
 	$(RM) $(INST) $(NOINST) *.lst $(DEPS)
