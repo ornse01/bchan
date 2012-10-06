@@ -1,7 +1,7 @@
 /*
  * test_cache.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,6 +24,10 @@
  *
  */
 
+#include    "test.h"
+
+#include    "cache.h"
+
 #include    <btron/btron.h>
 #include	<tcode.h>
 #include    <bstdio.h>
@@ -32,9 +36,7 @@
 #include    <tstring.h>
 #include	<errcode.h>
 
-#include    "test.h"
-
-#include    "cache.h"
+#include    <unittest_driver.h>
 
 LOCAL UB test_cache_testdata_01[] = {"aaaaabbbbbcccccddddd"};
 LOCAL UB test_cache_testdata_01_1[] = {"aaaaa"};
@@ -164,11 +166,11 @@ LOCAL Bool test_cache_util_cmp_rec_bin(LINK *lnk, W rectype, W subtype, UB *bin,
 
 /* test_cache_1 */
 
-LOCAL TEST_RESULT test_cache_1_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_1_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
 	datcache_datareadcontext_t *context;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	cache = datcache_new(vid);
@@ -176,11 +178,11 @@ LOCAL TEST_RESULT test_cache_1_testseq(VID vid, LINK *lnk)
 	context = datcache_startdataread(cache, 0);
 	if (context == NULL) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ok = test_cache_util_cmp_ctx_str(context, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok == False) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	datcache_enddataread(cache, context);
 
@@ -189,34 +191,34 @@ LOCAL TEST_RESULT test_cache_1_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_1()
+LOCAL UNITTEST_RESULT test_cache_1()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -225,12 +227,12 @@ LOCAL TEST_RESULT test_cache_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -238,12 +240,12 @@ LOCAL TEST_RESULT test_cache_1()
 
 /* test_cache_2 */
 
-LOCAL TEST_RESULT test_cache_2_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_2_testseq(VID vid, LINK *lnk)
 {
 	W err;
 	datcache_t *cache;
 	datcache_datareadcontext_t *context;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	cache = datcache_new(vid);
@@ -252,29 +254,29 @@ LOCAL TEST_RESULT test_cache_2_testseq(VID vid, LINK *lnk)
 	if (err < 0) {
 		printf("datcache_appenddata error 1\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
 	if (err < 0) {
 		printf("datcache_appenddata error 2\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
 	if (err < 0) {
 		printf("datcache_appenddata error 3\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	context = datcache_startdataread(cache, 0);
 	if (context == NULL) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ok = test_cache_util_cmp_ctx_str(context, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok == False) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	datcache_enddataread(cache, context);
 
@@ -283,34 +285,34 @@ LOCAL TEST_RESULT test_cache_2_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_2()
+LOCAL UNITTEST_RESULT test_cache_2()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -319,12 +321,12 @@ LOCAL TEST_RESULT test_cache_2()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -332,10 +334,10 @@ LOCAL TEST_RESULT test_cache_2()
 
 /* test_cache_3 */
 
-LOCAL TEST_RESULT test_cache_3_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_3_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *header;
 	W header_len, cmp;
 
@@ -344,12 +346,12 @@ LOCAL TEST_RESULT test_cache_3_testseq(VID vid, LINK *lnk)
 	datcache_getlatestheader(cache, &header, &header_len);
 	if (header_len != strlen(test_cache_testdata_02)) {
 		printf("datcache_getlatestheader: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(header, test_cache_testdata_02, header_len);
 	if (cmp != 0) {
 		printf("datcache_getlatestheader: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -357,34 +359,34 @@ LOCAL TEST_RESULT test_cache_3_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_3()
+LOCAL UNITTEST_RESULT test_cache_3()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -393,12 +395,12 @@ LOCAL TEST_RESULT test_cache_3()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -406,10 +408,10 @@ LOCAL TEST_RESULT test_cache_3()
 
 /* test_cache_4 */
 
-LOCAL TEST_RESULT test_cache_4_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_4_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *header;
 	W header_len;
 
@@ -418,11 +420,11 @@ LOCAL TEST_RESULT test_cache_4_testseq(VID vid, LINK *lnk)
 	datcache_getlatestheader(cache, &header, &header_len);
 	if (header_len != 0) {
 		printf("datcache_getlatestheader: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (header != NULL) {
 		printf("datcache_getlatestheader: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -430,28 +432,28 @@ LOCAL TEST_RESULT test_cache_4_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_4()
+LOCAL UNITTEST_RESULT test_cache_4()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -460,12 +462,12 @@ LOCAL TEST_RESULT test_cache_4()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -473,10 +475,10 @@ LOCAL TEST_RESULT test_cache_4()
 
 /* test_cache_5 */
 
-LOCAL TEST_RESULT test_cache_5_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_5_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *header;
 	W err, header_len, cmp;
 
@@ -486,18 +488,18 @@ LOCAL TEST_RESULT test_cache_5_testseq(VID vid, LINK *lnk)
 	if (err < 0) {
 		printf("datcache_updatelataestheade error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getlatestheader(cache, &header, &header_len);
 	if (header_len != strlen(test_cache_testdata_07)) {
 		printf("datcache_getlatestheader: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(header, test_cache_testdata_07, header_len);
 	if (cmp != 0) {
 		printf("datcache_getlatestheader: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -505,34 +507,34 @@ LOCAL TEST_RESULT test_cache_5_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_5()
+LOCAL UNITTEST_RESULT test_cache_5()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -541,12 +543,12 @@ LOCAL TEST_RESULT test_cache_5()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -554,10 +556,10 @@ LOCAL TEST_RESULT test_cache_5()
 
 /* test_cache_6 */
 
-LOCAL TEST_RESULT test_cache_6_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_6_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *header;
 	W err, header_len, cmp;
 
@@ -567,18 +569,18 @@ LOCAL TEST_RESULT test_cache_6_testseq(VID vid, LINK *lnk)
 	if (err < 0) {
 		printf("datcache_updatelataestheade error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getlatestheader(cache, &header, &header_len);
 	if (header_len != strlen(test_cache_testdata_07)) {
 		printf("datcache_getlatestheader: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(header, test_cache_testdata_07, header_len);
 	if (cmp != 0) {
 		printf("datcache_getlatestheader: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -586,28 +588,28 @@ LOCAL TEST_RESULT test_cache_6_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_6()
+LOCAL UNITTEST_RESULT test_cache_6()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -616,12 +618,12 @@ LOCAL TEST_RESULT test_cache_6()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -629,10 +631,10 @@ LOCAL TEST_RESULT test_cache_6()
 
 /* test_cache_7 */
 
-LOCAL TEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *host, *borad, *thread;
 	W cmp, host_len, borad_len, thread_len;
 
@@ -641,34 +643,34 @@ LOCAL TEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
 	datcache_gethost(cache, &host, &host_len);
 	if (host_len != strlen(test_cache_testdata_04)) {
 		printf("datcache_gethost: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(host, test_cache_testdata_04, host_len);
 	if (cmp != 0) {
 		printf("datcache_gethost: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getborad(cache, &borad, &borad_len);
 	if (borad_len != strlen(test_cache_testdata_05)) {
 		printf("datcache_getboard: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(borad, test_cache_testdata_05, borad_len);
 	if (cmp != 0) {
 		printf("datcache_getboard: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getthread(cache, &thread, &thread_len);
 	if (thread_len != strlen(test_cache_testdata_06)) {
 		printf("datcache_getthread: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cmp = memcmp(thread, test_cache_testdata_06, thread_len);
 	if (cmp != 0) {
 		printf("datcache_getthread: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -676,34 +678,34 @@ LOCAL TEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_7()
+LOCAL UNITTEST_RESULT test_cache_7()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -712,12 +714,12 @@ LOCAL TEST_RESULT test_cache_7()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -725,10 +727,10 @@ LOCAL TEST_RESULT test_cache_7()
 
 /* test_cache_8 */
 
-LOCAL TEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *host, *borad, *thread;
 	W host_len, borad_len, thread_len;
 
@@ -737,31 +739,31 @@ LOCAL TEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
 	datcache_gethost(cache, &host, &host_len);
 	if (host_len != 0) {
 		printf("datcache_gethost: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (host != NULL) {
 		printf("datcache_gethost: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getborad(cache, &borad, &borad_len);
 	if (borad_len != 0) {
 		printf("datcache_getboard: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (borad != NULL) {
 		printf("datcache_getboard: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_getthread(cache, &thread, &thread_len);
 	if (thread_len != 0) {
 		printf("datcache_getthread: length error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (thread != NULL) {
 		printf("datcache_getthread: data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -769,28 +771,28 @@ LOCAL TEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_8()
+LOCAL UNITTEST_RESULT test_cache_8()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -799,12 +801,12 @@ LOCAL TEST_RESULT test_cache_8()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -812,30 +814,30 @@ LOCAL TEST_RESULT test_cache_8()
 
 /* test_cache_9 */
 
-LOCAL TEST_RESULT test_cache_9()
+LOCAL UNITTEST_RESULT test_cache_9()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -845,32 +847,32 @@ LOCAL TEST_RESULT test_cache_9()
 	if (err < 0) {
 		printf("datcache_appenddata error 1\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_2, strlen(test_cache_testdata_01_2));
 	if (err < 0) {
 		printf("datcache_appenddata error 2\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
 	if (err < 0) {
 		printf("datcache_appenddata error 3\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
 	if (err < 0) {
 		printf("datcache_appenddata error 4\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -878,23 +880,23 @@ LOCAL TEST_RESULT test_cache_9()
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_MAIN, 0, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok == False) {
 		printf("main data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_02, strlen(test_cache_testdata_02));
 	if (ok == False) {
 		printf("info data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -902,36 +904,36 @@ LOCAL TEST_RESULT test_cache_9()
 
 /* test_cache_10 */
 
-LOCAL TEST_RESULT test_cache_10()
+LOCAL UNITTEST_RESULT test_cache_10()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -941,26 +943,26 @@ LOCAL TEST_RESULT test_cache_10()
 	if (err < 0) {
 		printf("datcache_appenddata error 2\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
 	if (err < 0) {
 		printf("datcache_appenddata error 3\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
 	if (err < 0) {
 		printf("datcache_appenddata error 4\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -968,23 +970,23 @@ LOCAL TEST_RESULT test_cache_10()
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_MAIN, 0, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok == False) {
 		printf("main data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_02, strlen(test_cache_testdata_02));
 	if (ok == False) {
 		printf("info data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -992,36 +994,36 @@ LOCAL TEST_RESULT test_cache_10()
 
 /* test_cache_11 */
 
-LOCAL TEST_RESULT test_cache_11()
+LOCAL UNITTEST_RESULT test_cache_11()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1031,14 +1033,14 @@ LOCAL TEST_RESULT test_cache_11()
 	if (err < 0) {
 		printf("datcache_updatelataestheade error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1046,23 +1048,23 @@ LOCAL TEST_RESULT test_cache_11()
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_MAIN, 0, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok == False) {
 		printf("main data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ok = test_cache_util_cmp_rec_bin(&test_lnk, DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, test_cache_testdata_07, strlen(test_cache_testdata_07));
 	if (ok == False) {
 		printf("info data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1070,11 +1072,11 @@ LOCAL TEST_RESULT test_cache_11()
 
 /* test_cache_12 */
 
-LOCAL TEST_RESULT test_cache_12_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_12_testseq(VID vid, LINK *lnk)
 {
 	datcache_t *cache;
 	datcache_datareadcontext_t *context;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *bin_cache;
 	W len_cache;
 	Bool ok;
@@ -1084,11 +1086,11 @@ LOCAL TEST_RESULT test_cache_12_testseq(VID vid, LINK *lnk)
 	context = datcache_startdataread(cache, strlen(test_cache_testdata_01) + 5);
 	if (context == NULL) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ok = datcache_datareadcontext_nextdata(context, &bin_cache, &len_cache);
 	if (ok == True) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	datcache_enddataread(cache, context);
 
@@ -1097,34 +1099,34 @@ LOCAL TEST_RESULT test_cache_12_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_12()
+LOCAL UNITTEST_RESULT test_cache_12()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1133,12 +1135,12 @@ LOCAL TEST_RESULT test_cache_12()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1146,12 +1148,12 @@ LOCAL TEST_RESULT test_cache_12()
 
 /* test_cache_13 */
 
-LOCAL TEST_RESULT test_cache_13_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_13_testseq(VID vid, LINK *lnk)
 {
 	W err;
 	datcache_t *cache;
 	datcache_datareadcontext_t *context;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *bin_cache;
 	W len_cache;
 	Bool ok;
@@ -1162,29 +1164,29 @@ LOCAL TEST_RESULT test_cache_13_testseq(VID vid, LINK *lnk)
 	if (err < 0) {
 		printf("datcache_appenddata error 1\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
 	if (err < 0) {
 		printf("datcache_appenddata error 2\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
 	if (err < 0) {
 		printf("datcache_appenddata error 3\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	context = datcache_startdataread(cache, strlen(test_cache_testdata_01)+5);
 	if (context == NULL) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ok = datcache_datareadcontext_nextdata(context, &bin_cache, &len_cache);
 	if (ok == True) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	datcache_enddataread(cache, context);
 
@@ -1193,34 +1195,34 @@ LOCAL TEST_RESULT test_cache_13_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_13()
+LOCAL UNITTEST_RESULT test_cache_13()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1229,12 +1231,12 @@ LOCAL TEST_RESULT test_cache_13()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1242,12 +1244,12 @@ LOCAL TEST_RESULT test_cache_13()
 
 /* test_cache_14 */
 
-LOCAL TEST_RESULT test_cache_14_testseq(VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_14_testseq(VID vid, LINK *lnk)
 {
 	W err;
 	datcache_t *cache;
 	datcache_datareadcontext_t *context;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *bin_cache;
 	W len_cache;
 	Bool ok;
@@ -1258,35 +1260,35 @@ LOCAL TEST_RESULT test_cache_14_testseq(VID vid, LINK *lnk)
 	if (err < 0) {
 		printf("datcache_appenddata error 1\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_2, strlen(test_cache_testdata_01_2));
 	if (err < 0) {
 		printf("datcache_appenddata error 2\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_3, strlen(test_cache_testdata_01_3));
 	if (err < 0) {
 		printf("datcache_appenddata error 3\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appenddata(cache, test_cache_testdata_01_4, strlen(test_cache_testdata_01_4));
 	if (err < 0) {
 		printf("datcache_appenddata error 4\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	context = datcache_startdataread(cache, strlen(test_cache_testdata_01)+5);
 	if (context == NULL) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ok = datcache_datareadcontext_nextdata(context, &bin_cache, &len_cache);
 	if (ok == True) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	datcache_enddataread(cache, context);
 
@@ -1295,28 +1297,28 @@ LOCAL TEST_RESULT test_cache_14_testseq(VID vid, LINK *lnk)
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_14()
+LOCAL UNITTEST_RESULT test_cache_14()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_03, strlen(test_cache_testdata_03), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1325,12 +1327,12 @@ LOCAL TEST_RESULT test_cache_14()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1338,17 +1340,17 @@ LOCAL TEST_RESULT test_cache_14()
 
 /* test_cache_15 */
 
-LOCAL TEST_RESULT test_cache_15()
+LOCAL UNITTEST_RESULT test_cache_15()
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1358,7 +1360,7 @@ LOCAL TEST_RESULT test_cache_15()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1366,29 +1368,29 @@ LOCAL TEST_RESULT test_cache_15()
 	fd = opn_fil(&test_lnk, F_READ|F_WRITE, NULL);
 	if (fd < 0) {
 		printf("main data error\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = fnd_rec(fd, F_TOPEND, 1 << DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, NULL);
 	if (err != ER_REC) {
 		printf("found HEADER record\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = fnd_rec(fd, F_TOPEND, 1 << DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, NULL);
 	if (err != ER_REC) {
 		printf("found RETRIEVE record\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1497,11 +1499,11 @@ LOCAL W test_cache_writecheck_testseq_modsize(W size_diff, LINK *lnk)
 	return 0;
 }
 
-LOCAL TEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool clear, Bool expected, VID vid, LINK *lnk)
+LOCAL UNITTEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool clear, Bool expected, VID vid, LINK *lnk)
 {
 	W err;
 	datcache_t *cache;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	Bool ok;
 	F_TIME ftime;
 	F_STATE fstate;
@@ -1509,27 +1511,27 @@ LOCAL TEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool c
 	cache = datcache_new(vid);
 	if (cache == NULL) {
 		printf("datcache_new error\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = test_cache_writecheck_testseq_appenddata(cache, clear);
 	if (err < 0) {
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = fil_sts(lnk, NULL, &fstate, NULL);
 	if (err < 0) {
 		printf("fil_sts error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (size_diff != 0) {
 		err = test_cache_writecheck_testseq_modsize(size_diff, lnk);
 		if (err < 0) {
 			printf("recsize modify error\n");
 			datcache_delete(cache);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ftime.f_ltime = -1;
@@ -1539,14 +1541,14 @@ LOCAL TEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool c
 	if (err < 0) {
 		printf("chg_ftm error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1554,28 +1556,28 @@ LOCAL TEST_RESULT test_cache_writecheck_testseq(W time_diff, W size_diff, Bool c
 	ok = test_cache_util_cmp_rec_bin(lnk, DATCACHE_RECORDTYPE_MAIN, 0, test_cache_testdata_01, strlen(test_cache_testdata_01));
 	if (ok != expected) {
 		printf("main data error\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}	
 
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_writecheck(W time_diff, W size_diff, Bool clear, Bool expected)
+LOCAL UNITTEST_RESULT test_cache_writecheck(W time_diff, W size_diff, Bool clear, Bool expected)
 {
 	LINK test_lnk;
 	W fd, err;
 	VID vid;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = ins_rec(fd, test_cache_testdata_01_1, strlen(test_cache_testdata_01_1), DATCACHE_RECORDTYPE_MAIN, 0, 0);
 	if (err < 0) {
 		cls_fil(fd);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1584,110 +1586,110 @@ LOCAL TEST_RESULT test_cache_writecheck(W time_diff, W size_diff, Bool clear, Bo
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
 }
 
-LOCAL TEST_RESULT test_cache_append_1()
+LOCAL UNITTEST_RESULT test_cache_append_1()
 {
 	return test_cache_writecheck(0, 0, False, True);
 }
 
-LOCAL TEST_RESULT test_cache_append_2()
+LOCAL UNITTEST_RESULT test_cache_append_2()
 {
 	return test_cache_writecheck(0, 3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_3()
+LOCAL UNITTEST_RESULT test_cache_append_3()
 {
 	return test_cache_writecheck(0, -3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_4()
+LOCAL UNITTEST_RESULT test_cache_append_4()
 {
 	return test_cache_writecheck(300, 0, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_5()
+LOCAL UNITTEST_RESULT test_cache_append_5()
 {
 	return test_cache_writecheck(300, 3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_6()
+LOCAL UNITTEST_RESULT test_cache_append_6()
 {
 	return test_cache_writecheck(300, -3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_7()
+LOCAL UNITTEST_RESULT test_cache_append_7()
 {
 	return test_cache_writecheck(-300, 0, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_8()
+LOCAL UNITTEST_RESULT test_cache_append_8()
 {
 	return test_cache_writecheck(-300, 3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_append_9()
+LOCAL UNITTEST_RESULT test_cache_append_9()
 {
 	return test_cache_writecheck(-300, -3, False, False);
 }
 
-LOCAL TEST_RESULT test_cache_reload_1()
+LOCAL UNITTEST_RESULT test_cache_reload_1()
 {
 	return test_cache_writecheck(0, 0, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_2()
+LOCAL UNITTEST_RESULT test_cache_reload_2()
 {
 	return test_cache_writecheck(0, 3, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_3()
+LOCAL UNITTEST_RESULT test_cache_reload_3()
 {
 	return test_cache_writecheck(0, -3, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_4()
+LOCAL UNITTEST_RESULT test_cache_reload_4()
 {
 	return test_cache_writecheck(300, 0, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_5()
+LOCAL UNITTEST_RESULT test_cache_reload_5()
 {
 	return test_cache_writecheck(300, 3, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_6()
+LOCAL UNITTEST_RESULT test_cache_reload_6()
 {
 	return test_cache_writecheck(300, -3, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_7()
+LOCAL UNITTEST_RESULT test_cache_reload_7()
 {
 	return test_cache_writecheck(-300, 0, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_8()
+LOCAL UNITTEST_RESULT test_cache_reload_8()
 {
 	return test_cache_writecheck(-300, 3, True, True);
 }
 
-LOCAL TEST_RESULT test_cache_reload_9()
+LOCAL UNITTEST_RESULT test_cache_reload_9()
 {
 	return test_cache_writecheck(-300, -3, True, True);
 }
 
 /* test_cache_residinfo_1 */
 
-LOCAL TEST_RESULT test_cache_residinfo_1()
+LOCAL UNITTEST_RESULT test_cache_residinfo_1()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -1698,7 +1700,7 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -1706,7 +1708,7 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1715,24 +1717,24 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1742,41 +1744,41 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr3) {
 		printf("residhash_searchdata 3 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color3) {
 		printf("residhash_searchdata 3 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1784,12 +1786,12 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1797,7 +1799,7 @@ LOCAL TEST_RESULT test_cache_residinfo_1()
 
 /* test_cache_residinfo_2 */
 
-LOCAL TEST_RESULT test_cache_residinfo_2()
+LOCAL UNITTEST_RESULT test_cache_residinfo_2()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -1808,7 +1810,7 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -1816,7 +1818,7 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1825,19 +1827,19 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1847,33 +1849,33 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1881,12 +1883,12 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1894,7 +1896,7 @@ LOCAL TEST_RESULT test_cache_residinfo_2()
 
 /* test_cache_residinfo_3 */
 
-LOCAL TEST_RESULT test_cache_residinfo_3()
+LOCAL UNITTEST_RESULT test_cache_residinfo_3()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -1905,7 +1907,7 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101;
 	COLOR color, color1 = 0x10FF00FF;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -1913,7 +1915,7 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -1922,14 +1924,14 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1939,25 +1941,25 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -1965,12 +1967,12 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -1978,7 +1980,7 @@ LOCAL TEST_RESULT test_cache_residinfo_3()
 
 /* test_cache_residinfo_4 */
 
-LOCAL TEST_RESULT test_cache_residinfo_4()
+LOCAL UNITTEST_RESULT test_cache_residinfo_4()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -1989,7 +1991,7 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr;
 	COLOR color;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -1997,7 +1999,7 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2007,7 +2009,7 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2017,17 +2019,17 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2035,12 +2037,12 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2048,7 +2050,7 @@ LOCAL TEST_RESULT test_cache_residinfo_4()
 
 /* test_cache_residinfo_5 */
 
-LOCAL TEST_RESULT test_cache_residinfo_5()
+LOCAL UNITTEST_RESULT test_cache_residinfo_5()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2059,7 +2061,7 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -2067,7 +2069,7 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2076,24 +2078,24 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2104,7 +2106,7 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2113,33 +2115,33 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("residhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2147,12 +2149,12 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2160,7 +2162,7 @@ LOCAL TEST_RESULT test_cache_residinfo_5()
 
 /* test_cache_residinfo_6 */
 
-LOCAL TEST_RESULT test_cache_residinfo_6()
+LOCAL UNITTEST_RESULT test_cache_residinfo_6()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2171,7 +2173,7 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -2179,7 +2181,7 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2188,24 +2190,24 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2217,7 +2219,7 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2226,25 +2228,25 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_FOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("residhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2252,12 +2254,12 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2265,7 +2267,7 @@ LOCAL TEST_RESULT test_cache_residinfo_6()
 
 /* test_cache_residinfo_7 */
 
-LOCAL TEST_RESULT test_cache_residinfo_7()
+LOCAL UNITTEST_RESULT test_cache_residinfo_7()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2276,7 +2278,7 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	W ret, idstr1_len = strlen(idstr1), idstr2_len = strlen(idstr2), idstr3_len = strlen(idstr3);
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(idstr1_tc, idstr1);
 	sjstotcs(idstr2_tc, idstr2);
@@ -2284,7 +2286,7 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2293,24 +2295,24 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	err = datcache_addresiddata(cache, idstr1_tc, idstr1_len, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr2_tc, idstr2_len, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresiddata(cache, idstr3_tc, idstr3_len, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2323,7 +2325,7 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2332,17 +2334,17 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	ret = datcache_searchresiddata(cache, idstr1_tc, idstr1_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr2_tc, idstr2_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresiddata(cache, idstr3_tc, idstr3_len, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESIDDATA_NOTFOUND) {
 		printf("residhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2350,12 +2352,12 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2363,7 +2365,7 @@ LOCAL TEST_RESULT test_cache_residinfo_7()
 
 /* test_cache_resindexinfo_1 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_1()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_1()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2373,11 +2375,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_1()
 	W ret;
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2386,24 +2388,24 @@ LOCAL TEST_RESULT test_cache_resindexinfo_1()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index2, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index3, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2413,41 +2415,41 @@ LOCAL TEST_RESULT test_cache_resindexinfo_1()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr3) {
 		printf("resindexhash_searchdata 3 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color3) {
 		printf("resindexhash_searchdata 3 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2455,12 +2457,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2468,7 +2470,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_1()
 
 /* test_cache_resindexinfo_2 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_2()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_2()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2478,11 +2480,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_2()
 	W ret;
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2491,19 +2493,19 @@ LOCAL TEST_RESULT test_cache_resindexinfo_2()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index2, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2513,33 +2515,33 @@ LOCAL TEST_RESULT test_cache_resindexinfo_2()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2547,12 +2549,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_2()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2560,7 +2562,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_2()
 
 /* test_cache_resindexinfo_3 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_3()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_3()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2570,11 +2572,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_3()
 	W ret;
 	UW attr, attr1 = 0x01010101;
 	COLOR color, color1 = 0x10FF00FF;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2583,14 +2585,14 @@ LOCAL TEST_RESULT test_cache_resindexinfo_3()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2600,25 +2602,25 @@ LOCAL TEST_RESULT test_cache_resindexinfo_3()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2626,12 +2628,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_3()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2639,7 +2641,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_3()
 
 /* test_cache_resindexinfo_4 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_4()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_4()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2649,11 +2651,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_4()
 	W ret;
 	UW attr;
 	COLOR color;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2663,7 +2665,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_4()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2673,17 +2675,17 @@ LOCAL TEST_RESULT test_cache_resindexinfo_4()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2691,12 +2693,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_4()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2704,7 +2706,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_4()
 
 /* test_cache_resindexinfo_5 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_5()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_5()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2714,11 +2716,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 	W ret;
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2727,24 +2729,24 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index2, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index3, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2755,7 +2757,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2764,33 +2766,33 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color2) {
 		printf("resindexhash_searchdata 2 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2798,12 +2800,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2811,7 +2813,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_5()
 
 /* test_cache_resindexinfo_6 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_6()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_6()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2821,11 +2823,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 	W ret;
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2834,24 +2836,24 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index2, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index3, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2863,7 +2865,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2872,25 +2874,25 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_FOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (attr != attr1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	if (color != color1) {
 		printf("resindexhash_searchdata 1 result fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2898,12 +2900,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -2911,7 +2913,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_6()
 
 /* test_cache_resindexinfo_7 */
 
-LOCAL TEST_RESULT test_cache_resindexinfo_7()
+LOCAL UNITTEST_RESULT test_cache_resindexinfo_7()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -2921,11 +2923,11 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	W ret;
 	UW attr, attr1 = 0x01010101, attr2 = 0x10101010, attr3 = 0x00001111;
 	COLOR color, color1 = 0x10FF00FF, color2 = 0x1000FF00, color3 = 0x10000000;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -2934,24 +2936,24 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	err = datcache_addresindexdata(cache, index1, attr1, color1);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index2, attr2, color2);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_addresindexdata(cache, index3, attr3, color3);
 	if (err < 0) {
 		printf("datcache_addresindexdata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2964,7 +2966,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -2973,17 +2975,17 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	ret = datcache_searchresindexdata(cache, index1, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index2, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	ret = datcache_searchresindexdata(cache, index3, &attr, &color);
 	if (ret != DATCACHE_SEARCHRESINDEXDATA_NOTFOUND) {
 		printf("resindexhash_searchdata 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -2991,12 +2993,12 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3004,7 +3006,7 @@ LOCAL TEST_RESULT test_cache_resindexinfo_7()
 
 /* test_cache_ngwordinfo_1 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_1()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_1()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3014,7 +3016,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3022,7 +3024,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3031,24 +3033,24 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3058,17 +3060,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3076,12 +3078,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3089,7 +3091,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_1()
 
 /* test_cache_ngwordinfo_2 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_2()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_2()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3099,7 +3101,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3107,7 +3109,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3116,19 +3118,19 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
 	if (err < 0) {
 		printf("datcache_addresiddata fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3138,17 +3140,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3156,12 +3158,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3169,7 +3171,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_2()
 
 /* test_cache_ngwordinfo_3 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_3()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_3()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3179,7 +3181,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3187,7 +3189,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3196,14 +3198,14 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3213,17 +3215,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3231,12 +3233,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3244,7 +3246,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_3()
 
 /* test_cache_ngwordinfo_4 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_4()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_4()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3254,7 +3256,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3262,7 +3264,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3272,7 +3274,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3282,17 +3284,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3300,12 +3302,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3313,7 +3315,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_4()
 
 /* test_cache_ngwordinfo_5 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_5()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_5()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3323,7 +3325,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3331,7 +3333,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3340,24 +3342,24 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3368,7 +3370,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -3377,17 +3379,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3395,12 +3397,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3408,7 +3410,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_5()
 
 /* test_cache_ngwordinfo_6 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_6()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_6()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3418,7 +3420,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3426,7 +3428,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3434,24 +3436,24 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3463,7 +3465,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -3472,17 +3474,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != True) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3490,12 +3492,12 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -3503,7 +3505,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_6()
 
 /* test_cache_ngwordinfo_7 */
 
-LOCAL TEST_RESULT test_cache_ngwordinfo_7()
+LOCAL UNITTEST_RESULT test_cache_ngwordinfo_7()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -3513,7 +3515,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 	TC ngword1_tc[9], ngword2_tc[8], ngword3_tc[8];
 	W ngword1_len = strlen(ngword1), ngword2_len = strlen(ngword2), ngword3_len = strlen(ngword3);
 	Bool found;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	sjstotcs(ngword1_tc, ngword1);
 	sjstotcs(ngword2_tc, ngword2);
@@ -3521,7 +3523,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 
 	fd = test_cache_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -3529,24 +3531,24 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 	err = datcache_appendngword(cache, ngword1_tc, ngword1_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword2_tc, ngword2_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = datcache_appendngword(cache, ngword3_tc, ngword3_len);
 	if (err < 0) {
 		printf("datcache_appendngword fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	err = datcache_writefile(cache);
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3559,7 +3561,7 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 	if (err < 0) {
 		printf("datcache_writefile error\n");
 		datcache_delete(cache);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	datcache_delete(cache);
 
@@ -3568,17 +3570,17 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 	found = datcache_checkngwordexist(cache, ngword1_tc, ngword1_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 1 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword2_tc, ngword2_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 2 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	found = datcache_checkngwordexist(cache, ngword3_tc, ngword3_len);
 	if (found != False) {
 		printf("datcache_checkngwordexist 3 fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datcache_delete(cache);
@@ -3586,86 +3588,71 @@ LOCAL TEST_RESULT test_cache_ngwordinfo_7()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
 }
 
-LOCAL VOID test_cache_printresult(TEST_RESULT (*proc)(), B *test_name)
+IMPORT VOID test_cache_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_cache: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-IMPORT VOID test_cache_main()
-{
-	test_cache_printresult(test_cache_1, "test_cache_1");
-	test_cache_printresult(test_cache_2, "test_cache_2");
-	test_cache_printresult(test_cache_3, "test_cache_3");
-	test_cache_printresult(test_cache_4, "test_cache_4");
-	test_cache_printresult(test_cache_5, "test_cache_5");
-	test_cache_printresult(test_cache_6, "test_cache_6");
-	test_cache_printresult(test_cache_7, "test_cache_7");
-	test_cache_printresult(test_cache_8, "test_cache_8");
-	test_cache_printresult(test_cache_9, "test_cache_9");
-	test_cache_printresult(test_cache_10, "test_cache_10");
-	test_cache_printresult(test_cache_11, "test_cache_11");
-	test_cache_printresult(test_cache_12, "test_cache_12");
-	test_cache_printresult(test_cache_13, "test_cache_13");
-	test_cache_printresult(test_cache_14, "test_cache_14");
-	test_cache_printresult(test_cache_15, "test_cache_15");
-	test_cache_printresult(test_cache_residinfo_1, "test_cache_residinfo_1");
-	test_cache_printresult(test_cache_residinfo_2, "test_cache_residinfo_2");
-	test_cache_printresult(test_cache_residinfo_3, "test_cache_residinfo_3");
-	test_cache_printresult(test_cache_residinfo_4, "test_cache_residinfo_4");
-	test_cache_printresult(test_cache_residinfo_5, "test_cache_residinfo_5");
-	test_cache_printresult(test_cache_residinfo_6, "test_cache_residinfo_6");
-	test_cache_printresult(test_cache_residinfo_7, "test_cache_residinfo_7");
-	test_cache_printresult(test_cache_resindexinfo_1, "test_cache_resindexinfo_1");
-	test_cache_printresult(test_cache_resindexinfo_2, "test_cache_resindexinfo_2");
-	test_cache_printresult(test_cache_resindexinfo_3, "test_cache_resindexinfo_3");
-	test_cache_printresult(test_cache_resindexinfo_4, "test_cache_resindexinfo_4");
-	test_cache_printresult(test_cache_resindexinfo_5, "test_cache_resindexinfo_5");
-	test_cache_printresult(test_cache_resindexinfo_6, "test_cache_resindexinfo_6");
-	test_cache_printresult(test_cache_resindexinfo_7, "test_cache_resindexinfo_7");
-	test_cache_printresult(test_cache_ngwordinfo_1, "test_cache_ngwordinfo_1");
-	test_cache_printresult(test_cache_ngwordinfo_2, "test_cache_ngwordinfo_2");
-	test_cache_printresult(test_cache_ngwordinfo_3, "test_cache_ngwordinfo_3");
-	test_cache_printresult(test_cache_ngwordinfo_4, "test_cache_ngwordinfo_4");
-	test_cache_printresult(test_cache_ngwordinfo_5, "test_cache_ngwordinfo_5");
-	test_cache_printresult(test_cache_ngwordinfo_6, "test_cache_ngwordinfo_6");
-	test_cache_printresult(test_cache_ngwordinfo_7, "test_cache_ngwordinfo_7");
-	test_cache_printresult(test_cache_append_1, "test_cache_append_1");
-	test_cache_printresult(test_cache_append_2, "test_cache_append_2");
-	test_cache_printresult(test_cache_append_3, "test_cache_append_3");
-	test_cache_printresult(test_cache_append_4, "test_cache_append_4");
-	test_cache_printresult(test_cache_append_5, "test_cache_append_5");
-	test_cache_printresult(test_cache_append_6, "test_cache_append_6");
-	test_cache_printresult(test_cache_append_7, "test_cache_append_7");
-	test_cache_printresult(test_cache_append_8, "test_cache_append_8");
-	test_cache_printresult(test_cache_append_9, "test_cache_append_9");
-	test_cache_printresult(test_cache_reload_1, "test_cache_reload_1");
-	test_cache_printresult(test_cache_reload_2, "test_cache_reload_2");
-	test_cache_printresult(test_cache_reload_3, "test_cache_reload_3");
-	test_cache_printresult(test_cache_reload_4, "test_cache_reload_4");
-	test_cache_printresult(test_cache_reload_5, "test_cache_reload_5");
-	test_cache_printresult(test_cache_reload_6, "test_cache_reload_6");
-	test_cache_printresult(test_cache_reload_7, "test_cache_reload_7");
-	test_cache_printresult(test_cache_reload_8, "test_cache_reload_8");
-	test_cache_printresult(test_cache_reload_9, "test_cache_reload_9");
+	UNITTEST_DRIVER_REGIST(driver, test_cache_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_8);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_9);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_10);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_11);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_12);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_13);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_14);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_15);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_resindexinfo_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_ngwordinfo_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_8);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_append_9);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_1);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_2);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_3);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_4);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_5);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_6);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_7);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_8);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_reload_9);
 }

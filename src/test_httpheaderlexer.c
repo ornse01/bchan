@@ -1,7 +1,7 @@
 /*
  * test_httpheaderlexer.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,13 +24,15 @@
  *
  */
 
+#include    "test.h"
+
+#include    "httpheaderlexer.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <tcode.h>
 
-#include    "test.h"
-
-#include    "httpheaderlexer.h"
+#include    <unittest_driver.h>
 
 LOCAL UB test_httpheaderlexer_testdata_01[] = {
 "ABCDEF: afgce\r
@@ -43,7 +45,7 @@ AAABBBCCC
 DDDEEEFFF"
 };
 
-LOCAL TEST_RESULT test_httpheaderlexer_1()
+LOCAL UNITTEST_RESULT test_httpheaderlexer_1()
 {
 	httpheaderlexer_t lexer;
 	W i,err,len;
@@ -53,7 +55,7 @@ LOCAL TEST_RESULT test_httpheaderlexer_1()
 
 	err = httpheaderlexer_initialize(&lexer);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	for (i = 0; i < len; i++) {
@@ -82,25 +84,25 @@ LOCAL TEST_RESULT test_httpheaderlexer_1()
 
 	httpheaderlexer_finalize(&lexer);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_httpheaderlexer_2()
+LOCAL UNITTEST_RESULT test_httpheaderlexer_2()
 {
 	httpheaderlexer_t lexer;
 	W err;
 	HTTPHEADERLEXER_RESULT_T hr;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 #define check_result_2(info, e, r) \
 	if (e != r) { \
-		result = TEST_RESULT_FAIL; \
+		result = UNITTEST_RESULT_FAIL; \
 		printf("test expected = %d, result = %d, fail = %s", e, r, info); \
 	}
 
 	err = httpheaderlexer_initialize(&lexer);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	httpheaderlexer_inputchar(&lexer, 'A', &hr);
@@ -213,23 +215,8 @@ LOCAL TEST_RESULT test_httpheaderlexer_2()
 	return result;
 }
 
-LOCAL VOID test_httpheaderlexer_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_httpheaderlexer_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_httpheaderlexer: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_httpheaderlexer_main()
-{
-	test_httpheaderlexer_printresult(test_httpheaderlexer_1, "test_httpheaderlexer_1");
-	test_httpheaderlexer_printresult(test_httpheaderlexer_2, "test_httpheaderlexer_2");
+	UNITTEST_DRIVER_REGIST(driver, test_httpheaderlexer_1);
+	UNITTEST_DRIVER_REGIST(driver, test_httpheaderlexer_2);
 }

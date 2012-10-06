@@ -1,7 +1,7 @@
 /*
  * test_submitutil.c
  *
- * Copyright (c) 2010-2011 project bchan
+ * Copyright (c) 2010-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,15 +24,17 @@
  *
  */
 
+#include    "test.h"
+
+#include    "submitutil.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <bstring.h>
 #include    <bstdlib.h>
 #include    <tcode.h>
 
-#include    "test.h"
-
-#include    "submitutil.h"
+#include    <unittest_driver.h>
 
 #define TEST_SUBMITUTIL_SAMPLE_RECTYPE 30
 #define TEST_SUBMITUTIL_SAMPLE_SUBTYPE 1
@@ -927,70 +929,70 @@ LOCAL UB test_checkresponse_error_02[] = {
 	0x74, 0x6d, 0x6c, 0x3e, 0x00
 };
 
-LOCAL TEST_RESULT test_checkresponse_1()
+LOCAL UNITTEST_RESULT test_checkresponse_1()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_true_01, strlen(test_checkresponse_true_01));
 	if (status != submitutil_poststatus_true) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_checkresponse_2()
+LOCAL UNITTEST_RESULT test_checkresponse_2()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_true_02, strlen(test_checkresponse_true_02));
 	if (status != submitutil_poststatus_true) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_checkresponse_3()
+LOCAL UNITTEST_RESULT test_checkresponse_3()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_cookie_01, strlen(test_checkresponse_cookie_01));
 	if (status != submitutil_poststatus_cookie) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_checkresponse_4()
+LOCAL UNITTEST_RESULT test_checkresponse_4()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_cookie_02, strlen(test_checkresponse_cookie_02));
 	if (status != submitutil_poststatus_cookie) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_checkresponse_5()
+LOCAL UNITTEST_RESULT test_checkresponse_5()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_error_01, strlen(test_checkresponse_error_01));
 	if (status != submitutil_poststatus_error) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_checkresponse_6()
+LOCAL UNITTEST_RESULT test_checkresponse_6()
 {
 	submitutil_poststatus_t status;
 
 	status = submitutil_checkresponse(test_checkresponse_error_02, strlen(test_checkresponse_error_02));
 	if (status != submitutil_poststatus_error) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 LOCAL UB test_makenextrequestbody_01_src[] = {
@@ -1289,31 +1291,31 @@ LOCAL UB test_makenextrequestbody_01_dest[] = {
 	0x25, 0x44, 0x45, 0x00
 };
 
-LOCAL TEST_RESULT test_makenextrequestbody_1()
+LOCAL UNITTEST_RESULT test_makenextrequestbody_1()
 {
 	W err, next_len;
 	UB *next = NULL;
 
 	err = submitutil_makenextrequestbody(test_makenextrequestbody_01_src, strlen(test_makenextrequestbody_01_src), &next, &next_len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next_len != strlen(test_makenextrequestbody_01_dest)) {
 		free(next);
 		printf("fail length: result = %d, data = %d\n", next_len, strlen(test_makenextrequestbody_01_dest));
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(next, test_makenextrequestbody_01_dest, next_len);
 	if (err != 0) {
 		free(next);
 		printf("fail body\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 LOCAL UB test_makenextrequestheader_01[] = {
@@ -1342,7 +1344,7 @@ LOCAL Bool test_submitutil_cookiecheck(UB *header, UB *expected_cookie)
 	return True;
 }
 
-LOCAL TEST_RESULT test_makenextrequestheader_1()
+LOCAL UNITTEST_RESULT test_makenextrequestheader_1()
 {
 	UB expected_cookie[] = "Cookie: PON=xxxxx.yyyy.zzzz.ad.jp; HAP=XYZABCD;";
 	UB host[] = "dummy.test.net";
@@ -1358,20 +1360,20 @@ LOCAL TEST_RESULT test_makenextrequestheader_1()
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
 	if (db == NULL) {
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = submitutil_updatecookiedb(db, test_makenextrequestheader_01, strlen(test_makenextrequestheader_01), host, strlen(host), 0x3a000000);
 	if (err < 0) {
 		cookiedb_delete(db);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = submitutil_makeheaderstring(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
 
@@ -1379,24 +1381,24 @@ LOCAL TEST_RESULT test_makenextrequestheader_1()
 	del_fil(NULL, &test_lnk, 0);
 
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	ok = test_submitutil_cookiecheck(next, expected_cookie);
 	if (ok == False) {
 		free(next);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 /* submitutil_setnamemailcookie */
 
-LOCAL TEST_RESULT test_setnamemailcookie_1()
+LOCAL UNITTEST_RESULT test_setnamemailcookie_1()
 {
 	UB expected_cookie[] = "Cookie: NAME=\"nameA\"; MAIL=\"mailB\";";
 	UB host[] = "dummy.test.net";
@@ -1412,20 +1414,20 @@ LOCAL TEST_RESULT test_setnamemailcookie_1()
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
 	if (db == NULL) {
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "nameA", 5, "mailB", 5);
 	if (err < 0) {
 		cookiedb_delete(db);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = submitutil_makeheaderstring(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
 
@@ -1433,22 +1435,22 @@ LOCAL TEST_RESULT test_setnamemailcookie_1()
 	del_fil(NULL, &test_lnk, 0);
 
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	ok = test_submitutil_cookiecheck(next, expected_cookie);
 	if (ok == False) {
 		free(next);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setnamemailcookie_2()
+LOCAL UNITTEST_RESULT test_setnamemailcookie_2()
 {
 	UB expected_cookie[] = "Cookie: NAME=\"nameA\"; MAIL=\"\";";
 	UB host[] = "dummy.test.net";
@@ -1464,20 +1466,20 @@ LOCAL TEST_RESULT test_setnamemailcookie_2()
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
 	if (db == NULL) {
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "nameA", 5, "", 0);
 	if (err < 0) {
 		cookiedb_delete(db);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = submitutil_makeheaderstring(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
 
@@ -1485,22 +1487,22 @@ LOCAL TEST_RESULT test_setnamemailcookie_2()
 	del_fil(NULL, &test_lnk, 0);
 
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	ok = test_submitutil_cookiecheck(next, expected_cookie);
 	if (ok == False) {
 		free(next);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setnamemailcookie_3()
+LOCAL UNITTEST_RESULT test_setnamemailcookie_3()
 {
 	UB expected_cookie[] = "Cookie: NAME=\"\"; MAIL=\"mailB\";";
 	UB host[] = "dummy.test.net";
@@ -1516,20 +1518,20 @@ LOCAL TEST_RESULT test_setnamemailcookie_3()
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
 	if (db == NULL) {
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "", 0, "mailB", 5);
 	if (err < 0) {
 		cookiedb_delete(db);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = submitutil_makeheaderstring(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
 
@@ -1537,22 +1539,22 @@ LOCAL TEST_RESULT test_setnamemailcookie_3()
 	del_fil(NULL, &test_lnk, 0);
 
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	ok = test_submitutil_cookiecheck(next, expected_cookie);
 	if (ok == False) {
 		free(next);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setnamemailcookie_4()
+LOCAL UNITTEST_RESULT test_setnamemailcookie_4()
 {
 	UB expected_cookie[] = "Cookie: NAME=\"\"; MAIL=\"\";";
 	UB host[] = "dummy.test.net";
@@ -1568,20 +1570,20 @@ LOCAL TEST_RESULT test_setnamemailcookie_4()
 
 	fd = test_util_gen_file(&test_lnk);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	db = cookiedb_new(&test_lnk, TEST_SUBMITUTIL_SAMPLE_RECTYPE, TEST_SUBMITUTIL_SAMPLE_SUBTYPE);
 	if (db == NULL) {
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = submitutil_setnamemailcookie(db, host, strlen(host), 0x3a000000, "", 0, "", 0);
 	if (err < 0) {
 		cookiedb_delete(db);
 		del_fil(NULL, &test_lnk, 0);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = submitutil_makeheaderstring(host, strlen(host), board, strlen(board), thread, strlen(thread), content_length, 0x3a000000, db, &next, &next_len);
 
@@ -1589,19 +1591,19 @@ LOCAL TEST_RESULT test_setnamemailcookie_4()
 	del_fil(NULL, &test_lnk, 0);
 
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (next == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	ok = test_submitutil_cookiecheck(next, expected_cookie);
 	if (ok == False) {
 		free(next);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	free(next);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 /* error message */
@@ -1853,145 +1855,130 @@ LOCAL UB test_makeerror_02[] = {
 	0x3c, 0x2f, 0x68, 0x74, 0x6d, 0x6c, 0x3e,
 };
 
-LOCAL TEST_RESULT test_makeerrormessage_1()
+LOCAL UNITTEST_RESULT test_makeerrormessage_1()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_checkresponse_true_01, strlen(test_checkresponse_true_01), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg != NULL) {
 		free(msg);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_makeerrormessage_2()
+LOCAL UNITTEST_RESULT test_makeerrormessage_2()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_checkresponse_true_02, strlen(test_checkresponse_true_02), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg != NULL) {
 		free(msg);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_makeerrormessage_3()
+LOCAL UNITTEST_RESULT test_makeerrormessage_3()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_checkresponse_error_01, strlen(test_checkresponse_error_01), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(msg);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_makeerrormessage_4()
+LOCAL UNITTEST_RESULT test_makeerrormessage_4()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_checkresponse_error_02, strlen(test_checkresponse_error_02), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(msg);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_makeerrormessage_5()
+LOCAL UNITTEST_RESULT test_makeerrormessage_5()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_makeerror_01, strlen(test_makeerror_01), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(msg);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_makeerrormessage_6()
+LOCAL UNITTEST_RESULT test_makeerrormessage_6()
 {
 	W len, err;
 	TC *msg;
 
 	err = submitutil_makeerrormessage(test_makeerror_02, strlen(test_makeerror_02), &msg, &len);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (msg == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(msg);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL VOID test_submituril_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_submitutil_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_submitutil: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_submitutil_main()
-{
-	test_submituril_printresult(test_checkresponse_1, "test_checkresponse_1");
-	test_submituril_printresult(test_checkresponse_2, "test_checkresponse_2");
-	test_submituril_printresult(test_checkresponse_3, "test_checkresponse_3");
-	test_submituril_printresult(test_checkresponse_4, "test_checkresponse_4");
-	test_submituril_printresult(test_checkresponse_5, "test_checkresponse_5");
-	test_submituril_printresult(test_checkresponse_6, "test_checkresponse_6");
-	test_submituril_printresult(test_makenextrequestbody_1, "test_makenextrequestbody_1");
-	test_submituril_printresult(test_makenextrequestheader_1, "test_makenextrequestheader_1");
-	test_submituril_printresult(test_setnamemailcookie_1, "test_setnamemailcookie_1");
-	test_submituril_printresult(test_setnamemailcookie_2, "test_setnamemailcookie_2");
-	test_submituril_printresult(test_setnamemailcookie_3, "test_setnamemailcookie_3");
-	test_submituril_printresult(test_setnamemailcookie_4, "test_setnamemailcookie_4");
-	test_submituril_printresult(test_makeerrormessage_1, "test_makeerrormessage_1");
-	test_submituril_printresult(test_makeerrormessage_2, "test_makeerrormessage_2");
-	test_submituril_printresult(test_makeerrormessage_3, "test_makeerrormessage_3");
-	test_submituril_printresult(test_makeerrormessage_4, "test_makeerrormessage_4");
-	test_submituril_printresult(test_makeerrormessage_5, "test_makeerrormessage_5");
-	test_submituril_printresult(test_makeerrormessage_6, "test_makeerrormessage_6");
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_1);
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_2);
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_3);
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_4);
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_5);
+	UNITTEST_DRIVER_REGIST(driver, test_checkresponse_6);
+	UNITTEST_DRIVER_REGIST(driver, test_makenextrequestbody_1);
+	UNITTEST_DRIVER_REGIST(driver, test_makenextrequestheader_1);
+	UNITTEST_DRIVER_REGIST(driver, test_setnamemailcookie_1);
+	UNITTEST_DRIVER_REGIST(driver, test_setnamemailcookie_2);
+	UNITTEST_DRIVER_REGIST(driver, test_setnamemailcookie_3);
+	UNITTEST_DRIVER_REGIST(driver, test_setnamemailcookie_4);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_1);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_2);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_3);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_4);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_5);
+	UNITTEST_DRIVER_REGIST(driver, test_makeerrormessage_6);
 }

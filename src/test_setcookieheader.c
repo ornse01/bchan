@@ -1,7 +1,7 @@
 /*
  * test_setcookieheader.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,13 +24,15 @@
  *
  */
 
+#include    "test.h"
+
+#include    "setcookieheader.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <bstring.h>
 
-#include    "test.h"
-
-#include    "setcookieheader.h"
+#include    <unittest_driver.h>
 
 LOCAL UB test_setcookieheader_testdata_01[] = " PON=xAjpuk10.tky.hoge.co.jp; expires=Friday, 01-Jan-2016 00:00:00 GMT; path=/";
 LOCAL UB test_setcookieheader_testdata_02[] = " HAP=0000000; expires=Friday, 01-Jan-2016 00:00:00 GMT; path=/; domain=.2ch.net";
@@ -292,7 +294,7 @@ LOCAL VOID print_setcookieparser_result_array(setcookieparser_result_t *result, 
 
 #endif
 
-LOCAL TEST_RESULT test_setcookieheader_1()
+LOCAL UNITTEST_RESULT test_setcookieheader_1()
 {
 	setcookieparser_t parser;
 	W i,err,len,res_len;
@@ -303,7 +305,7 @@ LOCAL TEST_RESULT test_setcookieheader_1()
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	len = strlen(test_setcookieheader_testdata_01);
 	for (i = 0; i < len; i++) {
@@ -315,13 +317,13 @@ LOCAL TEST_RESULT test_setcookieheader_1()
 	setcookieparser_finalize(&parser);
 
 	if (test_cookieresult_checkexpected(&check) == False) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setcookieheader_2()
+LOCAL UNITTEST_RESULT test_setcookieheader_2()
 {
 	setcookieparser_t parser;
 	W i,err,len,res_len;
@@ -332,7 +334,7 @@ LOCAL TEST_RESULT test_setcookieheader_2()
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	len = strlen(test_setcookieheader_testdata_02);
 	for (i = 0; i < len; i++) {
@@ -344,13 +346,13 @@ LOCAL TEST_RESULT test_setcookieheader_2()
 	setcookieparser_finalize(&parser);
 
 	if (test_cookieresult_checkexpected(&check) == False) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setcookieheader_3()
+LOCAL UNITTEST_RESULT test_setcookieheader_3()
 {
 	setcookieparser_t parser;
 	W i,err,len,res_len;
@@ -361,7 +363,7 @@ LOCAL TEST_RESULT test_setcookieheader_3()
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	len = strlen(test_setcookieheader_testdata_03);
 	for (i = 0; i < len; i++) {
@@ -373,13 +375,13 @@ LOCAL TEST_RESULT test_setcookieheader_3()
 	setcookieparser_finalize(&parser);
 
 	if (test_cookieresult_checkexpected(&check) == False) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_setcookieheader_4()
+LOCAL UNITTEST_RESULT test_setcookieheader_4()
 {
 	setcookieparser_t parser;
 	W i,err,len,res_len;
@@ -390,7 +392,7 @@ LOCAL TEST_RESULT test_setcookieheader_4()
 
 	err = setcookieparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	len = strlen(test_setcookieheader_testdata_04);
 	for (i = 0; i < len; i++) {
@@ -402,31 +404,16 @@ LOCAL TEST_RESULT test_setcookieheader_4()
 	setcookieparser_finalize(&parser);
 
 	if (test_cookieresult_checkexpected(&check) == False) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL VOID test_setcookieheader_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_setcookieheader_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_setcookieheader: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_setcookieheader_main()
-{
-	test_setcookieheader_printresult(test_setcookieheader_1, "test_setcookieheader_1");
-	test_setcookieheader_printresult(test_setcookieheader_2, "test_setcookieheader_2");
-	test_setcookieheader_printresult(test_setcookieheader_3, "test_setcookieheader_3");
-	test_setcookieheader_printresult(test_setcookieheader_4, "test_setcookieheader_4");
+	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_1);
+	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_2);
+	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_3);
+	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_4);
 }

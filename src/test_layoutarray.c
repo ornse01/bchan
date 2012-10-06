@@ -1,7 +1,7 @@
 /*
  * test_layoutarray.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,10 +24,12 @@
  *
  */
 
+#include    "test.h"
+
+#include    "layoutarray.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <tcode.h>
 
-#include    "test.h"
-
-#include    "layoutarray.h"
+#include    <unittest_driver.h>

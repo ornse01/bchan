@@ -1,7 +1,7 @@
 /*
  * test_main.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -39,29 +39,39 @@
 #include	<btron/libapp.h>
 #include	<btron/bsocket.h>
 
+#include    <unittest_driver.h>
+
 #include    "test.h"
 
 EXPORT	W	MAIN(MESSAGE *msg)
 {
-	test_cache_main();
-	test_parser_main();
-	test_layout_main();
-	test_parselib_main();
-	test_submitutil_main();
-	test_sjistring_main();
-	test_residhash_main();
-	test_resindexhash_main();
-	test_postres_main();
-	test_tadimf_main();
-	test_array_main();
-	test_wordlist_main();
-	test_tadsearch_main();
-	test_httpheaderlexer_main();
-	test_setcookieheader_main();
-	test_httpdateparser_main();
-	test_cookiedb_main();
-	test_psvlexer_main();
-	test_base64encode_main();
+	unittest_driver_t *driver;
+
+	driver = unittest_driver_new();
+	if (driver == NULL) {
+		return 0;
+	}
+
+	test_cache_main(driver);
+	test_parser_main(driver);
+	test_layout_main(driver);
+	test_parselib_main(driver);
+	test_submitutil_main(driver);
+	test_sjistring_main(driver);
+	test_residhash_main(driver);
+	test_resindexhash_main(driver);
+	test_postres_main(driver);
+	test_tadimf_main(driver);
+	test_wordlist_main(driver);
+	test_tadsearch_main(driver);
+	test_httpheaderlexer_main(driver);
+	test_setcookieheader_main(driver);
+	test_httpdateparser_main(driver);
+	test_cookiedb_main(driver);
+	test_psvlexer_main(driver);
+
+	unittest_driver_runnning(driver);
+	unittest_driver_delete(driver);
 
 	return 0;
 }

@@ -1,7 +1,7 @@
 /*
  * test_layout.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,6 +24,10 @@
  *
  */
 
+#include    "test.h"
+
+#include    "layout.h"
+
 #include    <btron/btron.h>
 #include	<btron/dp.h>
 #include	<tcode.h>
@@ -31,11 +35,10 @@
 #include    <bstring.h>
 #include    <bstdlib.h>
 
-#include    "test.h"
-
-#include    "layout.h"
 #include    "parser.h"
 #include    "cache.h"
+
+#include    <unittest_driver.h>
 
 LOCAL UB test_layout_testdata_01[] = {
 	0x81, 0xa0, 0x81, 0xa0, 0x81, 0xa0, 0x81, 0xa0,
@@ -153,7 +156,7 @@ LOCAL VOID test_layout_util_free_BMP(BMP *bmp)
 	free(bmp);
 }
 
-LOCAL TEST_RESULT test_layout_1()
+LOCAL UNITTEST_RESULT test_layout_1()
 {
 	LINK test_lnk;
 	BMP *bmp;
@@ -166,20 +169,20 @@ LOCAL TEST_RESULT test_layout_1()
 	datparser_res_t *res = NULL;
 	datlayoutstyle_t style;
 	datlayoutarray_t *layoutarray;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_parser_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 	bmp = test_layout_util_alloc_BMP();
 	if (bmp == NULL) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	gid = gopn_mem(NULL, bmp, NULL);
 	if (gid < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	cache = datcache_new(vid);
@@ -213,12 +216,12 @@ LOCAL TEST_RESULT test_layout_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -238,7 +241,7 @@ name<>sage<>2008/12/16(X) 22:08:27 BE:999999999-DIA(20000)<> body <>
 "
 };
 
-LOCAL TEST_RESULT test_layout_datepart_1()
+LOCAL UNITTEST_RESULT test_layout_datepart_1()
 {
 	LINK test_lnk;
 	TC *date, *id, *beid;
@@ -248,11 +251,11 @@ LOCAL TEST_RESULT test_layout_datepart_1()
 	datcache_t *cache;
 	datparser_t *parser;
 	datparser_res_t *res = NULL;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_parser_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -272,83 +275,83 @@ LOCAL TEST_RESULT test_layout_datepart_1()
 			switch (i) { /* TODO: should compair result TAD. */
 			case 0:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 1:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 10) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 2:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 6) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 3:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 10) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 23) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 4:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 6) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 23) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 5:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 23) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			case 6:
 				if (date_len != 27) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (id_len != 0) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				if (beid_len != 23) {
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				break;
 			default:
-				result = TEST_RESULT_FAIL;
+				result = UNITTEST_RESULT_FAIL;
 				break;
 			}
 		} else {
@@ -363,34 +366,19 @@ LOCAL TEST_RESULT test_layout_datepart_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
 }
 
-LOCAL VOID test_layout_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_layout_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_layout: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_layout_main()
-{
-	test_layout_printresult(test_layout_1, "test_layout_1");
-	test_layout_printresult(test_layout_datepart_1, "test_layout_datepart_1");
+	UNITTEST_DRIVER_REGIST(driver, test_layout_1);
+	UNITTEST_DRIVER_REGIST(driver, test_layout_datepart_1);
 }

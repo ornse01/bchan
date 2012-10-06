@@ -1,7 +1,7 @@
 /*
  * test_parser.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,15 +24,18 @@
  *
  */
 
+#include    "test.h"
+
+#include    "parser.h"
+
 #include    <btron/btron.h>
 #include	<tcode.h>
 #include    <bstdio.h>
 #include    <bstring.h>
 
-#include    "test.h"
-
-#include    "parser.h"
 #include    "cache.h"
+
+#include    <unittest_driver.h>
 
 LOCAL UB test_cache_testdata_01[] = {
 	0x81, 0xa0, 0x81, 0xa0, 0x81, 0xa0, 0x81, 0xa0,
@@ -126,7 +129,7 @@ LOCAL W test_parser_util_gen_file(LINK *lnk, VID *nvid)
 	return fd;
 }
 
-LOCAL TEST_RESULT test_parser_1()
+LOCAL UNITTEST_RESULT test_parser_1()
 {
 	LINK test_lnk;
 	W fd, err;
@@ -134,11 +137,11 @@ LOCAL TEST_RESULT test_parser_1()
 	datcache_t *cache;
 	datparser_t *parser;
 	datparser_res_t *res = NULL;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_parser_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -181,12 +184,12 @@ LOCAL TEST_RESULT test_parser_1()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
@@ -220,7 +223,7 @@ LOCAL UB test_parser_testdata_02[] = {
 	0x0a, 0x00
 };
 
-LOCAL TEST_RESULT test_parser_2()
+LOCAL UNITTEST_RESULT test_parser_2()
 {
 	LINK test_lnk;
 	W fd, err, num;
@@ -228,11 +231,11 @@ LOCAL TEST_RESULT test_parser_2()
 	datcache_t *cache;
 	datparser_t *parser;
 	datparser_res_t *res = NULL;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 
 	fd = test_parser_util_gen_file(&test_lnk, &vid);
 	if (fd < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
 
@@ -257,7 +260,7 @@ LOCAL TEST_RESULT test_parser_2()
 
 	if (num != 14) {
 		printf("res total number is fail\n");
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	datparser_delete(parser);
@@ -267,34 +270,19 @@ LOCAL TEST_RESULT test_parser_2()
 	err = odel_vob(vid, 0);
 	if (err < 0) {
 		printf("error odel_vob:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 	err = del_fil(NULL, &test_lnk, 0);
 	if (err < 0) {
 		printf("error del_fil:%d\n", err >> 16);
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 	}
 
 	return result;
 }
 
-LOCAL VOID test_parser_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_parser_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_parser: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_parser_main()
-{
-	test_parser_printresult(test_parser_1, "test_parser_1");
-	test_parser_printresult(test_parser_2, "test_parser_2");
+	UNITTEST_DRIVER_REGIST(driver, test_parser_1);
+	UNITTEST_DRIVER_REGIST(driver, test_parser_2);
 }

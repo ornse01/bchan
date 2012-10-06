@@ -1,7 +1,7 @@
 /*
  * test_tadsearch.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,14 +24,16 @@
  *
  */
 
+#include    "test.h"
+
+#include    "tadsearch.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <tcode.h>
 #include    <tstring.h>
 
-#include    "test.h"
-
-#include    "tadsearch.h"
+#include    <unittest_driver.h>
 
 LOCAL TC test_tadsearch_testdata01[] = {TK_A, TK_B, TK_C, TNULL};
 LOCAL TC test_tadsearch_testdata02[] = {TK_B, TK_C, TK_D, TNULL};
@@ -354,7 +356,7 @@ LOCAL UB test_tadsearch_testdata09[] = {
 LOCAL TC test_tadsearch_testdata10[] = {0x2331, 0x3B7E, 0x3456, TNULL};
 LOCAL TC test_tadsearch_testdata11[] = {0x4479, 0x2461, 0x405A, 0x246A, TNULL};
 
-LOCAL TEST_RESULT test_tadsearch_1()
+LOCAL UNITTEST_RESULT test_tadsearch_1()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -370,17 +372,17 @@ LOCAL TEST_RESULT test_tadsearch_1()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 0) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_2()
+LOCAL UNITTEST_RESULT test_tadsearch_2()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -396,13 +398,13 @@ LOCAL TEST_RESULT test_tadsearch_2()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata04, 5, set, 3, &result);
 	if (err != 0) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_3()
+LOCAL UNITTEST_RESULT test_tadsearch_3()
 {
 	tcstrbuffer_t set[1];
 	tadlib_rk_result_t result;
@@ -414,17 +416,17 @@ LOCAL TEST_RESULT test_tadsearch_3()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 1, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 0) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_4()
+LOCAL UNITTEST_RESULT test_tadsearch_4()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -440,17 +442,17 @@ LOCAL TEST_RESULT test_tadsearch_4()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 1) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_5()
+LOCAL UNITTEST_RESULT test_tadsearch_5()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -466,17 +468,17 @@ LOCAL TEST_RESULT test_tadsearch_5()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 2) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_6()
+LOCAL UNITTEST_RESULT test_tadsearch_6()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -492,17 +494,17 @@ LOCAL TEST_RESULT test_tadsearch_6()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 0) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_7()
+LOCAL UNITTEST_RESULT test_tadsearch_7()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -518,13 +520,13 @@ LOCAL TEST_RESULT test_tadsearch_7()
 	err = tadlib_rabinkarpsearch(test_tadsearch_testdata05, 5, set, 3, &result);
 	if (err != 0) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_8()
+LOCAL UNITTEST_RESULT test_tadsearch_8()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -541,13 +543,13 @@ LOCAL TEST_RESULT test_tadsearch_8()
 	err = tadlib_rabinkarpsearch((TC*)test_tadsearch_testdata08, len, set, 3, &result);
 	if (err != 0) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_9()
+LOCAL UNITTEST_RESULT test_tadsearch_9()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -564,17 +566,17 @@ LOCAL TEST_RESULT test_tadsearch_9()
 	err = tadlib_rabinkarpsearch((TC*)test_tadsearch_testdata08, len, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 1) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_10()
+LOCAL UNITTEST_RESULT test_tadsearch_10()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -591,13 +593,13 @@ LOCAL TEST_RESULT test_tadsearch_10()
 	err = tadlib_rabinkarpsearch((TC*)test_tadsearch_testdata09, len, set, 3, &result);
 	if (err != 0) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tadsearch_11()
+LOCAL UNITTEST_RESULT test_tadsearch_11()
 {
 	tcstrbuffer_t set[3];
 	tadlib_rk_result_t result;
@@ -614,42 +616,27 @@ LOCAL TEST_RESULT test_tadsearch_11()
 	err = tadlib_rabinkarpsearch((TC*)test_tadsearch_testdata09, len, set, 3, &result);
 	if (err != 1) {
 		printf("return value failure: %d\n", err);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (result.i != 1) {
 		printf("result failure: %d\n", result.i);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL VOID test_tadsearch_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_tadsearch_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_tadsearch: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_tadsearch_main()
-{
-	test_tadsearch_printresult(test_tadsearch_1, "test_tadsearch_1");
-	test_tadsearch_printresult(test_tadsearch_2, "test_tadsearch_2");
-	test_tadsearch_printresult(test_tadsearch_3, "test_tadsearch_3");
-	test_tadsearch_printresult(test_tadsearch_4, "test_tadsearch_4");
-	test_tadsearch_printresult(test_tadsearch_5, "test_tadsearch_5");
-	test_tadsearch_printresult(test_tadsearch_6, "test_tadsearch_6");
-	test_tadsearch_printresult(test_tadsearch_7, "test_tadsearch_7");
-	test_tadsearch_printresult(test_tadsearch_8, "test_tadsearch_8");
-	test_tadsearch_printresult(test_tadsearch_9, "test_tadsearch_9");
-	test_tadsearch_printresult(test_tadsearch_10, "test_tadsearch_10");
-	test_tadsearch_printresult(test_tadsearch_11, "test_tadsearch_11");
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_1);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_2);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_3);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_4);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_5);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_6);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_7);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_8);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_9);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_10);
+	UNITTEST_DRIVER_REGIST(driver, test_tadsearch_11);
 }

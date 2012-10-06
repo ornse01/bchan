@@ -1,7 +1,7 @@
 /*
  * layoutarray.c
  *
- * Copyright (c) 2010-2011 project bchan
+ * Copyright (c) 2010-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -25,7 +25,7 @@
  */
 
 #include    "layoutarray.h"
-#include    "array.h"
+#include    <coll/arraybase.h>
 
 #include	<basic.h>
 #include	<bstdlib.h>

@@ -1,7 +1,7 @@
 /*
  * test_parselib.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,16 +24,18 @@
  *
  */
 
+#include    "test.h"
+
+#include    "parselib.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <bstring.h>
 #include    <bstdlib.h>
 
-#include    "test.h"
+#include    <unittest_driver.h>
 
-#include    "parselib.h"
-
-LOCAL TEST_RESULT test_character_reference_1()
+LOCAL UNITTEST_RESULT test_character_reference_1()
 {
 	charreferparser_t parser;
 	charreferparser_result_t parseresult;
@@ -41,45 +43,45 @@ LOCAL TEST_RESULT test_character_reference_1()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	parseresult = charreferparser_parsechar(&parser, '&');
 	if (parseresult != CHARREFERPARSER_RESULT_CONTINUE) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	parseresult = charreferparser_parsechar(&parser, '#');
 	if (parseresult != CHARREFERPARSER_RESULT_CONTINUE) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	parseresult = charreferparser_parsechar(&parser, '1');
 	if (parseresult != CHARREFERPARSER_RESULT_CONTINUE) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	parseresult = charreferparser_parsechar(&parser, '0');
 	if (parseresult != CHARREFERPARSER_RESULT_CONTINUE) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	parseresult = charreferparser_parsechar(&parser, ';');
 		charreferparser_finalize(&parser);
 	if (parseresult != CHARREFERPARSER_RESULT_DETERMINE) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = charreferparser_getcharnumber(&parser);
 	if (err < 0) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (err != 10) {
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 LOCAL W test_charrefer_parsestr(charreferparser_t *parser, UB *str)
@@ -99,7 +101,7 @@ LOCAL W test_charrefer_parsestr(charreferparser_t *parser, UB *str)
 	return -1;
 }
 
-LOCAL TEST_RESULT test_character_reference_2()
+LOCAL UNITTEST_RESULT test_character_reference_2()
 {
 	W i;
 	struct {
@@ -175,18 +177,18 @@ LOCAL TEST_RESULT test_character_reference_2()
 	for (i = 0; tuple[i].str != NULL; i++) {
 		err = charreferparser_initialize(&parser);
 		if (err < 0) {
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		err = test_charrefer_parsestr(&parser, tuple[i].str);
 		if (err < 0) {
 			printf("failed to parsing\n");
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		err = charreferparser_getcharnumber(&parser);
 		if (err < 0) {
 			printf("failed to get character number\n");
 			charreferparser_finalize(&parser);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		if (err != tuple[i].val) {
 			printf("invalid parse result: %d(0x%x)\n", err, err);
@@ -194,15 +196,15 @@ LOCAL TEST_RESULT test_character_reference_2()
 			printf("                         <- %d\n", tuple[i].val);
 			printf("                         <- 0x%x\n", tuple[i].val);
 			charreferparser_finalize(&parser);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		charreferparser_finalize(&parser);
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_3()
+LOCAL UNITTEST_RESULT test_character_reference_3()
 {
 	W i;
 	struct {
@@ -221,18 +223,18 @@ LOCAL TEST_RESULT test_character_reference_3()
 	for (i = 0; tuple[i].str != NULL; i++) {
 		err = charreferparser_initialize(&parser);
 		if (err < 0) {
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		err = test_charrefer_parsestr(&parser, tuple[i].str);
 		if (err < 0) {
 			printf("failed to parsing\n");
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		err = charreferparser_getcharnumber(&parser);
 		if (err < 0) {
 			printf("failed to get character number\n");
 			charreferparser_finalize(&parser);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		if (err != tuple[i].val) {
 			printf("invalid parse result: %d(0x%x)\n", err, err);
@@ -240,15 +242,15 @@ LOCAL TEST_RESULT test_character_reference_3()
 			printf("                         <- %d\n", tuple[i].val);
 			printf("                         <- 0x%x\n", tuple[i].val);
 			charreferparser_finalize(&parser);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		charreferparser_finalize(&parser);
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_4()
+LOCAL UNITTEST_RESULT test_character_reference_4()
 {
 	W i, len, err;
 	UB *str;
@@ -257,7 +259,7 @@ LOCAL TEST_RESULT test_character_reference_4()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -268,26 +270,26 @@ LOCAL TEST_RESULT test_character_reference_4()
 	if (i != 2) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 1) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_5()
+LOCAL UNITTEST_RESULT test_character_reference_5()
 {
 	W i, len, err;
 	UB *str;
@@ -296,7 +298,7 @@ LOCAL TEST_RESULT test_character_reference_5()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -307,26 +309,26 @@ LOCAL TEST_RESULT test_character_reference_5()
 	if (i != 1) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 0) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_6()
+LOCAL UNITTEST_RESULT test_character_reference_6()
 {
 	W i, len, err;
 	UB *str;
@@ -335,7 +337,7 @@ LOCAL TEST_RESULT test_character_reference_6()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -346,26 +348,26 @@ LOCAL TEST_RESULT test_character_reference_6()
 	if (i != 3) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 2) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_7()
+LOCAL UNITTEST_RESULT test_character_reference_7()
 {
 	W i, len, err;
 	UB *str;
@@ -374,7 +376,7 @@ LOCAL TEST_RESULT test_character_reference_7()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -385,26 +387,26 @@ LOCAL TEST_RESULT test_character_reference_7()
 	if (i != 4) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 3) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_8()
+LOCAL UNITTEST_RESULT test_character_reference_8()
 {
 	W i, len, err;
 	UB *str;
@@ -413,7 +415,7 @@ LOCAL TEST_RESULT test_character_reference_8()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -424,26 +426,26 @@ LOCAL TEST_RESULT test_character_reference_8()
 	if (i != 2) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 1) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_9()
+LOCAL UNITTEST_RESULT test_character_reference_9()
 {
 	W i, len, err;
 	UB *str;
@@ -452,7 +454,7 @@ LOCAL TEST_RESULT test_character_reference_9()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -463,26 +465,26 @@ LOCAL TEST_RESULT test_character_reference_9()
 	if (i != 3) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 2) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_10()
+LOCAL UNITTEST_RESULT test_character_reference_10()
 {
 	W i, len, err;
 	UB *str;
@@ -491,7 +493,7 @@ LOCAL TEST_RESULT test_character_reference_10()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -502,26 +504,26 @@ LOCAL TEST_RESULT test_character_reference_10()
 	if (i != 4) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 3) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_character_reference_11()
+LOCAL UNITTEST_RESULT test_character_reference_11()
 {
 	W i, len, err;
 	UB *str;
@@ -530,7 +532,7 @@ LOCAL TEST_RESULT test_character_reference_11()
 
 	err = charreferparser_initialize(&parser);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	for (i = 0; data[i] != '\0'; i++) {
 		err = charreferparser_parsechar(&parser, data[i]);
@@ -541,23 +543,23 @@ LOCAL TEST_RESULT test_character_reference_11()
 	if (i != 5) {
 		printf("failed to invalid position\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_getlastmatchedstring(&parser, &str, &len);
 	if (len != 4) {
 		printf("failed to get last matched string length\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	err = strncmp(data + 1, str, len);
 	if (err != 0) {
 		printf("failed to get last matched string\n");
 		charreferparser_finalize(&parser);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	charreferparser_finalize(&parser);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 LOCAL tokenchecker_valuetuple_t test_tokenchecker_testdata_tuple_0001[] = {
@@ -571,7 +573,7 @@ LOCAL tokenchecker_valuetuple_t test_tokenchecker_testdata_tuple_0001[] = {
 };
 LOCAL UB test_tokenchecker_testdata_etoken_0001[] = ":>";
 
-LOCAL TEST_RESULT test_tokenchecker_1()
+LOCAL UNITTEST_RESULT test_tokenchecker_1()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -590,7 +592,7 @@ LOCAL TEST_RESULT test_tokenchecker_1()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -605,38 +607,38 @@ LOCAL TEST_RESULT test_tokenchecker_1()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 1) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_2()
+LOCAL UNITTEST_RESULT test_tokenchecker_2()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -655,7 +657,7 @@ LOCAL TEST_RESULT test_tokenchecker_2()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -670,38 +672,38 @@ LOCAL TEST_RESULT test_tokenchecker_2()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 2) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_3()
+LOCAL UNITTEST_RESULT test_tokenchecker_3()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -720,7 +722,7 @@ LOCAL TEST_RESULT test_tokenchecker_3()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -735,38 +737,38 @@ LOCAL TEST_RESULT test_tokenchecker_3()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 3) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_4()
+LOCAL UNITTEST_RESULT test_tokenchecker_4()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -785,7 +787,7 @@ LOCAL TEST_RESULT test_tokenchecker_4()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -800,38 +802,38 @@ LOCAL TEST_RESULT test_tokenchecker_4()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 4) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_5()
+LOCAL UNITTEST_RESULT test_tokenchecker_5()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -850,7 +852,7 @@ LOCAL TEST_RESULT test_tokenchecker_5()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -865,38 +867,38 @@ LOCAL TEST_RESULT test_tokenchecker_5()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 5) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_6()
+LOCAL UNITTEST_RESULT test_tokenchecker_6()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -915,7 +917,7 @@ LOCAL TEST_RESULT test_tokenchecker_6()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -930,38 +932,38 @@ LOCAL TEST_RESULT test_tokenchecker_6()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 6) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_7()
+LOCAL UNITTEST_RESULT test_tokenchecker_7()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -980,7 +982,7 @@ LOCAL TEST_RESULT test_tokenchecker_7()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -995,38 +997,38 @@ LOCAL TEST_RESULT test_tokenchecker_7()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_inputchar fail: end character\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 7) {
 		printf("tokenchecker_inputchar fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_nomatch_getlastmatchedstring_sequence(tokenchecker_t *checker, W num, UB *teststr, W teststr_len)
+LOCAL UNITTEST_RESULT test_tokenchecker_nomatch_getlastmatchedstring_sequence(tokenchecker_t *checker, W num, UB *teststr, W teststr_len)
 {
 	W i, j, len2, ret, val;
 	UB *str2;
@@ -1035,18 +1037,18 @@ LOCAL TEST_RESULT test_tokenchecker_nomatch_getlastmatchedstring_sequence(tokenc
 		ret = tokenchecker_inputchar(checker, teststr[i], &val);
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_inputchar(checker, 'z', &val);
 	if (ret != TOKENCHECKER_CONTINUE_NOMATCH) {
 		printf("tokenchecker_inputchar fail: nomatch char\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(checker, &str2, &len2);
 	if (len2 != num) {
 		printf("tokenchecker_getlastmatchedstring fail: length\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (strncmp(teststr, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: nomatch string\n");
@@ -1059,18 +1061,18 @@ LOCAL TEST_RESULT test_tokenchecker_nomatch_getlastmatchedstring_sequence(tokenc
 			printf("%c", str2[j]);
 		}
 		printf("\n");
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_8()
+LOCAL UNITTEST_RESULT test_tokenchecker_8()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[0].name);
 	len = strlen(str);
@@ -1082,7 +1084,7 @@ LOCAL TEST_RESULT test_tokenchecker_8()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1090,15 +1092,15 @@ LOCAL TEST_RESULT test_tokenchecker_8()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_9()
+LOCAL UNITTEST_RESULT test_tokenchecker_9()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[1].name);
 	len = strlen(str);
@@ -1110,7 +1112,7 @@ LOCAL TEST_RESULT test_tokenchecker_9()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1118,15 +1120,15 @@ LOCAL TEST_RESULT test_tokenchecker_9()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_10()
+LOCAL UNITTEST_RESULT test_tokenchecker_10()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[2].name);
 	len = strlen(str);
@@ -1138,7 +1140,7 @@ LOCAL TEST_RESULT test_tokenchecker_10()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1146,15 +1148,15 @@ LOCAL TEST_RESULT test_tokenchecker_10()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_11()
+LOCAL UNITTEST_RESULT test_tokenchecker_11()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[3].name);
 	len = strlen(str);
@@ -1166,7 +1168,7 @@ LOCAL TEST_RESULT test_tokenchecker_11()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1174,15 +1176,15 @@ LOCAL TEST_RESULT test_tokenchecker_11()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_12()
+LOCAL UNITTEST_RESULT test_tokenchecker_12()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[4].name);
 	len = strlen(str);
@@ -1194,7 +1196,7 @@ LOCAL TEST_RESULT test_tokenchecker_12()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1202,15 +1204,15 @@ LOCAL TEST_RESULT test_tokenchecker_12()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_13()
+LOCAL UNITTEST_RESULT test_tokenchecker_13()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[5].name);
 	len = strlen(str);
@@ -1222,7 +1224,7 @@ LOCAL TEST_RESULT test_tokenchecker_13()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1230,15 +1232,15 @@ LOCAL TEST_RESULT test_tokenchecker_13()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_14()
+LOCAL UNITTEST_RESULT test_tokenchecker_14()
 {
 	tokenchecker_t checker;
 	W i,len;
 	UB *str;
-	TEST_RESULT result;
+	UNITTEST_RESULT result;
 
 	str = strdup(test_tokenchecker_testdata_tuple_0001[6].name);
 	len = strlen(str);
@@ -1250,7 +1252,7 @@ LOCAL TEST_RESULT test_tokenchecker_14()
 
 	for (i = 1; i < len; i++) {
 		result = test_tokenchecker_nomatch_getlastmatchedstring_sequence(&checker, i, str, len);
-		if (result != TEST_RESULT_PASS) {
+		if (result != UNITTEST_RESULT_PASS) {
 			return result;
 		}
 		tokenchecker_clear(&checker);
@@ -1258,12 +1260,12 @@ LOCAL TEST_RESULT test_tokenchecker_14()
 
 	free(str);
 
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
 /* testing endinput */
 
-LOCAL TEST_RESULT test_tokenchecker_15()
+LOCAL UNITTEST_RESULT test_tokenchecker_15()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1282,7 +1284,7 @@ LOCAL TEST_RESULT test_tokenchecker_15()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1297,38 +1299,38 @@ LOCAL TEST_RESULT test_tokenchecker_15()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 1) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_16()
+LOCAL UNITTEST_RESULT test_tokenchecker_16()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1347,7 +1349,7 @@ LOCAL TEST_RESULT test_tokenchecker_16()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1362,38 +1364,38 @@ LOCAL TEST_RESULT test_tokenchecker_16()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 2) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_17()
+LOCAL UNITTEST_RESULT test_tokenchecker_17()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1412,7 +1414,7 @@ LOCAL TEST_RESULT test_tokenchecker_17()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1427,38 +1429,38 @@ LOCAL TEST_RESULT test_tokenchecker_17()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 3) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_18()
+LOCAL UNITTEST_RESULT test_tokenchecker_18()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1477,7 +1479,7 @@ LOCAL TEST_RESULT test_tokenchecker_18()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1492,38 +1494,38 @@ LOCAL TEST_RESULT test_tokenchecker_18()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 4) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_19()
+LOCAL UNITTEST_RESULT test_tokenchecker_19()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1542,7 +1544,7 @@ LOCAL TEST_RESULT test_tokenchecker_19()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1557,38 +1559,38 @@ LOCAL TEST_RESULT test_tokenchecker_19()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 5) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_20()
+LOCAL UNITTEST_RESULT test_tokenchecker_20()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1607,7 +1609,7 @@ LOCAL TEST_RESULT test_tokenchecker_20()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1622,38 +1624,38 @@ LOCAL TEST_RESULT test_tokenchecker_20()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 6) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL TEST_RESULT test_tokenchecker_21()
+LOCAL UNITTEST_RESULT test_tokenchecker_21()
 {
 	tokenchecker_t checker;
 	W i, j, len, len2, val, ret;
@@ -1672,7 +1674,7 @@ LOCAL TEST_RESULT test_tokenchecker_21()
 		if (ret != TOKENCHECKER_CONTINUE) {
 			printf("tokenchecker_inputchar fail: right string\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 		tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 		if (strncmp(str, str2, len2) != 0) {
@@ -1687,84 +1689,69 @@ LOCAL TEST_RESULT test_tokenchecker_21()
 			}
 			printf("\n");
 			free(str);
-			return TEST_RESULT_FAIL;
+			return UNITTEST_RESULT_FAIL;
 		}
 	}
 	ret = tokenchecker_endinput(&checker, &val);
 	if (ret != TOKENCHECKER_DETERMINE) {
 		printf("tokenchecker_endinput fail\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	if (val != 7) {
 		printf("tokenchecker_endinput fail: select value\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	tokenchecker_getlastmatchedstring(&checker, &str2, &len2);
 	if (strncmp(str, str2, len2) != 0) {
 		printf("tokenchecker_getlastmatchedstring fail: end token\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 	ret = tokenchecker_inputchar(&checker, ':', &val);
 	if (ret != TOKENCHECKER_AFTER_END) {
 		printf("tokenchecker_inputchar fail: after end\n");
 		free(str);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	free(str);
-	return TEST_RESULT_PASS;
+	return UNITTEST_RESULT_PASS;
 }
 
-LOCAL VOID test_parselib_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_parselib_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_parselib: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_parselib_main()
-{
-	test_parselib_printresult(test_character_reference_1, "test_character_reference_1");
-	test_parselib_printresult(test_character_reference_2, "test_character_reference_2");
-	test_parselib_printresult(test_character_reference_3, "test_character_reference_3");
-	test_parselib_printresult(test_character_reference_4, "test_character_reference_4");
-	test_parselib_printresult(test_character_reference_5, "test_character_reference_5");
-	test_parselib_printresult(test_character_reference_6, "test_character_reference_6");
-	test_parselib_printresult(test_character_reference_7, "test_character_reference_7");
-	test_parselib_printresult(test_character_reference_8, "test_character_reference_8");
-	test_parselib_printresult(test_character_reference_9, "test_character_reference_9");
-	test_parselib_printresult(test_character_reference_10, "test_character_reference_10");
-	test_parselib_printresult(test_character_reference_11, "test_character_reference_11");
-	test_parselib_printresult(test_tokenchecker_1, "test_tokenchecker_1");
-	test_parselib_printresult(test_tokenchecker_2, "test_tokenchecker_2");
-	test_parselib_printresult(test_tokenchecker_3, "test_tokenchecker_3");
-	test_parselib_printresult(test_tokenchecker_4, "test_tokenchecker_4");
-	test_parselib_printresult(test_tokenchecker_5, "test_tokenchecker_5");
-	test_parselib_printresult(test_tokenchecker_6, "test_tokenchecker_6");
-	test_parselib_printresult(test_tokenchecker_7, "test_tokenchecker_7");
-	test_parselib_printresult(test_tokenchecker_8, "test_tokenchecker_8");
-	test_parselib_printresult(test_tokenchecker_9, "test_tokenchecker_9");
-	test_parselib_printresult(test_tokenchecker_10, "test_tokenchecker_10");
-	test_parselib_printresult(test_tokenchecker_11, "test_tokenchecker_11");
-	test_parselib_printresult(test_tokenchecker_12, "test_tokenchecker_12");
-	test_parselib_printresult(test_tokenchecker_13, "test_tokenchecker_13");
-	test_parselib_printresult(test_tokenchecker_14, "test_tokenchecker_14");
-	test_parselib_printresult(test_tokenchecker_15, "test_tokenchecker_15");
-	test_parselib_printresult(test_tokenchecker_16, "test_tokenchecker_16");
-	test_parselib_printresult(test_tokenchecker_17, "test_tokenchecker_17");
-	test_parselib_printresult(test_tokenchecker_18, "test_tokenchecker_18");
-	test_parselib_printresult(test_tokenchecker_19, "test_tokenchecker_19");
-	test_parselib_printresult(test_tokenchecker_20, "test_tokenchecker_20");
-	test_parselib_printresult(test_tokenchecker_21, "test_tokenchecker_21");
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_1);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_2);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_3);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_4);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_5);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_6);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_7);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_8);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_9);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_10);
+	UNITTEST_DRIVER_REGIST(driver, test_character_reference_11);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_1);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_2);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_3);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_4);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_5);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_6);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_7);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_8);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_9);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_10);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_11);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_12);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_13);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_14);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_15);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_16);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_17);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_18);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_19);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_20);
+	UNITTEST_DRIVER_REGIST(driver, test_tokenchecker_21);
 }

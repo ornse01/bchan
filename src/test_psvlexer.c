@@ -1,7 +1,7 @@
 /*
  * test_psvlexer.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,14 +24,16 @@
  *
  */
 
+#include    "test.h"
+
+#include    "psvlexer.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <bstdlib.h>
 #include    <bstring.h>
 
-#include    "test.h"
-
-#include    "psvlexer.h"
+#include    <unittest_driver.h>
 
 #if 0
 # define DUMP_RESULT(arg) printf arg
@@ -133,36 +135,36 @@ LOCAL VOID testpsvlexer_result_finalize(testpsvlexer_result_t *testresult)
 LOCAL UB test_psvlexer_testdata01[] = "aaa<>bbb<>ccc<>\nddd<>eee<>fff\n";
 LOCAL UB test_psvlexer_testdata02[] = "<aa<>b<b<>cc<<>dd<\n";
 
-LOCAL TEST_RESULT test_psvlexer_common(UB *test, W test_len)
+LOCAL UNITTEST_RESULT test_psvlexer_common(UB *test, W test_len)
 {
 	psvlexer_t lexer;
 	psvlexer_result_t *result;
 	testpsvlexer_result_t testresult;
 	W i, err, result_len;
-	TEST_RESULT ret = TEST_RESULT_PASS;
+	UNITTEST_RESULT ret = UNITTEST_RESULT_PASS;
 	Bool ok;
 
 	err = psvlexer_initialize(&lexer);
 	if (err < 0) {
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	err = testpsvlexer_result_initialize(&testresult);
 	if (err < 0) {
 		psvlexer_finalize(&lexer);
-		return TEST_RESULT_FAIL;
+		return UNITTEST_RESULT_FAIL;
 	}
 
 	for (i = 0; i < test_len; i++) {
 		psvlexer_inputchar(&lexer, test + i, 1, &result, &result_len);
 		err = testpsvlexer_result_inputresultarray(&testresult, result, result_len);
 		if (err < 0) {
-			ret = TEST_RESULT_FAIL;
+			ret = UNITTEST_RESULT_FAIL;
 		}
 	}
 	ok = testpsvlexer_result_compaire(&testresult, test, test_len);
 	if (ok == False) {
-		ret = TEST_RESULT_FAIL;
+		ret = UNITTEST_RESULT_FAIL;
 	}
 
 	testpsvlexer_result_finalize(&testresult);
@@ -171,33 +173,18 @@ LOCAL TEST_RESULT test_psvlexer_common(UB *test, W test_len)
 	return ret;
 }
 
-LOCAL TEST_RESULT test_psvlexer_1()
+LOCAL UNITTEST_RESULT test_psvlexer_1()
 {
 	return test_psvlexer_common(test_psvlexer_testdata01, strlen(test_psvlexer_testdata01));
 }
 
-LOCAL TEST_RESULT test_psvlexer_2()
+LOCAL UNITTEST_RESULT test_psvlexer_2()
 {
 	return test_psvlexer_common(test_psvlexer_testdata02, strlen(test_psvlexer_testdata02));
 }
 
-LOCAL VOID test_psvlexer_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_psvlexer_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_psvlexer: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_psvlexer_main()
-{
-	test_psvlexer_printresult(test_psvlexer_1, "test_psvlexer_1");
-	test_psvlexer_printresult(test_psvlexer_2, "test_psvlexer_2");
+	UNITTEST_DRIVER_REGIST(driver, test_psvlexer_1);
+	UNITTEST_DRIVER_REGIST(driver, test_psvlexer_2);
 }

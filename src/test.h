@@ -1,7 +1,7 @@
 /*
  * test.h
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -25,70 +25,60 @@
  */
 
 #include    <basic.h>
+#include    <unittest_driver.h>
 
 #ifndef __BCHAN_TEST_H__
 #define __BCHAN_TEST_H__
 
-typedef enum {
-	TEST_RESULT_PASS,
-	TEST_RESULT_FAIL
-} TEST_RESULT;
-
 /* test_cache.c */
-IMPORT VOID test_cache_main();
+IMPORT VOID test_cache_main(unittest_driver_t *driver);
 
 /* test_parser.c */
-IMPORT VOID test_parser_main();
+IMPORT VOID test_parser_main(unittest_driver_t *driver);
 
 /* test_layout.c */
-IMPORT VOID test_layout_main();
+IMPORT VOID test_layout_main(unittest_driver_t *driver);
 
 /* test_parselib.c */
-IMPORT VOID test_parselib_main();
+IMPORT VOID test_parselib_main(unittest_driver_t *driver);
 
 /* test_submitutil.c */
-IMPORT VOID test_submitutil_main();
+IMPORT VOID test_submitutil_main(unittest_driver_t *driver);
 
 /* test_sjisstring.c */
-IMPORT VOID test_sjistring_main();
+IMPORT VOID test_sjistring_main(unittest_driver_t *driver);
 
 /* test_residhash.c */
-IMPORT VOID test_residhash_main();
+IMPORT VOID test_residhash_main(unittest_driver_t *driver);
 
 /* test_resindexhash.c */
-IMPORT VOID test_resindexhash_main();
+IMPORT VOID test_resindexhash_main(unittest_driver_t *driver);
 
 /* test_postres.c */
-IMPORT VOID test_postres_main();
+IMPORT VOID test_postres_main(unittest_driver_t *driver);
 
 /* test_tadimf.c */
-IMPORT VOID test_tadimf_main();
-
-/* test_array.c */
-IMPORT VOID test_array_main();
+IMPORT VOID test_tadimf_main(unittest_driver_t *driver);
 
 /* test_wordlist.c */
-IMPORT VOID test_wordlist_main();
+IMPORT VOID test_wordlist_main(unittest_driver_t *driver);
 
 /* test_tadsearch.c */
-IMPORT VOID test_tadsearch_main();
+IMPORT VOID test_tadsearch_main(unittest_driver_t *driver);
 
 /* test_httpheaderlexer.c */
-IMPORT VOID test_httpheaderlexer_main();
+IMPORT VOID test_httpheaderlexer_main(unittest_driver_t *driver);
 
 /* test_setcookieheader.c */
-IMPORT VOID test_setcookieheader_main();
+IMPORT VOID test_setcookieheader_main(unittest_driver_t *driver);
 
 /* test_httpdateparser.c */
-IMPORT VOID test_httpdateparser_main();
+IMPORT VOID test_httpdateparser_main(unittest_driver_t *driver);
 
 /* test_cookiedb.c */
-IMPORT VOID test_cookiedb_main();
+IMPORT VOID test_cookiedb_main(unittest_driver_t *driver);
 
 /* test_psvlexer.c */
-IMPORT VOID test_psvlexer_main();
-
-/* test_base64encode.c */
-IMPORT VOID test_base64encode_main();
+IMPORT VOID test_psvlexer_main(unittest_driver_t *driver);
 
 #endif

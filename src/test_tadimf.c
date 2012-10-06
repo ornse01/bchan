@@ -1,7 +1,7 @@
 /*
  * test_tadimf.c
  *
- * Copyright (c) 2010 project bchan
+ * Copyright (c) 2010-2012 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -24,13 +24,15 @@
  *
  */
 
+#include    "test.h"
+
+#include    "tadimf.h"
+
 #include    <btron/btron.h>
 #include    <bstdio.h>
 #include    <tcode.h>
 
-#include    "test.h"
-
-#include    "tadimf.h"
+#include    <unittest_driver.h>
 
 LOCAL UB test_tadimf_testdata01[] = {
 	0xe0, 0xff, 0x06, 0x00, 0x00, 0x00, 0x02, 0x00,
@@ -611,13 +613,13 @@ LOCAL tctokenchecker_valuetuple_t namelist_test[] = {
   {(TC[]){TK_m, TK_a, TK_i, TK_l, TNULL}, NAMELIST_TEST_VAL_mail},
 };
 
-LOCAL TEST_RESULT test_tadimf_valuecheck(TC *testdata, W testdata_len, TC *val_from, W val_from_len, TC *val_mail, W val_mail_len, TC *val_body, W val_body_len)
+LOCAL UNITTEST_RESULT test_tadimf_valuecheck(TC *testdata, W testdata_len, TC *val_from, W val_from_len, TC *val_mail, W val_mail_len, TC *val_body, W val_body_len)
 {
 	timfparser_t timf;
 	TIMFPARSER_RESULT_T cont;
 	UB *bin;
 	W len, val, ret;
-	TEST_RESULT result = TEST_RESULT_PASS;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	W val_from_i = 0, val_mail_i = 0, val_body_i = 0;
 
 	timfparser_initialize(&timf, namelist_test, 2, testdata, testdata_len);
@@ -629,44 +631,44 @@ LOCAL TEST_RESULT test_tadimf_valuecheck(TC *testdata, W testdata_len, TC *val_f
 				ret = memcmp(val_from + val_from_i, bin, len);
 				if (ret != 0) {
 					printf(" header value FROM: error, i = %d, len = %d\n", val_from_i, len);
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				val_from_i += len / sizeof(TC);
 			} else if (val == NAMELIST_TEST_VAL_mail) {
 				ret = memcmp(val_mail + val_mail_i, bin, len);
 				if (ret != 0) {
 					printf(" header value mail: error, i = %d, len = %d\n", val_mail_i, len);
-					result = TEST_RESULT_FAIL;
+					result = UNITTEST_RESULT_FAIL;
 				}
 				val_mail_i += len / sizeof(TC);
 			} else {
-				result = TEST_RESULT_FAIL;
+				result = UNITTEST_RESULT_FAIL;
 			}
 		} else if (cont == TIMFPARSER_RESULT_BODY) {
 			ret = memcmp(val_body + val_body_i, bin, len);
 			if (ret != 0) {
 				printf(" body value error, i = %d, len = %d\n", val_body_i, len);
-				result = TEST_RESULT_FAIL;
+				result = UNITTEST_RESULT_FAIL;
 			}
 			val_body_i += len / sizeof(TC);
 		} else if (cont == TIMFPARSER_RESULT_END) {
 			break;
 		} else {
-			result = TEST_RESULT_FAIL;
+			result = UNITTEST_RESULT_FAIL;
 			break;
 		}
 	}
 
 	if (val_from_i != val_from_len) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 		printf("val_from_len error, read len = %d, given len = %d\n", val_from_i, val_from_len);
 	}
 	if (val_mail_i != val_mail_len) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 		printf("val_mail_len error, read len = %d, given len = %d\n", val_mail_i, val_mail_len);
 	}
 	if (val_body_i != val_body_len) {
-		result = TEST_RESULT_FAIL;
+		result = UNITTEST_RESULT_FAIL;
 		printf("val_body_len error, read len = %d, given len = %d\n", val_body_i, val_body_len);
 	}
 
@@ -675,7 +677,7 @@ LOCAL TEST_RESULT test_tadimf_valuecheck(TC *testdata, W testdata_len, TC *val_f
 	return result;
 }
 
-LOCAL TEST_RESULT test_tadimf_1()
+LOCAL UNITTEST_RESULT test_tadimf_1()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -687,7 +689,7 @@ LOCAL TEST_RESULT test_tadimf_1()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_2()
+LOCAL UNITTEST_RESULT test_tadimf_2()
 {
 	TC val_from[] = {TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -699,7 +701,7 @@ LOCAL TEST_RESULT test_tadimf_2()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_3()
+LOCAL UNITTEST_RESULT test_tadimf_3()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TNULL};
@@ -711,7 +713,7 @@ LOCAL TEST_RESULT test_tadimf_3()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_4()
+LOCAL UNITTEST_RESULT test_tadimf_4()
 {
 	TC val_from[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -723,7 +725,7 @@ LOCAL TEST_RESULT test_tadimf_4()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_5()
+LOCAL UNITTEST_RESULT test_tadimf_5()
 {
 	TC val_from[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -735,7 +737,7 @@ LOCAL TEST_RESULT test_tadimf_5()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_6()
+LOCAL UNITTEST_RESULT test_tadimf_6()
 {
 	TC val_from[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_n, TK_a, TK_m, TK_e, 0xFFA2, 0x0006, 0x0300, 0x0000, 0x0000, TNULL};
 	TC val_mail[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_m, TK_a, TK_i, TK_l, 0xFFA2, 0x0006, 0x0300, 0x0000, 0x0000, TNULL};
@@ -747,7 +749,7 @@ LOCAL TEST_RESULT test_tadimf_6()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_7()
+LOCAL UNITTEST_RESULT test_tadimf_7()
 {
 	TC val_from[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_n, TK_a, 0xFFA2, 0x0006, 0x0300, 0x0000, 0x0000, TK_m, TK_e, TNULL};
 	TC val_mail[] = {0xFFA2, 0x0006, 0x0300, 0x0000, 0x0102, TK_m, TK_a, 0xFFA2, 0x0006, 0x0300, 0x0000, 0x0000, TK_i, TK_l, TNULL};
@@ -759,7 +761,7 @@ LOCAL TEST_RESULT test_tadimf_7()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_8()
+LOCAL UNITTEST_RESULT test_tadimf_8()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -778,7 +780,7 @@ LOCAL TEST_RESULT test_tadimf_8()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_9()
+LOCAL UNITTEST_RESULT test_tadimf_9()
 {
 	TC val_from[] = {TNULL};
 	TC val_mail[] = {TNULL};
@@ -790,7 +792,7 @@ LOCAL TEST_RESULT test_tadimf_9()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_10()
+LOCAL UNITTEST_RESULT test_tadimf_10()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -802,7 +804,7 @@ LOCAL TEST_RESULT test_tadimf_10()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_11()
+LOCAL UNITTEST_RESULT test_tadimf_11()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -814,7 +816,7 @@ LOCAL TEST_RESULT test_tadimf_11()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_12()
+LOCAL UNITTEST_RESULT test_tadimf_12()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -826,7 +828,7 @@ LOCAL TEST_RESULT test_tadimf_12()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_13()
+LOCAL UNITTEST_RESULT test_tadimf_13()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -838,7 +840,7 @@ LOCAL TEST_RESULT test_tadimf_13()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL TEST_RESULT test_tadimf_14()
+LOCAL UNITTEST_RESULT test_tadimf_14()
 {
 	TC val_from[] = {TK_n, TK_a, TK_m, TK_e, TNULL};
 	TC val_mail[] = {TK_m, TK_a, TK_i, TK_l, TNULL};
@@ -850,35 +852,20 @@ LOCAL TEST_RESULT test_tadimf_14()
 								  val_body, (sizeof(val_body) - 2)/sizeof(TC));
 }
 
-LOCAL VOID test_tadimf_printresult(TEST_RESULT (*proc)(), B *test_name)
+EXPORT VOID test_tadimf_main(unittest_driver_t *driver)
 {
-	TEST_RESULT result;
-
-	printf("test_tadimf: %s\n", test_name);
-	printf("---------------------------------------------\n");
-	result = proc();
-	if (result == TEST_RESULT_PASS) {
-		printf("--pass---------------------------------------\n");
-	} else {
-		printf("--fail---------------------------------------\n");
-	}
-	printf("---------------------------------------------\n");
-}
-
-EXPORT VOID test_tadimf_main()
-{
-	test_tadimf_printresult(test_tadimf_1, "test_tadimf_1");
-	test_tadimf_printresult(test_tadimf_2, "test_tadimf_2");
-	test_tadimf_printresult(test_tadimf_3, "test_tadimf_3");
-	test_tadimf_printresult(test_tadimf_4, "test_tadimf_4");
-	test_tadimf_printresult(test_tadimf_5, "test_tadimf_5");
-	test_tadimf_printresult(test_tadimf_6, "test_tadimf_6");
-	test_tadimf_printresult(test_tadimf_7, "test_tadimf_7");
-	test_tadimf_printresult(test_tadimf_8, "test_tadimf_8");
-	test_tadimf_printresult(test_tadimf_9, "test_tadimf_9");
-	test_tadimf_printresult(test_tadimf_10, "test_tadimf_10");
-	test_tadimf_printresult(test_tadimf_11, "test_tadimf_11");
-	test_tadimf_printresult(test_tadimf_12, "test_tadimf_12");
-	test_tadimf_printresult(test_tadimf_13, "test_tadimf_13");
-	test_tadimf_printresult(test_tadimf_14, "test_tadimf_14");
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_1);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_2);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_3);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_4);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_5);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_6);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_7);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_8);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_9);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_10);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_11);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_12);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_13);
+	UNITTEST_DRIVER_REGIST(driver, test_tadimf_14);
 }

@@ -452,7 +452,8 @@ LOCAL W tadlib_drawtext_ch(VP arg, TC ch)
 
 	if (ch == TK_USCR) {
 		if (ctx->isHankaku == True) {
-			gset_chp(ctx->gid, 4, 0, 0);
+			//gset_chp(ctx->gid, 4, 0, 0);
+			gdra_chr(ctx->gid, ch, G_STORE);
 		} else {
 			gdra_chr(ctx->gid, ch, G_STORE);
 		}
