@@ -1,0 +1,139 @@
+#
+#	@(#)Makefile (library using bchanf)
+#		GNU make 用
+#
+#	make の方法
+#	・make
+#		リリース用の正式版を作成
+#	・make mode=debug
+#		デバッグ用に作成
+#	・make clean
+#		make で作成した全てのファイルを削除
+#	・make install
+#		規定の場所にインストール (実機用のみ)
+#
+
+# バージョン
+version = 0x0010
+
+# リリース用をデフォルトにする
+mode =
+
+# ソースの依存関係ファイル (自動生成)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# アプリケーション標準ルール
+MACHINE = pcat
+include $(BD)/appl/etc/makerules
+
+#----------------------------------------------------------------------
+# 作成対象
+TARGET = libbchanf
+
+# ソースファイルのサーチパス
+TOPDIR = ../../src/bchanf
+S = $(TOPDIR)/src $(TOPDIR)/src/http $(TOPDIR)/src/parse $(TOPDIR)/src/coll $(TOPDIR)/src/coding $(TOPDIR)/src/tad $(TOPDIR)/src/hmi $(TOPDIR)/src/css
+VPATH = $(S)
+
+# ヘッダファイルのディレクトリ追加
+HEADER := $(S) $(HEADER)
+
+# ソースファイル
+
+SRC_HTTP = 	http_connector.c \
+		http_transferdecoder.c \
+		http_contentdecoder.c \
+		http_headerlexer.c \
+		http_statuslineparser.c \
+		http_requestlinestream.c \
+		http_defaultheaderstream.c \
+		http_defaultheaderparser.c \
+		http_transport.c
+
+SRC_PARSE =	tokenchecker.c \
+		charreferparser.c 
+
+SRC_COLL =	idtocb.c \
+		arraybase.c \
+		treebase.c \
+		bytearray.c \
+		wordarray.c
+
+SRC_CODING = 	base64encoder.c \
+		base64decoder.c
+
+SRC_TAD =	taditerator.c \
+		tadstack.c \
+		tadtsvparser.c \
+		tadlexer_le.c \
+		traydata_iterator.c \
+		tadfragment.c \
+		tadlangcode.c \
+		taddecoder.c \
+		tadsegment.c
+
+SRC_HMI =	hmi_windowscroll.c \
+		texteditor_textfragment.c \
+	    	texteditor_characterstate.c \
+		texteditor_insertfilter.c \
+		texteditor_stackfilter.c
+
+SRC_CSS =	cssrendering_box.c \
+		cssrendering_coordinate.c
+
+SRC =	$(SRC_HTTP) $(SRC_PARSE) $(SRC_COLL) $(SRC_CODING) $(SRC_TAD) $(SRC_HMI) $(SRC_CSS)
+
+# データボックスソースファイル
+DBSRC =
+
+SRC += $(DBSRC)
+
+WC_SRC = $(filter %.C, $(SRC))
+
+# オブジェクトファイル
+OBJ = $(addsuffix .o, $(basename $(SRC)))
+
+# コンパイルオプション
+ifneq ($(mode), debug)
+  CFLAGS += -Wall
+endif
+
+CFLAGS += $(BUILDOPTIONS)
+
+LOADLIBES += -limg
+
+#----------------------------------------------------------------------
+.PHONY: all clean install
+
+INST = $(addprefix $(TARGET), .a)
+
+all: $(INST)
+
+$(TARGET).a: $(OBJ)
+	$(GNUi386)/bin/ar $(ARFLAGS) $@ $^
+	$(RANLIB) $@
+
+clean:
+	$(RM) $(OBJ)
+	$(RM) $(WC_SRC:%.C=%.c) $(DBSRC)
+	$(RM) $(INST) $(NOINST) *.lst $(DEPS)
+
+install: $(INST:%=$(EXE_INSTALLDIR)/%)
+
+$(EXE_INSTALLDIR)/$(TARGET).out: $(EXE_INSTALLDIR)/%: %
+	$(EXE_INSTALL_STRIP)
+
+# ソースの依存関係
+
+$(WC_SRC:%.C=%.c):
+
+$(DBSRC):
+
+ifdef DEPENDENCIES_OUTPUT
+$(DEPS):	; touch $(DEPS)
+else
+$(DEPS): $(SRC)	; $(MAKEDEPS) $@ $?
+endif
+
+include $(DEPS)
