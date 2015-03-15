@@ -1,7 +1,7 @@
 /*
  * test_cache.c
  *
- * Copyright (c) 2009-2012 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -49,6 +49,7 @@ LOCAL UB test_cache_testdata_04[] = {"aaa.bbb.ccc.jp"};
 LOCAL UB test_cache_testdata_05[] = {"thread"};
 LOCAL UB test_cache_testdata_06[] = {"AAAAAAAAA"};
 LOCAL UB test_cache_testdata_07[] = {"XXX abcdef\r\nAAAA: valueC\r\nBBBB: valueC\r\n\r\n"};
+LOCAL UB test_cache_testdata_08[] = {"aaa.bbb.ccc.jp:15000\nthread\nAAAAAAAAA\n"};
 
 LOCAL W test_cache_util_gen_file(LINK *lnk, VID *nvid)
 {
@@ -637,6 +638,7 @@ LOCAL UNITTEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
 	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *host, *borad, *thread;
 	W cmp, host_len, borad_len, thread_len;
+	UH port;
 
 	cache = datcache_new(vid);
 
@@ -648,6 +650,12 @@ LOCAL UNITTEST_RESULT test_cache_7_testseq(VID vid, LINK *lnk)
 	cmp = memcmp(host, test_cache_testdata_04, host_len);
 	if (cmp != 0) {
 		printf("datcache_gethost: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_getport(cache, &port);
+	if (port != 80) {
+		printf("datcache_getport: data error\n");
 		result = UNITTEST_RESULT_FAIL;
 	}
 
@@ -733,6 +741,7 @@ LOCAL UNITTEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
 	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
 	UB *host, *borad, *thread;
 	W host_len, borad_len, thread_len;
+	UH port;
 
 	cache = datcache_new(vid);
 
@@ -743,6 +752,12 @@ LOCAL UNITTEST_RESULT test_cache_8_testseq(VID vid, LINK *lnk)
 	}
 	if (host != NULL) {
 		printf("datcache_gethost: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_getport(cache, &port);
+	if (port != 80) {
+		printf("datcache_getport: data error\n");
 		result = UNITTEST_RESULT_FAIL;
 	}
 
@@ -1381,6 +1396,109 @@ LOCAL UNITTEST_RESULT test_cache_15()
 		result = UNITTEST_RESULT_FAIL;
 	}
 	cls_fil(fd);
+
+	err = odel_vob(vid, 0);
+	if (err < 0) {
+		printf("error odel_vob:%d\n", err >> 16);
+		result = UNITTEST_RESULT_FAIL;
+	}
+	err = del_fil(NULL, &test_lnk, 0);
+	if (err < 0) {
+		printf("error del_fil:%d\n", err >> 16);
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	return result;
+}
+
+/* test_cache_16 */
+
+LOCAL UNITTEST_RESULT test_cache_16_testseq(VID vid, LINK *lnk)
+{
+	datcache_t *cache;
+	UNITTEST_RESULT result = UNITTEST_RESULT_PASS;
+	UB *host, *borad, *thread;
+	W cmp, host_len, borad_len, thread_len;
+	UH port;
+
+	cache = datcache_new(vid);
+
+	datcache_gethost(cache, &host, &host_len);
+	if (host_len != strlen(test_cache_testdata_04)) {
+		printf("datcache_gethost: length error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+	cmp = memcmp(host, test_cache_testdata_04, host_len);
+	if (cmp != 0) {
+		printf("datcache_gethost: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_getport(cache, &port);
+	if (port != 15000) {
+		printf("datcache_getport: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_getborad(cache, &borad, &borad_len);
+	if (borad_len != strlen(test_cache_testdata_05)) {
+		printf("datcache_getboard: length error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+	cmp = memcmp(borad, test_cache_testdata_05, borad_len);
+	if (cmp != 0) {
+		printf("datcache_getboard: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_getthread(cache, &thread, &thread_len);
+	if (thread_len != strlen(test_cache_testdata_06)) {
+		printf("datcache_getthread: length error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+	cmp = memcmp(thread, test_cache_testdata_06, thread_len);
+	if (cmp != 0) {
+		printf("datcache_getthread: data error\n");
+		result = UNITTEST_RESULT_FAIL;
+	}
+
+	datcache_delete(cache);
+
+	return result;
+}
+
+LOCAL UNITTEST_RESULT test_cache_16()
+{
+	LINK test_lnk;
+	W fd, err;
+	VID vid;
+	UNITTEST_RESULT result;
+
+	fd = test_cache_util_gen_file(&test_lnk, &vid);
+	if (fd < 0) {
+		return UNITTEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, test_cache_testdata_01, strlen(test_cache_testdata_01), DATCACHE_RECORDTYPE_MAIN, 0, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk, 0);
+		return UNITTEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, test_cache_testdata_02, strlen(test_cache_testdata_02), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_HEADER, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk, 0);
+		return UNITTEST_RESULT_FAIL;
+	}
+	err = ins_rec(fd, test_cache_testdata_08, strlen(test_cache_testdata_08), DATCACHE_RECORDTYPE_INFO, DATCACHE_RECORDSUBTYPE_RETRIEVE, 0);
+	if (err < 0) {
+		cls_fil(fd);
+		del_fil(NULL, &test_lnk, 0);
+		return UNITTEST_RESULT_FAIL;
+	}
+	cls_fil(fd);
+
+	result = test_cache_16_testseq(vid, &test_lnk);
 
 	err = odel_vob(vid, 0);
 	if (err < 0) {
@@ -3616,6 +3734,7 @@ IMPORT VOID test_cache_main(unittest_driver_t *driver)
 	UNITTEST_DRIVER_REGIST(driver, test_cache_13);
 	UNITTEST_DRIVER_REGIST(driver, test_cache_14);
 	UNITTEST_DRIVER_REGIST(driver, test_cache_15);
+	UNITTEST_DRIVER_REGIST(driver, test_cache_16);
 	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_1);
 	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_2);
 	UNITTEST_DRIVER_REGIST(driver, test_cache_residinfo_3);

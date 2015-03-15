@@ -1,7 +1,7 @@
 /*
  * http.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -54,11 +54,12 @@ struct http_t_ {
 	http_responsecontext_t *context;
 };
 
-EXPORT W http_connect(http_t *http, UB *host, W host_len)
+EXPORT W http_connect(http_t *http, UB *host, W host_len, UH port)
 {
 	W sock, err;
 	B buf[HBUFLEN], *str;
 	HOSTENT ent;
+	struct in_addr addr;
 	struct sockaddr_in *addr_in;
 
 	if (http->sockid > 0) {
@@ -72,25 +73,33 @@ EXPORT W http_connect(http_t *http, UB *host, W host_len)
 	strncpy(str, host, host_len);
 	str[host_len] = '\0';
 
-	err = so_gethostbyname(str, &ent, buf);
-	free(str);
-	if (err < 0) {
-		return err;
+	err = inet_aton(str, &addr);
+	if (err == 0) {
+		err = so_gethostbyname(str, &ent, buf);
+		if (err < 0) {
+			DP_ER("so_gethostbyname error", err);
+			free(str);
+			return err;
+		}
+		addr.s_addr = *(unsigned int *)(ent.h_addr_list[0]);
 	}
+	free(str);
 
 	addr_in = (struct sockaddr_in *)&(http->addr);
 	addr_in->sin_family = AF_INET;
-	addr_in->sin_port = htons( 80 );
-	addr_in->sin_addr.s_addr = *(unsigned int *)(ent.h_addr_list[0]);
+	addr_in->sin_port = htons(port);
+	addr_in->sin_addr = addr;
 
 	sock = so_socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
+		DP_ER("so_socket error", sock);
 		return sock;
 	}
 	http->sockid = sock;
 
 	err = so_connect(http->sockid, &(http->addr), sizeof(SOCKADDR));
 	if (err < 0) {
+		DP_ER("so_connect error", err);
 		so_close(http->sockid);
 		return err;
 	}

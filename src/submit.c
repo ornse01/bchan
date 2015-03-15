@@ -1,7 +1,7 @@
 /*
  * submit.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -57,11 +57,13 @@ LOCAL W ressubmit_simplerequest(ressubmit_t *submit, UB *header, W header_len, U
 {
 	UB *host, *r_body = NULL, *bin;
 	W err, host_len, r_len = 0, len;
+	UH port;
 	http_responsecontext_t *context;
 
 	datcache_gethost(submit->cache, &host, &host_len);
+	datcache_getport(submit->cache, &port);
 
-	err = http_connect(submit->http, host, host_len);
+	err = http_connect(submit->http, host, host_len, port);
 	if (err < 0) {
 		DP_ER("error http_connect", err);
 		return err;

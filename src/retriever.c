@@ -1,7 +1,7 @@
 /*
  * retriever.c
  *
- * Copyright (c) 2009-2010 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -52,6 +52,7 @@ struct datretriever_t_ {
 	W server_len;
 	W board_len;
 	W thread_len;
+	UH port;
 	http_t *http;
 };
 
@@ -270,8 +271,9 @@ EXPORT W datretriever_request(datretriever_t *retriever)
 	UB *bin, *lm, *et;
 	http_responsecontext_t *ctx;
 
-	err = http_connect(retriever->http, retriever->server, retriever->server_len);
+	err = http_connect(retriever->http, retriever->server, retriever->server_len, retriever->port);
 	if (err < 0) {
+		DP_ER("http_connect error", err);
 		return err;
 	}
 
@@ -512,6 +514,8 @@ LOCAL W datretriever_new_prepareinfo(datretriever_t *retriever, datcache_t *cach
 	memcpy(retriever->server, str, len);
 	retriever->server[len] = '\0';
 	retriever->server_len = len;
+
+	datcache_getport(cache, &retriever->port);
 
 	datcache_getborad(cache, &str, &len);
 	if (str == NULL) {

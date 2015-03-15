@@ -1,7 +1,7 @@
 /*
  * http.h
  *
- * Copyright (c) 2009 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -34,7 +34,7 @@ typedef struct http_responsecontext_t_ http_responsecontext_t;
 
 IMPORT http_t* http_new();
 IMPORT VOID http_delete(http_t *http);
-IMPORT W http_connect(http_t *http, UB *host, W host_len);
+IMPORT W http_connect(http_t *http, UB *host, W host_len, UH port);
 IMPORT W http_send(http_t *http, UB *bin, W len);
 IMPORT W http_waitresponseheader(http_t *http);
 IMPORT W http_getstatus(http_t *http);

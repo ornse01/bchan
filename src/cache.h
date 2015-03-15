@@ -1,7 +1,7 @@
 /*
  * cache.h
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -54,6 +54,7 @@ IMPORT VOID datcache_cleardata(datcache_t *cache);
 IMPORT VOID datcache_getlatestheader(datcache_t *cache, UB **header, W *len);
 IMPORT W datcache_updatelatestheader(datcache_t *cache, UB *header, W len);
 IMPORT VOID datcache_gethost(datcache_t *cache, UB **header, W *len);
+IMPORT VOID datcache_getport(datcache_t *cache, UH *port);
 IMPORT VOID datcache_getborad(datcache_t *cache, UB **borad, W *len);
 IMPORT VOID datcache_getthread(datcache_t *cache, UB **thread, W *len);
 IMPORT W datcache_datasize(datcache_t *cache);

@@ -1,7 +1,7 @@
 /*
  * cache.c
  *
- * Copyright (c) 2009-2012 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -65,6 +65,7 @@ struct datcache_t_ {
 	W retrinfo_len;
 	UB *host;
 	W host_len;
+	UH port;
 	UB *board;
 	W board_len;
 	UB *thread;
@@ -393,6 +394,11 @@ EXPORT VOID datcache_gethost(datcache_t *cache, UB **host, W *len)
 	*len = cache->host_len;
 }
 
+EXPORT VOID datcache_getport(datcache_t *cache, UH *port)
+{
+	*port = cache->port;
+}
+
 EXPORT VOID datcache_getborad(datcache_t *cache, UB **borad, W *len)
 {
 	*borad = cache->board;
@@ -408,11 +414,13 @@ EXPORT VOID datcache_getthread(datcache_t *cache, UB **thread, W *len)
 LOCAL VOID datcache_setupretrinfo(datcache_t *cache, UB *retrinfo, W len)
 {
 	W i=0;
+	Bool has_port = False;
 
 	cache->retrinfo = retrinfo;
 	cache->retrinfo_len = len;
 	cache->host = NULL;
 	cache->host_len = 0;
+	cache->port = 80;
 	cache->board = NULL;
 	cache->board_len = 0;
 	cache->thread = NULL;
@@ -427,7 +435,21 @@ LOCAL VOID datcache_setupretrinfo(datcache_t *cache, UB *retrinfo, W len)
 		if (cache->retrinfo[i] == '\n') {
 			break;
 		}
+		if (cache->retrinfo[i] == ':') {
+			has_port = True;
+			break;
+		}
 		cache->host_len++;
+	}
+
+	if (has_port != False) {
+		i++;
+		cache->port = atoi(cache->retrinfo + i);
+		for (; i < len; i++) {
+			if (cache->retrinfo[i] == '\n') {
+				break;
+			}
+		}
 	}
 
 	i++;
