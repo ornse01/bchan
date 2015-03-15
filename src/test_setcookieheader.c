@@ -1,7 +1,7 @@
 /*
  * test_setcookieheader.c
  *
- * Copyright (c) 2011-2012 project bchan
+ * Copyright (c) 2011-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -38,6 +38,7 @@ LOCAL UB test_setcookieheader_testdata_01[] = " PON=xAjpuk10.tky.hoge.co.jp; exp
 LOCAL UB test_setcookieheader_testdata_02[] = " HAP=0000000; expires=Friday, 01-Jan-2016 00:00:00 GMT; path=/; domain=.2ch.net";
 LOCAL UB test_setcookieheader_testdata_03[] = " num=123456; expires=Sun, 10-Jun-2001 12:00:00 GMT; path=/HTTP/";
 LOCAL UB test_setcookieheader_testdata_04[] = " param2=GHIJKL; expires=Mon, 31-Dec-2001 23:59:59 GMT; path=/; secure";
+LOCAL UB test_setcookieheader_testdata_05[] = " NAME=; Expires=Friday, 01-Jan-2016 00:00:00 GMT; Path=/";
 
 typedef struct {
 	UB *attr_name_exptd;
@@ -410,10 +411,40 @@ LOCAL UNITTEST_RESULT test_setcookieheader_4()
 	return UNITTEST_RESULT_PASS;
 }
 
+LOCAL UNITTEST_RESULT test_setcookieheader_5()
+{
+	setcookieparser_t parser;
+	W i,err,len,res_len;
+	setcookieparser_result_t *res;
+	test_cookieresult_t check;
+
+	test_cookieresult_initialize(&check, "NAME", "", "", "", /*"Friday, 01-Jan-2016 00:00:00"*/0x3a4e7700, "", "/", "", False);
+
+	err = setcookieparser_initialize(&parser);
+	if (err < 0) {
+		return UNITTEST_RESULT_FAIL;
+	}
+	len = strlen(test_setcookieheader_testdata_05);
+	for (i = 0; i < len; i++) {
+		setcookieparser_inputchar(&parser, test_setcookieheader_testdata_05[i], &res, &res_len);
+		test_cookieresult_inputresult_array(&check, res, res_len);
+	}
+	setcookieparser_endinput(&parser, &res, &res_len);
+	test_cookieresult_inputresult_array(&check, res, res_len);
+	setcookieparser_finalize(&parser);
+
+	if (test_cookieresult_checkexpected(&check) == False) {
+		return UNITTEST_RESULT_FAIL;
+	}
+
+	return UNITTEST_RESULT_PASS;
+}
+
 EXPORT VOID test_setcookieheader_main(unittest_driver_t *driver)
 {
 	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_1);
 	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_2);
 	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_3);
 	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_4);
+	UNITTEST_DRIVER_REGIST(driver, test_setcookieheader_5);
 }

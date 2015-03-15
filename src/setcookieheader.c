@@ -1,7 +1,7 @@
 /*
  * setcookieheader.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -107,6 +107,11 @@ LOCAL VOID httpcookiegeneral_inputchar(httpcookiegeneral_t *lexer, UB ch, HTTPCO
 	case HTTPCOOKIEGENERAL_STATE_SEARCH_VALUE:
 		DP_STATE(("state = SEARCH_VALUE: %c[%02x]\n", ch, ch));
 		if (ch == ' ') {
+			break;
+		}
+		if (ch == ';') {
+			lexer->state = HTTPCOOKIEGENERAL_STATE_SEARCH_ATTR;
+			*result = HTTPCOOKIEGENERAL_RESULT_AVPAIR_END;
 			break;
 		}
 		lexer->state = HTTPCOOKIEGENERAL_STATE_READ_VALUE;
@@ -322,6 +327,13 @@ EXPORT W setcookieparser_endinput(setcookieparser_t *parser, setcookieparser_res
 }
 
 LOCAL tokenchecker_valuetuple_t nList_attr[] = {
+	{"Comment", SETCOOKIEPARSER_ATTR_COMMENT},
+	{"Domain", SETCOOKIEPARSER_ATTR_DOMAIN},
+	{"Expires", SETCOOKIEPARSER_ATTR_EXPIRES},
+	{"Max-age", SETCOOKIEPARSER_ATTR_MAX_AGE},
+	{"Path", SETCOOKIEPARSER_ATTR_PATH},
+	{"Secure", SETCOOKIEPARSER_ATTR_SECURE},
+	{"Versions", SETCOOKIEPARSER_ATTR_VERSION},
 	{"comment", SETCOOKIEPARSER_ATTR_COMMENT},
 	{"domain", SETCOOKIEPARSER_ATTR_DOMAIN},
 	{"expires", SETCOOKIEPARSER_ATTR_EXPIRES},
@@ -336,7 +348,7 @@ EXPORT W setcookieparser_initialize(setcookieparser_t *parser)
 {
 	parser->state = SETCOOKIEPARSER_STATE_SEARCH_ATTR;
 	parser->attr = 0;
-	tokenchecker_initialize(&(parser->attrchecker), nList_attr, 7, eToken_attr);
+	tokenchecker_initialize(&(parser->attrchecker), nList_attr, 14, eToken_attr);
 	return httpcookiegeneral_initialize(&parser->lexer);
 }
 
