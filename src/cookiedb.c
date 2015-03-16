@@ -1,7 +1,7 @@
 /*
  * cookiedb.c
  *
- * Copyright (c) 2011 project bchan
+ * Copyright (c) 2011-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -180,9 +180,6 @@ LOCAL ascstr_t* httpcookie_getvalidpath(httpcookie_t *cookie)
 LOCAL Bool httpcookie_isvalueset(httpcookie_t *cookie)
 {
 	if (cookie->attr.len == 0) {
-		return False;
-	}
-	if (cookie->name.len == 0) {
 		return False;
 	}
 	return True;
@@ -1246,9 +1243,6 @@ LOCAL Bool cookiedb_readfilecontext_cookiecheck(httpcookie_t *cookie)
 		return False;
 	}
 	if (cookie->attr.len == 0) {
-		return False;
-	}
-	if (cookie->name.len == 0) {
 		return False;
 	}
 	if (cookie->persistent == False) {

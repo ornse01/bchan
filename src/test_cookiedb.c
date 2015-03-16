@@ -1,7 +1,7 @@
 /*
  * test_cookiedb.c
  *
- * Copyright (c) 2011-2012 project bchan
+ * Copyright (c) 2011-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -2871,6 +2871,77 @@ LOCAL UNITTEST_RESULT test_cookiedb_52()
 	return test_cookiedb_testingseparateinput_file_clear(data, 2, 0x1eec16c0, NULL, 0, "2ch.net", "/", False, 0x1eec16c0, expected, 0);
 }
 
+/* empty value test */
+
+LOCAL UNITTEST_RESULT test_cookiedb_53()
+{
+	testcookie_input_t data[] = {
+		{
+			"0ch.net", /* origin_host */
+			"/", /* origin_path */
+			"PON", /* name */
+			"", /* value */
+			NULL, /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+		{
+			"0ch.net", /* origin_host */
+			"/", /* origin_path */
+			"HAP", /* name */
+			NULL, /* value */
+			NULL, /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	testcookie_expected_t expected[] = {
+		{
+			"PON", /* name */
+			"", /* value */
+		},
+		{
+			"HAP", /* name */
+			"", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput(data, 2, 0x1eec16c0, "0ch.net", "/", False, 0x1eec16c0, expected, 2);
+}
+
+/* empty value test with cookiedb_readfile() */
+
+LOCAL UNITTEST_RESULT test_cookiedb_54()
+{
+	testcookie_input_t data[] = {
+		{
+			"0ch.net", /* origin_host */
+			"/", /* origin_path */
+			"AAA", /* name */
+			"BBB", /* value */
+			NULL, /* domain */
+			NULL, /* path */
+			False, /* secure */
+			0 /* expires */
+		},
+	};
+	UB filedata[] = {"0ch.net<>/<>III<><>comment<><>1300000000<><><><>\n"};
+	testcookie_expected_t expected[] = {
+		{
+			"AAA", /* name */
+			"BBB", /* value */
+		},
+		{
+			"III", /* name */
+			"", /* value */
+		}
+	};
+
+	return test_cookiedb_testingseparateinput_file(data, 1, 0x0eec16c0, filedata, strlen(filedata), "0ch.net", "/", False, 0x0eec16c0, expected, 2);
+}
+
 EXPORT VOID test_cookiedb_main(unittest_driver_t *driver)
 {
 	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_1);
@@ -2925,4 +2996,6 @@ EXPORT VOID test_cookiedb_main(unittest_driver_t *driver)
 	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_50);
 	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_51);
 	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_52);
+	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_53);
+	UNITTEST_DRIVER_REGIST(driver, test_cookiedb_54);
 }
