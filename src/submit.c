@@ -287,7 +287,7 @@ EXPORT W ressubmit_respost(ressubmit_t *submit, postresdata_t *post, cookiedb_t 
 		DP_ER("submitutil_makenextrequestbody error:", err);
 		return RESSUBMIT_RESPOST_ERROR_CLIENT;
 	}
-	err = ressubmit_makenextheader(submit, cookiedb, time, body_len, &next_header, &next_header_len);
+	err = ressubmit_makenextheader(submit, cookiedb, time, next_body_len, &next_header, &next_header_len);
 	if (err < 0) {
 		free(next_body);
 		DP_ER("ressubmit_makenextheader error:", err);
