@@ -1,7 +1,7 @@
 /*
  * postres.c
  *
- * Copyright (c) 2009-2011 project bchan
+ * Copyright (c) 2009-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -34,6 +34,8 @@
 #include	<btron/btron.h>
 #include	<btron/hmi.h>
 #include	<btron/tf.h>
+
+#include    <coding/htmlform_urlencoder.h>
 
 #include    "postres.h"
 #include    "sjisstring.h"
@@ -211,7 +213,7 @@ LOCAL W postresdata_tctosjis(TF_CTX *ctx, tcstrbuffer_t *src_tc, UB **dest, W *d
 		return err;
 	}
 
-	err = sjstring_appendurlencodestring(dest, dlen, buf, buf_len);
+	err = sjstring_appendasciistring(dest, dlen, buf, buf_len);
 	free(buf);
 
 	return err;
@@ -330,130 +332,69 @@ LOCAL W postresdata_appendasciistring(UB **dest, W *dest_len, UB *str, W len)
 	return sjstring_appendasciistring(dest, dest_len, str, len);
 }
 
+#define POST_FIELDS (7)
+
 struct postresdata_genbodycontext_t_ {
 	postresdata_t *post;
-	UB *board;
-	W board_len;
-	UB *thread;
-	W thread_len;
-	STIME time;
-	enum {
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS,
-		POSTRESDATA_GENBODYCONTEXT_STATE_BOARD,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY,
-		POSTRESDATA_GENBODYCONTEXT_STATE_THREAD,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME,
-		POSTRESDATA_GENBODYCONTEXT_STATE_TIME,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM,
-		POSTRESDATA_GENBODYCONTEXT_STATE_FROM,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL,
-		POSTRESDATA_GENBODYCONTEXT_STATE_MAIL,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE,
-		POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE,
-		POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT,
-		POSTRESDATA_GENBODYCONTEXT_STATE_END
-	} state;
 	UB timebuf[10];
+	htmlform_field fields[POST_FIELDS];
+	htmlform_urlencoder_t encoder;
 } ;
 typedef struct postresdata_genbodycontext_t_ postresdata_genbodycontext_t;
 
-LOCAL UB name_bbs[] = "bbs=";
-LOCAL UB name_key[] = "&key=";
-LOCAL UB name_time[] = "&time=";
-LOCAL UB name_FROM[] = "&FROM=";
-LOCAL UB name_mail[] = "&mail=";
-LOCAL UB name_MESSAGE[] = "&MESSAGE=";
-LOCAL UB name_submit[] = "&submit=%8F%91%82%AB%8D%9E%82%DE";
+LOCAL UB name_bbs[] = "bbs";
+LOCAL UB name_key[] = "key";
+LOCAL UB name_time[] = "time";
+LOCAL UB name_FROM[] = "FROM";
+LOCAL UB name_mail[] = "mail";
+LOCAL UB name_MESSAGE[] = "MESSAGE";
+LOCAL UB name_submit[] = "submit";
+LOCAL UB value_submit[] = { 0x8F, 0x91, 0x82, 0xAB, 0x8D, 0x9E, 0x82, 0xDE };
 
 LOCAL Bool postresdata_genbodycontext_next(postresdata_genbodycontext_t *ctx, UB **str, W *len)
 {
-	switch (ctx->state) {
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS:
-		*str = name_bbs;
-		*len = strlen(name_bbs);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_BOARD;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_BOARD:
-		*str = ctx->board;
-		*len = ctx->board_len;
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_KEY:
-		*str = name_key;
-		*len = strlen(name_key);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_THREAD;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_THREAD:
-		*str = ctx->thread;
-		*len = ctx->thread_len;
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_TIME:
-		*str = name_time;
-		*len = strlen(name_time);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_TIME;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_TIME:
-		*str = ctx->timebuf;
-		*len = sjstring_writeUWstring(ctx->timebuf, ctx->time + 473385600);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_FROM:
-		*str = name_FROM;
-		*len = strlen(name_FROM);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_FROM;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_FROM:
-		*str = ctx->post->asc_from;
-		*len = ctx->post->asc_from_len;
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MAIL:
-		*str = name_mail;
-		*len = strlen(name_mail);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_MAIL;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_MAIL:
-		*str = ctx->post->asc_mail;
-		*len = ctx->post->asc_mail_len;
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_MESSAGE:
-		*str = name_MESSAGE;
-		*len = strlen(name_MESSAGE);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_MESSAGE:
-		*str = ctx->post->asc_message;
-		*len = ctx->post->asc_message_len;
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_NAME_SUBMIT:
-		*str = name_submit;
-		*len = strlen(name_submit);
-		ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_END;
-		return True;
-	case POSTRESDATA_GENBODYCONTEXT_STATE_END:
-	default:
-	}
-	*str = NULL;
-	*len = 0;
-	return False;
+	return htmlform_urlencoder_next(&ctx->encoder, str, len);
 }
 
 LOCAL VOID postresdata_genbodycontext_initialize(postresdata_genbodycontext_t *ctx, postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time)
 {
 	ctx->post = post;
-	ctx->board = board;
-	ctx->board_len = board_len;
-	ctx->thread = thread;
-	ctx->thread_len = thread_len;
-	ctx->time = time;
-	ctx->state = POSTRESDATA_GENBODYCONTEXT_STATE_NAME_BBS;
+
+	ctx->fields[0].name = name_bbs;
+	ctx->fields[0].name_len = strlen(name_bbs);
+	ctx->fields[0].value = board;
+	ctx->fields[0].value_len = board_len;
+	ctx->fields[1].name = name_key;
+	ctx->fields[1].name_len = strlen(name_key);
+	ctx->fields[1].value = thread;
+	ctx->fields[1].value_len = thread_len;
+	ctx->fields[2].name = name_time;
+	ctx->fields[2].name_len = strlen(name_time);
+	ctx->fields[2].value = ctx->timebuf;
+	ctx->fields[2].value_len = sjstring_writeUWstring(ctx->timebuf, time + 473385600);
+	ctx->fields[3].name = name_FROM;
+	ctx->fields[3].name_len = strlen(name_FROM);
+	ctx->fields[3].value = ctx->post->asc_from;
+	ctx->fields[3].value_len = ctx->post->asc_from_len;
+	ctx->fields[4].name = name_mail;
+	ctx->fields[4].name_len = strlen(name_mail);
+	ctx->fields[4].value = ctx->post->asc_mail;
+	ctx->fields[4].value_len = ctx->post->asc_mail_len;
+	ctx->fields[5].name = name_MESSAGE;
+	ctx->fields[5].name_len = strlen(name_MESSAGE);
+	ctx->fields[5].value = ctx->post->asc_message;
+	ctx->fields[5].value_len = ctx->post->asc_message_len;
+	ctx->fields[6].name = name_submit;
+	ctx->fields[6].name_len = strlen(name_submit);
+	ctx->fields[6].value = value_submit;
+	ctx->fields[6].value_len = strlen(value_submit);
+
+	htmlform_urlencoder_initialize(&ctx->encoder, ctx->fields, POST_FIELDS);
 }
 
 LOCAL VOID postresdata_genbodycontext_finalize(postresdata_genbodycontext_t *ctx)
 {
+	htmlform_urlencoder_finalize(&ctx->encoder);
 }
 
 EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len, UB *thread, W thread_len, STIME time, UB **body, W *body_len)
@@ -494,44 +435,6 @@ EXPORT W postresdata_genrequestbody(postresdata_t *post, UB *board, W board_len,
 
 	*body = buf_ret;
 	*body_len = buf_ret_len;
-
-	return 0;
-}
-
-EXPORT W postresdata_gennamemail(postresdata_t *post, UB **name, W *name_len, UB **mail, W *mail_len)
-{
-	UB *buf_name = NULL, *buf_mail = NULL;
-	W err, buf_name_len = 0, buf_mail_len = 0;
-
-	buf_name = malloc(sizeof(UB));
-	if (buf_name == NULL) {
-		return -1;
-	}
-	buf_name[0] = '\0';
-	buf_mail = malloc(sizeof(UB));
-	if (buf_mail == NULL) {
-		free(buf_name);
-		return -1;
-	}
-	buf_mail[0] = '\0';
-
-	err = postresdata_appendasciistring(&buf_name, &buf_name_len, post->asc_from, post->asc_from_len);
-	if (err < 0) {
-		free(buf_mail);
-		free(buf_name);
-		return err;
-	}
-	err = postresdata_appendasciistring(&buf_mail, &buf_mail_len, post->asc_mail, post->asc_mail_len);
-	if (err < 0) {
-		free(buf_mail);
-		free(buf_name);
-		return err;
-	}
-
-	*name = buf_name;
-	*name_len = buf_name_len;
-	*mail = buf_mail;
-	*mail_len = buf_mail_len;
 
 	return 0;
 }
