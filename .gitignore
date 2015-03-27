@@ -1,0 +1,17 @@
+src/*~
+pcat/*.o
+pcat/*.map
+pcat/*.out
+pcat/*.a
+pcat/*.btf
+pcat/*.bz
+pcat/*.dbx
+pcat/*.fsn
+pcat/*.lst
+pcat/Dependencies
+pcat/Dependencies.mf
+pcat/mymake.sh
+pcat/bchanf/*.o
+pcat/bchanf/*.a
+pcat/bchanf/Dependencies
+pcat.test
