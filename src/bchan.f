@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------
 -- bchan.f
 --
--- Copyright (c) 2009 project bchan
+-- Copyright (c) 2009-2015 project bchan
 --
 -- This software is provided 'as-is', without any express or implied
 -- warranty. In no event will the authors be held liable for any damages
@@ -28,8 +28,8 @@
 	0x10000000L 0x10000000L 0x10FFFFFFL	-- colors
 	4					-- pict
 	0x8000	0xC053	0x8000			-- apl-id
-	"£â£ã£è£á£î"16				-- name
-	"£²£ã£è¥¹¥ì"16				-- type
+	"¥¹¥ì¥Ã¥É¥Ó¥å¡¼¥¢"16			-- name
+	"¥¹¥ì¥Ã¥É"16				-- type
 	0					-- dlen
 	------ ¸ÇÍ­¥Ç¡¼¥¿ ------
 ----------------------------------------------------------------------
