@@ -1,5 +1,5 @@
 #
-#	@(#)Makefile (bchan: BTRON 2channel thread viewer)
+#	@(#)Makefile (bchan: BTRON BBS thread viewer)
 #		GNU make 用
 #
 #	make の方法
@@ -14,7 +14,7 @@
 #
 
 # バージョン
-version = 0x0301
+version = 0x0400
 
 # リリース用をデフォルトにする
 mode =

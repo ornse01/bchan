@@ -1,7 +1,7 @@
 /*
  * submitutil.c
  *
- * Copyright (c) 2010-2011 project bchan
+ * Copyright (c) 2010-2015 project bchan
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
@@ -584,7 +584,7 @@ EXPORT W submitutil_makeheaderstring(UB *host, W host_len, UB *board, W board_le
 		return err;
 	}
 	MAKEHEADER_ERR(&str, &len, "Content-Type: application/x-www-form-urlencoded\r\n");
-	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.301)\r\nConnection: close\r\n\r\n");
+	MAKEHEADER_ERR(&str, &len, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.400)\r\nConnection: close\r\n\r\n");
 
 	*header = str;
 	*header_len = len;

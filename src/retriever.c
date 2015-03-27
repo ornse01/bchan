@@ -207,7 +207,7 @@ LOCAL W datretriever_http_sendheder(datretriever_t *retriever)
 	HTTP_ERR_SEND(retriever->http, "/");
 	HTTP_ERR_SEND(retriever->http, retriever->thread);
 	HTTP_ERR_SEND(retriever->http, "/\r\n");
-	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.301)\r\nConnection: close\r\n\r\n");
+	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.400)\r\nConnection: close\r\n\r\n");
 
 	return 0;
 }
@@ -246,7 +246,7 @@ LOCAL W datretriever_http_sendheader_partial(datretriever_t *retriever, UB *etag
 	HTTP_ERR_SEND(retriever->http, "-\r\n");
 	HTTP_ERR_SEND(retriever->http, "\r\n");
 
-	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.301)\r\nConnection: close\r\n\r\n");
+	HTTP_ERR_SEND(retriever->http, "Accept-Language: ja\r\nUser-Agent: Monazilla/1.00 (bchan/0.400)\r\nConnection: close\r\n\r\n");
 
 	return 0;
 }
