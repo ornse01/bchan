@@ -1,3 +1,3 @@
 [submodule "src/bchanf"]
 	path = src/bchanf
-	url = git://git.sourceforge.jp/gitroot/bbk/bchanf.git
+	url = ../../ornse01/bchanf.git
